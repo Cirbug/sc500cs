@@ -1,0 +1,111 @@
+============================================================
+   BitWriter, V1.2.190657
+   Copyright (c) 2012-2026 Anlogic Inc.
+   Executable = F:/AnlogicFpga/TD_Release_2026.1_6.2.190.657/bin/bw.exe
+   Built at =   17:44:28 Jan 14 2026
+   Run by =     pc
+   Run Date =   Mon Sep 14 19:54:28 2026
+
+   Run on =     CIRBUG
+============================================================
+RUN-1002 : start command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-r -s 5555 -f 12 -i 0} -open"
+RUN-1003 : finish command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-r -s 5555 -f 12 -i 0} -open" in  0.006225s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 59 MB, reserved memory is 36 MB, peak memory is 59 MB
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit -mode jtag -spd 7 -cable 0" in  8.606281s wall, 1.015625s user + 0.328125s system = 1.343750s CPU (15.6%)
+
+RUN-1004 : used memory is 89 MB, reserved memory is 54 MB, peak memory is 140 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0" in  9.874502s wall, 1.125000s user + 0.546875s system = 1.671875s CPU (16.9%)
+
+RUN-1004 : used memory is 136 MB, reserved memory is 68 MB, peak memory is 203 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit ..\..\lab_ex1_mipi_hdmi\lab_ex1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit ..\..\lab_ex1_mipi_hdmi\lab_ex1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit -mode jtag -spd 7 -cable 0" in  8.845603s wall, 0.921875s user + 0.437500s system = 1.359375s CPU (15.4%)
+
+RUN-1004 : used memory is 139 MB, reserved memory is 71 MB, peak memory is 203 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0" in  10.026860s wall, 1.140625s user + 0.421875s system = 1.562500s CPU (15.6%)
+
+RUN-1004 : used memory is 138 MB, reserved memory is 71 MB, peak memory is 205 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0"
+PRG-8000 ERROR: transfer failed
+PRG-8000 ERROR: Connect server failed.
+PRG-8000 ERROR: Connect server failed.
+PRG-8000 ERROR: Connect server failed.
+PRG-8000 ERROR: Connect server failed.
+PRG-8000 ERROR: Connect server failed.
+PRG-8000 ERROR: Connect server failed.
+PRG-8000 ERROR: Connect server failed.
+PRG-8000 ERROR: Connect server failed.
+PRG-8000 ERROR: Connect server failed.
+PRG-9525 ERROR: Chip validation failed! Please check the connection or type of chip!
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0" in  51.560036s wall, 0.968750s user + 0.953125s system = 1.921875s CPU (3.7%)
+
+RUN-1004 : used memory is 137 MB, reserved memory is 70 MB, peak memory is 205 MB
+GUI-8001 ERROR: Downloading failed!
+PRG-8000 ERROR: Connect server failed.
+RUN-1002 : start command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-r -s 5555 -f 12 -i 0} -open"
+RUN-1003 : finish command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-r -s 5555 -f 12 -i 0} -open" in  0.002494s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 135 MB, reserved memory is 71 MB, peak memory is 205 MB
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0" in  10.004188s wall, 1.171875s user + 0.671875s system = 1.843750s CPU (18.4%)
+
+RUN-1004 : used memory is 136 MB, reserved memory is 70 MB, peak memory is 205 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit ..\..\lab_ex1_mipi_hdmi\lab_ex1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit ..\..\lab_ex1_mipi_hdmi\lab_ex1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit -mode jtag -spd 7 -cable 0" in  8.811922s wall, 0.765625s user + 0.609375s system = 1.375000s CPU (15.6%)
+
+RUN-1004 : used memory is 136 MB, reserved memory is 70 MB, peak memory is 205 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0" in  10.201989s wall, 1.046875s user + 0.640625s system = 1.687500s CPU (16.5%)
+
+RUN-1004 : used memory is 137 MB, reserved memory is 70 MB, peak memory is 205 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit ..\..\lab_ex1_mipi_hdmi\lab_ex1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit ..\..\lab_ex1_mipi_hdmi\lab_ex1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit -mode jtag -spd 7 -cable 0" in  8.762078s wall, 0.859375s user + 0.390625s system = 1.250000s CPU (14.3%)
+
+RUN-1004 : used memory is 137 MB, reserved memory is 71 MB, peak memory is 205 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0" in  10.168841s wall, 1.203125s user + 0.375000s system = 1.578125s CPU (15.5%)
+
+RUN-1004 : used memory is 138 MB, reserved memory is 72 MB, peak memory is 205 MB
+GUI-1001 : Downloading succeeded!
+PRG-8000 ERROR: transfer failed
+RUN-1002 : start command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-r -s 5555 -f 12 -i 0} -open"
+RUN-1003 : finish command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-r -s 5555 -f 12 -i 0} -open" in  0.002857s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 122 MB, reserved memory is 73 MB, peak memory is 205 MB
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0" in  9.595190s wall, 1.031250s user + 0.406250s system = 1.437500s CPU (15.0%)
+
+RUN-1004 : used memory is 122 MB, reserved memory is 71 MB, peak memory is 205 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-r -s 5555 -f 12 -i 0} -open"
+RUN-1003 : finish command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-r -s 5555 -f 12 -i 0} -open" in  0.002885s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 119 MB, reserved memory is 73 MB, peak memory is 205 MB
+PRG-8000 ERROR: transfer failed
+RUN-1002 : start command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\camera_to_dsi_display.bit -mode jtag -spd 7 -cable 0" in  9.641717s wall, 1.015625s user + 0.484375s system = 1.500000s CPU (15.6%)
+
+RUN-1004 : used memory is 119 MB, reserved memory is 72 MB, peak memory is 205 MB
+GUI-1001 : Downloading succeeded!

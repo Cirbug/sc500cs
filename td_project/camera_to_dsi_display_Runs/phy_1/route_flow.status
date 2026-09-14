@@ -1,0 +1,23 @@
+Location         : D:\2026fpga\al\lab_hd_1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\phy_1
+Running with     : Tang Dynasty v6.2.190657
+                   Copyright (c) 2012-2026 Anlogic Inc.
+Top Model        : design_top_wrapper
+Device           : PH1P35MDG324
+Speed            : 3
+
+Timing Mode      : final
+Setup            : WNS  1937ps  TNS        0ps  NUM_FEPS     0
+Hold             : WNS    20ps  TNS        0ps  NUM_FEPS     0
+
+Flow Statistics  :
+---------------------------------------------------------------------------------------------------
+     command     |  #calls  |  wall time   |  cpu time(s)  |  used memory(mb)  |  peak memory(mb)  
+---------------------------------------------------------------------------------------------------
+      place      |    1     |  2m6s(60%)   |   735(86%)    |       1135        |       1135        
+      route      |    1     |  1m13s(35%)  |   108(12%)    |       1923        |       1923        
+    fix_hold     |    1     |    7s(3%)    |     8(0%)     |       1923        |       1923        
+  import_device  |    1     |    2s(0%)    |     2(0%)     |        317        |        317        
+    import_db    |    1     |    0s(0%)    |     0(0%)     |        509        |        509        
+---------------------------------------------------------------------------------------------------
+      total      |    5     |    3m28s     |      853      |       1923        |       1923        
+---------------------------------------------------------------------------------------------------

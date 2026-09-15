@@ -1,19 +1,31 @@
 
 // 视频分辨率和时序集中参数文件。
-// 当前模式：SC500 1920x1080@30，HDMI 1920x1080@30。
+// 当前模式：SC500 2592x1944 全分辨率采集，HDMI 1920x1080@30 显示。
 `ifndef VIDEO_PARAMS_VH
 `define VIDEO_PARAMS_VH
 
 // 摄像头实际输出图像宽度和高度，必须与 uics500reg.v 一致。
-`define SENSOR_WIDTH       1920
-`define SENSOR_HEIGHT      1080
-// 当前 ISP/RAW 数据流使用的图像宽度和高度。
-`define PIPE_WIDTH         `SENSOR_WIDTH
-`define PIPE_HEIGHT        `SENSOR_HEIGHT
+`define SENSOR_WIDTH       2592
+`define SENSOR_HEIGHT      1944
+
+// RGB 缩放中间尺寸：Full 图像等比例缩小为 1920x1440。
+`define SCALE_WIDTH        1920
+`define SCALE_HEIGHT       1440
+
+// 缩放并完成上下裁剪后，写入 DDR 的图像尺寸。
+`define PIPE_WIDTH         1920
+`define PIPE_HEIGHT        1080
 
 // HDMI 有效显示区域宽度和高度。
 `define DISPLAY_WIDTH      1920
 `define DISPLAY_HEIGHT     1080
+
+// DDR 图像与 HDMI 尺寸一致，显示读取不再进行二次裁剪。
+`define DISPLAY_CROP_X     ((`PIPE_WIDTH  - `DISPLAY_WIDTH)  / 2)
+`define DISPLAY_CROP_Y     ((`PIPE_HEIGHT - `DISPLAY_HEIGHT) / 2)
+
+// 1920x1440 缩放结果上下各裁剪 180 行，得到 1920x1080。
+`define SCALE_CROP_Y       ((`SCALE_HEIGHT - `PIPE_HEIGHT) / 2)
 
 // 1920x1080@30 HDMI 时序参数。
 // 水平方向：有效区、总周期、同步起始位置、同步结束位置。
@@ -35,7 +47,7 @@
 `define HDMI_V_SYNC            5
 `define HDMI_V_BP             36
 
-// DDR 环形帧缓存的帧地址间隔，单位为字节。
-// 该值不是图像宽度；修改输出格式时需要确认它大于单帧数据大小。
-`define DDR_FRAME_STRIDE_BYTES 7000000
+// DDR 用户地址每增加 8，对应一个 128 bit（16 字节）数据字，因此地址单位为 2 字节。
+// 1920x1080 RGB888 单帧需要 3110400 个地址单位；这里留出对齐裕量。
+`define DDR_FRAME_STRIDE_ADDR 3200000
 `endif

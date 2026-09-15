@@ -39,13 +39,28 @@ module video_out (
     reg[3:0]    S_fifo_rd_cnt_1d;     
     reg[127:0]  S_fifo_rd_data_1d;    
 	wire        S_fifo_emtpy;     
+    reg[8:0]    S_source_line_word_cnt;
+    reg[18:0]   S_frame_rd_word_cnt;
 
 
 
     localparam IMAGE_BASE_ADDR_0 = 25'd0;
-    localparam IMAGE_BASE_ADDR_1 = `DDR_FRAME_STRIDE_BYTES;
-    localparam IMAGE_BASE_ADDR_2 = `DDR_FRAME_STRIDE_BYTES * 2;
-    localparam IMAGE_BASE_ADDR_3 = `DDR_FRAME_STRIDE_BYTES * 3;
+    localparam IMAGE_BASE_ADDR_1 = `DDR_FRAME_STRIDE_ADDR;
+    // The full-resolution frame is about 15.12 MB; use two DDR frame buffers.
+    localparam IMAGE_BASE_ADDR_2 = IMAGE_BASE_ADDR_0;
+    localparam IMAGE_BASE_ADDR_3 = IMAGE_BASE_ADDR_1;
+
+    // DDR user addresses are in 2-byte units. One 128-bit transfer advances
+    // the address by 8. RGB888 makes both the source and display line lengths
+    // exact multiples of 128 bits for the selected resolutions.
+    localparam integer DDR_WORD_ADDR_STEP       = 8;
+    localparam integer SOURCE_LINE_ADDR_STEP    = (`PIPE_WIDTH * 3) / 2;
+    localparam integer DISPLAY_LINE_WORDS       = (`DISPLAY_WIDTH * 3) / 16;
+    localparam integer FRAME_READ_WORDS         = DISPLAY_LINE_WORDS * `DISPLAY_HEIGHT;
+    localparam integer CROP_START_ADDR_OFFSET   =
+        (`DISPLAY_CROP_Y * SOURCE_LINE_ADDR_STEP) + ((`DISPLAY_CROP_X * 3) / 2);
+    localparam integer NEXT_LINE_ADDR_STEP      =
+        SOURCE_LINE_ADDR_STEP - ((DISPLAY_LINE_WORDS - 1) * DDR_WORD_ADDR_STEP);
 
 
     always @(posedge I_ddr_clk) begin
@@ -81,7 +96,10 @@ module video_out (
         这里需要注意fifo的剩余空间一定要大于将要写入的长度，因为ddr读出的时候会有至少40个时钟周期的延时，
         例如每次从ddr读出240个长度的数据，那么fifo的剩余空间最少要设为280，否则会引起fifo写满丢失数据。
     */
-    assign S_ddr_rd_trig = (('d511 - S_fifo_wr_num) >= 'd300) && (!I_video_in_wr_busy) && (!S_ddr_rd_valid) && (!S_fifo_rst) && I_rst_n ? 1'b1 : 1'b0;
+    assign S_ddr_rd_trig = (('d511 - S_fifo_wr_num) >= 'd300) &&
+                           (S_frame_rd_word_cnt < FRAME_READ_WORDS) &&
+                           (!I_video_in_wr_busy) && (!S_ddr_rd_valid) &&
+                           (!S_fifo_rst) && I_rst_n ? 1'b1 : 1'b0;
 
     /*
         fifo的深度是512，实际的深度是510，因此需要注意每次读出的长度避免为256，否则连续两次写入会引起fifo写满，丢失数据
@@ -90,7 +108,9 @@ module video_out (
         if(!I_rst_n)
             S_ddr_rd_valid <= 1'b0;
         else
-			if(O_ddr_user_rd_en && S_ddr_rd_cnt == 'd239)
+			if(O_ddr_user_rd_en &&
+               ((S_ddr_rd_cnt == 'd239) ||
+                (S_frame_rd_word_cnt == FRAME_READ_WORDS - 1)))
                 S_ddr_rd_valid <= 1'b0;
             else if(S_ddr_rd_trig)
                 S_ddr_rd_valid <= 1'b1;
@@ -120,16 +140,36 @@ module video_out (
             if(S_video_frame_start)
                 begin
                     case(I_video_out_rp)
-                        'd0: O_ddr_user_addr <= IMAGE_BASE_ADDR_0;
-                        'd1: O_ddr_user_addr <= IMAGE_BASE_ADDR_1;
-                        'd2: O_ddr_user_addr <= IMAGE_BASE_ADDR_2;
-                        'd3: O_ddr_user_addr <= IMAGE_BASE_ADDR_3;
+                        'd0: O_ddr_user_addr <= IMAGE_BASE_ADDR_0 + CROP_START_ADDR_OFFSET;
+                        'd1: O_ddr_user_addr <= IMAGE_BASE_ADDR_1 + CROP_START_ADDR_OFFSET;
+                        default: O_ddr_user_addr <= IMAGE_BASE_ADDR_0 + CROP_START_ADDR_OFFSET;
                     endcase
                 end
+            else if(O_ddr_user_rd_en &&
+                    (S_source_line_word_cnt == DISPLAY_LINE_WORDS - 1))
+                O_ddr_user_addr <= O_ddr_user_addr + NEXT_LINE_ADDR_STEP;
             else if(O_ddr_user_rd_en)
-                O_ddr_user_addr <= O_ddr_user_addr + 'd8;
+                O_ddr_user_addr <= O_ddr_user_addr + DDR_WORD_ADDR_STEP;
             else    
                 O_ddr_user_addr <= O_ddr_user_addr;
+    end
+
+    always @(posedge I_ddr_clk or negedge I_rst_n) begin
+        if(!I_rst_n || S_video_frame_start)
+            S_source_line_word_cnt <= 'd0;
+        else if(O_ddr_user_rd_en) begin
+            if(S_source_line_word_cnt == DISPLAY_LINE_WORDS - 1)
+                S_source_line_word_cnt <= 'd0;
+            else
+                S_source_line_word_cnt <= S_source_line_word_cnt + 1'b1;
+        end
+    end
+
+    always @(posedge I_ddr_clk or negedge I_rst_n) begin
+        if(!I_rst_n || S_video_frame_start)
+            S_frame_rd_word_cnt <= 'd0;
+        else if(O_ddr_user_rd_en && (S_frame_rd_word_cnt < FRAME_READ_WORDS))
+            S_frame_rd_word_cnt <= S_frame_rd_word_cnt + 1'b1;
     end
 
     

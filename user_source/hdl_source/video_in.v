@@ -40,9 +40,11 @@ module video_in (
     reg[9:0]    S_ddr_wr_cnt;
 
     localparam IMAGE_BASE_ADDR_0 = 25'd0;
-    localparam IMAGE_BASE_ADDR_1 = `DDR_FRAME_STRIDE_BYTES;
-    localparam IMAGE_BASE_ADDR_2 = `DDR_FRAME_STRIDE_BYTES * 2;
-    localparam IMAGE_BASE_ADDR_3 = `DDR_FRAME_STRIDE_BYTES * 3;
+    localparam IMAGE_BASE_ADDR_1 = `DDR_FRAME_STRIDE_ADDR;
+    // 2592x1944 RGB888 occupies about 15.12 MB, so use two frame buffers
+    // within the 25-bit DDR user address range.
+    localparam IMAGE_BASE_ADDR_2 = IMAGE_BASE_ADDR_0;
+    localparam IMAGE_BASE_ADDR_3 = IMAGE_BASE_ADDR_1;
 
 
     assign S_fifo_rst = S_camera_frame_start_extend_3d;
@@ -115,7 +117,7 @@ module video_in (
                     if(I_mipi_rx_error)
                         S_video_in_wp <= S_video_in_wp;
                     else
-                        S_video_in_wp <= S_video_in_wp + 'd1;
+                        S_video_in_wp <= (S_video_in_wp == 2'd0) ? 2'd1 : 2'd0;
                 end
             else
                 S_video_in_wp <= S_video_in_wp;
@@ -131,10 +133,9 @@ module video_in (
             else if(S_frame_start)
                 begin
                     case(S_video_in_wp)
-                        'd0: O_video_out_rp <= 'd2;
-                        'd1: O_video_out_rp <= 'd3;
-                        'd2: O_video_out_rp <= 'd0;
-                        'd3: O_video_out_rp <= 'd1;
+                        'd0: O_video_out_rp <= 'd1;
+                        'd1: O_video_out_rp <= 'd0;
+                        default: O_video_out_rp <= 'd0;
                     endcase
                 end
             else
@@ -186,17 +187,15 @@ module video_in (
                     case(S_video_in_wp)
                         'd0: O_ddr_user_addr <= IMAGE_BASE_ADDR_0;
                         'd1: O_ddr_user_addr <= IMAGE_BASE_ADDR_1;
-                        'd2: O_ddr_user_addr <= IMAGE_BASE_ADDR_2;
-                        'd3: O_ddr_user_addr <= IMAGE_BASE_ADDR_3;
+                        default: O_ddr_user_addr <= IMAGE_BASE_ADDR_0;
                     endcase
                 end
 			else if(S_frame_start && I_mipi_rx_error)
 				begin
                 	case(S_video_in_wp)
-                        'd0: O_ddr_user_addr <= IMAGE_BASE_ADDR_3;
+                        'd0: O_ddr_user_addr <= IMAGE_BASE_ADDR_1;
                         'd1: O_ddr_user_addr <= IMAGE_BASE_ADDR_0;
-                        'd2: O_ddr_user_addr <= IMAGE_BASE_ADDR_1;
-                        'd3: O_ddr_user_addr <= IMAGE_BASE_ADDR_2;
+                        default: O_ddr_user_addr <= IMAGE_BASE_ADDR_0;
                     endcase
                 end
             else if(O_ddr_user_wr_en)

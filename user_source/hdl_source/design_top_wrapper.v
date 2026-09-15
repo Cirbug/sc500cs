@@ -287,7 +287,7 @@ module design_top_wrapper (
             S_dbg_isp_valid_seen <= 1'b1;
     end
 
-    // RAW10 1920-pixel lines contain 2400 payload bytes, or 600 valid
+    // RAW10 2592-pixel lines contain 3240 payload bytes, or 810 valid
     // 32-bit words after csi_unpacket.  Count complete lines and frames so
     // the on-screen diagnostic verifies the sensor's actual output format.
     always @(posedge S_csi_rx_clk or negedge S_rst_n) begin
@@ -311,7 +311,7 @@ module design_top_wrapper (
                 S_dbg_csi_words <= S_dbg_csi_words + 11'd1;
 
             if(S_dbg_hs_valid_d && !S_hs_rx_valid && (S_dbg_csi_words != 0)) begin
-                if(S_dbg_csi_words == 11'd600) begin
+                if(S_dbg_csi_words == 11'd810) begin
                     S_dbg_width_1920_seen <= 1'b1;
                     S_dbg_good_lines <= S_dbg_good_lines + 11'd1;
                 end
@@ -320,7 +320,7 @@ module design_top_wrapper (
             if(S_csi_frame_start) begin
                 if(S_dbg_frame_seen_once) begin
                     S_dbg_frame_repeat_seen <= 1'b1;
-                    if(S_dbg_good_lines == 11'd1080)
+                    if(S_dbg_good_lines == 11'd1944)
                         S_dbg_height_1080_seen <= 1'b1;
                 end
                 else
@@ -609,8 +609,8 @@ raw10_unpacket_2lane u_raw10_unpacket (
 
 //将数据转为stream流
 uial2axis #(
-.IMG_WIDTH(`PIPE_WIDTH),
-.IMG_HEIGHT(`PIPE_HEIGHT),
+.IMG_WIDTH(`SENSOR_WIDTH),
+.IMG_HEIGHT(`SENSOR_HEIGHT),
 .INPUT_DATA_WIDTH(40)
 ) 
 u_uial2axis (

@@ -3,7 +3,7 @@
 **	All Right Reserved.
 \************************************************************/
 /************************************************************\
-**	Build time: Mar 26 2026 17:03:43
+**	Build time: Sep 15 2026 14:21:04
 **	TD version	:	6.2.168116
 ************************************************************/
 ///////////////////////////////////////////////////////////////////////////////
@@ -13,9 +13,9 @@
 //	Clock information:
 //		Clock name	| Frequency 	| Phase shift 
 //		C0        	| 100.000000   MHz	    |  0.0000 DEG 
-//		C1        	| 24.074074   MHz	    |  0.0000 DEG 
-//		C4        	| 52.000000   MHz		|  0.0000 DEG 
-//		C5        	| 260.000000   MHz		|  0.0000 DEG 
+//		C1        	| 23.809524   MHz	    |  0.0000 DEG 
+//		C4        	| 75.000000   MHz		|  0.0000 DEG 
+//		C5        	| 375.000000   MHz		|  0.0000 DEG 
 ///////////////////////////////////////////////////////////////////////////////
 `timescale 1 ns / 100 fs 
 
@@ -50,38 +50,38 @@ PH1P_LOGIC_BUFG bufg_feedback (
       .REFCLK_DIV(1),
       .FBCLK_DIV(2),
       .CLKC0_ENABLE("ENABLE"),
-      .CLKC0_DIV(13),
-      .CLKC0_CPHASE(12),
+      .CLKC0_DIV(15),
+      .CLKC0_CPHASE(14),
       .CLKC0_FPHASE(0),
       .CLKC0_FPHASE_RSTSEL(0),
       .CLKC0_DUTY50("ENABLE"),
-      .CLKC0_DUTY_INT(7),
+      .CLKC0_DUTY_INT(8),
       .CLKC1_ENABLE("ENABLE"),
-      .CLKC1_DIV(54),
-      .CLKC1_CPHASE(53),
+      .CLKC1_DIV(63),
+      .CLKC1_CPHASE(62),
       .CLKC1_FPHASE(0),
       .CLKC1_FPHASE_RSTSEL(0),
       .CLKC1_DUTY50("ENABLE"),
-      .CLKC1_DUTY_INT(27),
+      .CLKC1_DUTY_INT(32),
       .CLKC4_ENABLE("ENABLE"),
-      .CLKC4_DIV(25),
-      .CLKC4_CPHASE(24),
+      .CLKC4_DIV(20),
+      .CLKC4_CPHASE(19),
       .CLKC4_FPHASE(0),
       .CLKC4_FPHASE_RSTSEL(0),
       .CLKC4_DUTY50("ENABLE"),
-      .CLKC4_DUTY_INT(13),
+      .CLKC4_DUTY_INT(10),
       .CLKC5_ENABLE("ENABLE"),
-      .CLKC5_DIV(5),
-      .CLKC5_CPHASE(4),
+      .CLKC5_DIV(4),
+      .CLKC5_CPHASE(3),
       .CLKC5_FPHASE(0),
       .CLKC5_FPHASE_RSTSEL(0),
       .CLKC5_DUTY50("ENABLE"),
-      .CLKC5_DUTY_INT(3),
+      .CLKC5_DUTY_INT(2),
       .PLL_USR_RST("ENABLE"),
       .PLL_FEED_TYPE("EXTERNAL"),
       .PLL_FASTLOOP("ENABLE"),
       .LPF_RES(0),
-      .LPF_CAP(5),
+      .LPF_CAP(13),
       .ICP_CUR(29),
       .PHASE_PATH_SEL(0),
       .DYN_PHASE_PATH_SEL("DISABLE"),

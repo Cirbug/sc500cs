@@ -1,3 +1,5 @@
+`include "../video_params.vh"
+
 module isp_top (
     input 			axi4s_video_aclk,
     input 			I_rst_n			,
@@ -47,8 +49,8 @@ wire         m_aixs_tvalid;  //synthesis keep
  
  
 demosaic #(
-    .IMG_HEIGHT          (600),  // 图像高度
-    .IMG_WIDTH           (1024),   // 图像宽度
+    .IMG_HEIGHT          (`PIPE_HEIGHT),  // 图像高度
+    .IMG_WIDTH           (`PIPE_WIDTH),   // 图像宽度
     .data_complete_delay (50  ),
     .BAYER_MODE          ("BGGR")
 )
@@ -75,8 +77,8 @@ data128_96 u_data128_96 (
 );
 
 awb #(
-    .IMG_HEIGHT(600),
-    .IMG_WIDTH (1024)
+    .IMG_HEIGHT(`PIPE_HEIGHT),
+    .IMG_WIDTH (`PIPE_WIDTH)
 ) u_awb (
     .I_clk   (axi4s_video_aclk),
     .I_rst_n (I_rst_n),

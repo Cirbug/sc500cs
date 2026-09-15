@@ -1,6 +1,8 @@
 
 
 
+`include "video_params.vh"
+
 module video_out (
     input wire        I_rst_n,
 
@@ -41,9 +43,9 @@ module video_out (
 
 
     localparam IMAGE_BASE_ADDR_0 = 25'd0;
-    localparam IMAGE_BASE_ADDR_1 = 25'd7000000;
-    localparam IMAGE_BASE_ADDR_2 = 25'd14000000;
-    localparam IMAGE_BASE_ADDR_3 = 25'd21000000;
+    localparam IMAGE_BASE_ADDR_1 = `DDR_FRAME_STRIDE_BYTES;
+    localparam IMAGE_BASE_ADDR_2 = `DDR_FRAME_STRIDE_BYTES * 2;
+    localparam IMAGE_BASE_ADDR_3 = `DDR_FRAME_STRIDE_BYTES * 3;
 
 
     always @(posedge I_ddr_clk) begin

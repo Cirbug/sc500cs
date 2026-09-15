@@ -1,5 +1,7 @@
 
 
+`include "video_params.vh"
+
 module video_in (
     input wire         I_rst_n,
 
@@ -38,14 +40,17 @@ module video_in (
     reg[9:0]    S_ddr_wr_cnt;
 
     localparam IMAGE_BASE_ADDR_0 = 25'd0;
-    localparam IMAGE_BASE_ADDR_1 = 25'd7000000;
-    localparam IMAGE_BASE_ADDR_2 = 25'd14000000;
-    localparam IMAGE_BASE_ADDR_3 = 25'd21000000;
+    localparam IMAGE_BASE_ADDR_1 = `DDR_FRAME_STRIDE_BYTES;
+    localparam IMAGE_BASE_ADDR_2 = `DDR_FRAME_STRIDE_BYTES * 2;
+    localparam IMAGE_BASE_ADDR_3 = `DDR_FRAME_STRIDE_BYTES * 3;
 
 
     assign S_fifo_rst = S_camera_frame_start_extend_3d;
 
-    assign O_video_in_wr_busy = S_ddr_wr_valid | O_ddr_user_wr_en;
+    // S_ddr_wr_valid owns the complete DDR write burst.  O_ddr_user_wr_en is
+    // delayed by one clock; including it here removes the only arbitration
+    // gap between continuous bursts and can permanently starve video_out.
+    assign O_video_in_wr_busy = S_ddr_wr_valid;
 
     w128_d512_fifo U_w128_d512_fifo(
         .rst        ( S_fifo_rst         ),   

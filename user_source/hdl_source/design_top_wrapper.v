@@ -1,5 +1,7 @@
 
 
+`include "video_params.vh"
+
 module design_top_wrapper (
     input wire        I_sys_clk,
     input wire        I_rst_n,
@@ -191,6 +193,19 @@ module design_top_wrapper (
     reg [1:0]   S_dbg_mc_app_rdy_seen_sync;
     reg [1:0]   S_dbg_mc_wdf_rdy_seen_sync;
     reg [1:0]   S_dbg_mc_cmd_pop_seen_sync;
+    reg         S_dbg_hs_valid_d;
+    reg [10:0]  S_dbg_csi_words;
+    reg [10:0]  S_dbg_good_lines;
+    reg         S_dbg_frame_seen_once;
+    reg         S_dbg_frame_repeat_seen;
+    reg         S_dbg_width_1920_seen;
+    reg         S_dbg_height_1080_seen;
+    reg         S_dbg_isp_frame_seen_once;
+    reg         S_dbg_isp_frame_repeat_seen;
+    reg [1:0]   S_dbg_frame_repeat_sync;
+    reg [1:0]   S_dbg_width_1920_sync;
+    reg [1:0]   S_dbg_height_1080_sync;
+    reg [1:0]   S_dbg_isp_frame_repeat_sync;
     wire[3:0]   S_hdmi_debug_status;
     wire        S_lane_error_any;
 
@@ -270,6 +285,56 @@ module design_top_wrapper (
             S_dbg_isp_valid_seen <= 1'b0;
         else if(S_ISP_O_tvalid)
             S_dbg_isp_valid_seen <= 1'b1;
+    end
+
+    // RAW10 1920-pixel lines contain 2400 payload bytes, or 600 valid
+    // 32-bit words after csi_unpacket.  Count complete lines and frames so
+    // the on-screen diagnostic verifies the sensor's actual output format.
+    always @(posedge S_csi_rx_clk or negedge S_rst_n) begin
+        if(!S_rst_n) begin
+            S_dbg_hs_valid_d             <= 1'b0;
+            S_dbg_csi_words              <= 11'd0;
+            S_dbg_good_lines             <= 11'd0;
+            S_dbg_frame_seen_once        <= 1'b0;
+            S_dbg_frame_repeat_seen      <= 1'b0;
+            S_dbg_width_1920_seen        <= 1'b0;
+            S_dbg_height_1080_seen       <= 1'b0;
+            S_dbg_isp_frame_seen_once    <= 1'b0;
+            S_dbg_isp_frame_repeat_seen  <= 1'b0;
+        end
+        else begin
+            S_dbg_hs_valid_d <= S_hs_rx_valid;
+
+            if(!S_dbg_hs_valid_d && S_hs_rx_valid)
+                S_dbg_csi_words <= 11'd0;
+            else if(S_csi_valid)
+                S_dbg_csi_words <= S_dbg_csi_words + 11'd1;
+
+            if(S_dbg_hs_valid_d && !S_hs_rx_valid && (S_dbg_csi_words != 0)) begin
+                if(S_dbg_csi_words == 11'd600) begin
+                    S_dbg_width_1920_seen <= 1'b1;
+                    S_dbg_good_lines <= S_dbg_good_lines + 11'd1;
+                end
+            end
+
+            if(S_csi_frame_start) begin
+                if(S_dbg_frame_seen_once) begin
+                    S_dbg_frame_repeat_seen <= 1'b1;
+                    if(S_dbg_good_lines == 11'd1080)
+                        S_dbg_height_1080_seen <= 1'b1;
+                end
+                else
+                    S_dbg_frame_seen_once <= 1'b1;
+                S_dbg_good_lines <= 11'd0;
+            end
+
+            if(S_ISP_O_tuser) begin
+                if(S_dbg_isp_frame_seen_once)
+                    S_dbg_isp_frame_repeat_seen <= 1'b1;
+                else
+                    S_dbg_isp_frame_seen_once <= 1'b1;
+            end
+        end
     end
 
     always @(posedge S_ddr_clk or negedge S_rst_n) begin
@@ -363,6 +428,10 @@ module design_top_wrapper (
             S_dbg_mc_app_rdy_seen_sync <= 2'b00;
             S_dbg_mc_wdf_rdy_seen_sync <= 2'b00;
             S_dbg_mc_cmd_pop_seen_sync <= 2'b00;
+            S_dbg_frame_repeat_sync <= 2'b00;
+            S_dbg_width_1920_sync <= 2'b00;
+            S_dbg_height_1080_sync <= 2'b00;
+            S_dbg_isp_frame_repeat_sync <= 2'b00;
         end
         else begin
             S_dbg_cam_cfg_seen_sync <= {S_dbg_cam_cfg_seen_sync[0], S_dbg_cam_cfg_seen};
@@ -384,6 +453,10 @@ module design_top_wrapper (
             S_dbg_mc_app_rdy_seen_sync <= {S_dbg_mc_app_rdy_seen_sync[0], S_dbg_mc_app_rdy_seen};
             S_dbg_mc_wdf_rdy_seen_sync <= {S_dbg_mc_wdf_rdy_seen_sync[0], S_dbg_mc_wdf_rdy_seen};
             S_dbg_mc_cmd_pop_seen_sync <= {S_dbg_mc_cmd_pop_seen_sync[0], S_dbg_mc_cmd_pop_seen};
+            S_dbg_frame_repeat_sync <= {S_dbg_frame_repeat_sync[0], S_dbg_frame_repeat_seen};
+            S_dbg_width_1920_sync <= {S_dbg_width_1920_sync[0], S_dbg_width_1920_seen};
+            S_dbg_height_1080_sync <= {S_dbg_height_1080_sync[0], S_dbg_height_1080_seen};
+            S_dbg_isp_frame_repeat_sync <= {S_dbg_isp_frame_repeat_sync[0], S_dbg_isp_frame_repeat_seen};
             if(S_hdmi_window_rd_en && (S_video_rd_data != 24'd0))
                 S_dbg_video_nonzero_seen <= 1'b1;
         end
@@ -401,10 +474,10 @@ module design_top_wrapper (
     assign S_mc_dbg_cmd_pop = 1'b0;
 
     assign S_hdmi_debug_status = {
-        (|S_ddr_user_rd_data),
-        S_ddr_user_rd_valid,
-        S_vo_ddr_rd_en,
-        S_vi_ddr_wr_en
+        S_dbg_height_1080_sync[1] & S_dbg_isp_frame_repeat_sync[1],
+        S_dbg_width_1920_sync[1],
+        S_dbg_frame_repeat_sync[1],
+        S_dbg_cam_cfg_seen_sync[1]
     };
 	
 	assign O_cam_rst 	= 1'b1;
@@ -536,8 +609,8 @@ raw10_unpacket_2lane u_raw10_unpacket (
 
 //将数据转为stream流
 uial2axis #(
-.IMG_WIDTH(1024),
-.IMG_HEIGHT(600),
+.IMG_WIDTH(`PIPE_WIDTH),
+.IMG_HEIGHT(`PIPE_HEIGHT),
 .INPUT_DATA_WIDTH(40)
 ) 
 u_uial2axis (
@@ -554,22 +627,13 @@ u_uial2axis (
 );
 	
 
-image_correction #(
-    .DATA_WIDTH(40)
-)(
-    .I_clk   		(S_csi_rx_clk),
-    .I_rst_n 		(S_rst_n),
-					
-    .I_raw_data 	(S_axis_tdata),
-    .I_raw_frame_end 	(S_axis_tlast),
-    .I_raw_valid	(S_axis_tvalid),
-    .I_raw_frame_start 	(S_axis_tuser),
-					
-    .O_raw_tdata 	(S_raw_tdata ),
-    .O_raw_tlast 	(S_raw_tlast ),
-    .O_raw_tvalid	(S_raw_tvalid),
-    .O_raw_tuser 	(S_raw_tuser )
-);
+// The legacy image_correction block is fixed at 1024 pixels per line and
+// would truncate the official 1920x1080 stream.  The official SC500 example
+// sends the native RAW10 AXI stream directly into the ISP.
+assign S_raw_tdata  = S_axis_tdata;
+assign S_raw_tlast  = S_axis_tlast;
+assign S_raw_tvalid = S_axis_tvalid;
+assign S_raw_tuser  = S_axis_tuser;
 
 
 //cwc1 cwc1_Inst
@@ -731,14 +795,14 @@ isp_top u_isp_top (
 
 
     uivtc #(
-        .H_ActiveSize ( 1024 ),
-        .H_FrameSize  ( 1344 ),
-        .H_SyncStart  ( 1184 ),
-        .H_SyncEnd    ( 1208 ),
-        .V_ActiveSize ( 600  ),
-        .V_FrameSize  ( 635  ),
-        .V_SyncStart  ( 612  ),
-        .V_SyncEnd    ( 614  )
+        .H_ActiveSize ( `HDMI_H_ACTIVE ),
+        .H_FrameSize  ( `HDMI_H_TOTAL ),
+        .H_SyncStart  ( `HDMI_H_SYNC_START ),
+        .H_SyncEnd    ( `HDMI_H_SYNC_END ),
+        .V_ActiveSize ( `HDMI_V_ACTIVE ),
+        .V_FrameSize  ( `HDMI_V_TOTAL ),
+        .V_SyncStart  ( `HDMI_V_SYNC_START ),
+        .V_SyncEnd    ( `HDMI_V_SYNC_END )
     )u_hdmi_vtc(
         .I_vtc_rstn    ( S_hdmi_rst_n    ),
         .I_vtc_clk     ( S_hdmi_pixel_clk ),
@@ -752,8 +816,8 @@ isp_top u_isp_top (
     hdmi_mixer #(
         .H_OFFSET   ( 0    ),
         .V_OFFSET   ( 0    ),
-        .IMG_WIDTH  ( 1024 ),
-        .IMG_HEIGHT ( 600  ),
+        .IMG_WIDTH  ( `DISPLAY_WIDTH ),
+        .IMG_HEIGHT ( `DISPLAY_HEIGHT ),
         .DEBUG_MODE ( 0    )
     )u_hdmi_mixer(
         .I_clk           ( S_hdmi_pixel_clk   ),

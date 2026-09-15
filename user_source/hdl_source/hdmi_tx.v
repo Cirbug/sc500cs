@@ -1,4 +1,5 @@
 `timescale 1ns / 1ns //仿真时间刻度/精度
+`include "video_params.vh"
 
 module hdmi_tx (
     input wire       I_pixel_clk, //像素时钟
@@ -175,16 +176,16 @@ module hdmi_tx (
     hdmi_1_4b_transmitter_core_wrapper#(
         .DEVICE                 ( "PH1P"   ),
 
-		.HTOTAL                 ( 1344     ),
-        .HSA                    ( 24       ),
-        .HFP                    ( 160      ),
-        .HBP                    ( 136      ),
-        .HACTIVE                ( 1024     ),
-        .VTOTAL                 ( 635      ),
-        .VSA                    ( 2        ),
-        .VFP                    ( 12       ),
-        .VBP                    ( 21       ),
-        .VACTIVE                ( 600      ),
+        .HTOTAL                 ( `HDMI_H_TOTAL     ),
+        .HSA                    ( `HDMI_H_SYNC      ),
+        .HFP                    ( `HDMI_H_FP        ),
+        .HBP                    ( `HDMI_H_BP        ),
+        .HACTIVE                ( `HDMI_H_ACTIVE     ),
+        .VTOTAL                 ( `HDMI_V_TOTAL     ),
+        .VSA                    ( `HDMI_V_SYNC      ),
+        .VFP                    ( `HDMI_V_FP        ),
+        .VBP                    ( `HDMI_V_BP        ),
+        .VACTIVE                ( `HDMI_V_ACTIVE     ),
 
 		.VIDEO_VIC              ( 0        ),
 

@@ -1,6 +1,6 @@
 Created by          : Tang Dynasty v6.2.168116
                     : Copyright (c) 2012-2025 Anlogic Inc.
-Generated           : Tue Sep 15 12:43:06 2026
+Generated           : Tue Sep 15 17:50:08 2026
 
 Top Model           : design_top_wrapper
 Device              : PH1P35MDG324
@@ -28,7 +28,7 @@ MCP/SMD Summary
 		--------------------
 		     Total    Dominated     Shadowed      Ignored   Constraint
 		        18            0            0           18   set_max_delay -from [get_regs -nowarn {*/primary_addr_gray_reg[*]}] -to [get_regs -nowarn {*/sync_r1[*]}] -datapath_only 8.588
-		        18            0            0           18   set_max_delay -from [get_regs -nowarn {*/primary_addr_gray_reg[*]}] -to [get_regs -nowarn {*/sync_r1[*]}] -datapath_only 14.700
+		        18            0            0           18   set_max_delay -from [get_regs -nowarn {*/primary_addr_gray_reg[*]}] -to [get_regs -nowarn {*/sync_r1[*]}] -datapath_only 13.033
 
 		Min Check
 		--------------------
@@ -50,7 +50,7 @@ Ignored        :           18,        100.0%
                :           18, by set_clock_groups
 
 
-Constraint     :   set_max_delay -from [get_regs -nowarn {*/primary_addr_gray_reg[*]}] -to [get_regs -nowarn {*/sync_r1[*]}] -datapath_only 14.700
+Constraint     :   set_max_delay -from [get_regs -nowarn {*/primary_addr_gray_reg[*]}] -to [get_regs -nowarn {*/sync_r1[*]}] -datapath_only 13.033
 Check Type     :   Max
 --------------------------------------------------------------------------------
 Total Paths    :           18

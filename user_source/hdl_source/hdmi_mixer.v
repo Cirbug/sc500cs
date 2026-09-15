@@ -1,8 +1,10 @@
+`include "video_params.vh"
+
 module hdmi_mixer #(
     parameter H_OFFSET = 128,
     parameter V_OFFSET = 60,
-    parameter IMG_WIDTH = 1024,
-    parameter IMG_HEIGHT = 600,
+    parameter IMG_WIDTH = `DISPLAY_WIDTH,
+    parameter IMG_HEIGHT = `DISPLAY_HEIGHT,
     parameter integer DEBUG_MODE = 0
 )(
     input wire        I_clk,

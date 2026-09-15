@@ -40,3 +40,4 @@ ipgen_gui_set_spin_box_text IP_Generator CLK1_DIVISION_FACTOR_SET_DISP 63
 ipgen_gui_set_spin_box_text IP_Generator CLK4_DIVISION_FACTOR_SET_DISP 20
 ipgen_gui_set_spin_box_text IP_Generator CLK5_DIVISION_FACTOR_SET_DISP 4
 ipgen_gui_select_window IP_Generator
+ipgen_gui_close_window IP_Generator

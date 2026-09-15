@@ -142,7 +142,9 @@ module hdmi_mixer #(
                 end
             end
             else begin
-                O_hdmi_data <= S_video_data_2d;
+                // video_out 的同步 FIFO 读数据比 I_video_de 晚一拍。
+                // 使用一级数据延时与三级控制延时对齐，避免每行首像素形成左侧竖线。
+                O_hdmi_data <= S_video_data_1d;
             end
         end
     end

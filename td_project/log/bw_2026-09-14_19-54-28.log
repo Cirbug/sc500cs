@@ -109,3 +109,11 @@ RUN-1003 : finish command "download -bit camera_to_dsi_display_Runs\best_result\
 
 RUN-1004 : used memory is 119 MB, reserved memory is 72 MB, peak memory is 205 MB
 GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "connect_cable -close"
+RUN-1003 : finish command "connect_cable -close" in  0.000108s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 119 MB, reserved memory is 73 MB, peak memory is 205 MB
+RUN-1002 : start command "connect_cable -close"
+RUN-1003 : finish command "connect_cable -close" in  0.000005s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 120 MB, reserved memory is 73 MB, peak memory is 205 MB

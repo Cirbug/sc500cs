@@ -8,24 +8,24 @@ IO Statistics
   #inout                   35
 
 Gate Statistics
-#Basic gates            23036
-  #and                    894
+#Basic gates            23018
+  #and                    892
   #nand                     0
-  #or                     719
+  #or                     718
   #nor                      0
   #xor                     95
   #xnor                     0
   #buf                      0
-  #not                    799
+  #not                    798
   #bufif1                   1
-  #MX21                  3719
+  #MX21                  3705
   #FADD                     0
   #DFF                  16809
   #LATCH                    0
 #MACRO_ADD                388
 #MACRO_EQ                 292
 #MACRO_MULT                 8
-#MACRO_MUX               5900
+#MACRO_MUX               5910
 #MACRO_OTHERS              15
 
 LUT Statistics
@@ -40,7 +40,7 @@ Report Hierarchy Area:
 +-----------------------------------------------------------------------------------------------------------------------------------------+
 |Instance                                                         |Module                                         |gates  |seq    |macros |
 +-----------------------------------------------------------------------------------------------------------------------------------------+
-|top                                                              |design_top_wrapper                             |6227   |16809  |703    |
+|top                                                              |design_top_wrapper                             |6209   |16809  |703    |
 |  image_correction_u0                                            |image_correction                               |26     |71     |9      |
 |  u_PLL                                                          |PLL                                            |0      |0      |1      |
 |    ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst                       |ph1p_phy_pll_wrapper_25a56e5ce2f9              |0      |0      |0      |
@@ -179,10 +179,10 @@ Report Hierarchy Area:
 |            byteIdx_1[1]$u_wfifo_sync                            |ph1p_ddr_fifo_dram_sync                        |5      |11     |5      |
 |  u_raw10_unpacket                                               |raw10_unpacket_2lane                           |98     |144    |4      |
 |  u_uial2axis                                                    |uial2axis                                      |17     |28     |8      |
-|  u_uicfgcs500                                                   |uicfgcs500                                     |313    |91     |16     |
+|  u_uicfgcs500                                                   |uicfgcs500                                     |296    |91     |16     |
 |    gain_tbl                                                     |SC500GainTbl                                   |0      |10     |0      |
 |    uics500regAE_inst                                            |uics500regAE                                   |13     |0      |0      |
-|    uics500reg_inst                                              |uics500reg                                     |165    |0      |0      |
+|    uics500reg_inst                                              |uics500reg                                     |156    |0      |0      |
 |    uii2c_inst                                                   |uii2c                                          |53     |33     |13     |
 |  u_video_in                                                     |video_in                                       |59     |268    |13     |
 |    U_w128_d512_fifo                                             |w128_d512_fifo                                 |38     |222    |6      |

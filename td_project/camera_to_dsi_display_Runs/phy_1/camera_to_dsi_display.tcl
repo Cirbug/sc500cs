@@ -89,20 +89,24 @@ proc read_design_fun {} {
   upvar prj_name prj_name
   upvar top_model_name top_model_name
   upvar singleRun singleRun
+  upvar ADCList ADCList
   upvar IpADCList IpADCList
+  upvar SDCList SDCList
   upvar IpSDCList IpSDCList
   if { ![info exists singleRun] } { commit_param -step design }
 
 ### Editable zone for read_design ###
   elaborate -top $top_model_name
 #####################################
+  if { [info exists ADCList] } { foreach adc $ADCList { read_adc $adc } }
   if { [info exists IpADCList] } {
     set i 0
     while {$i < [llength $IpADCList]} {
-      read_adc -ip [lindex $IpADCList $i] -file [lindex $IpADCList [expr $i + 1] ]
+      read_ip_adc -ip [lindex $IpADCList $i] -file [lindex $IpADCList [expr $i + 1] ]
       incr i 2
     }
   }
+  if { [info exists SDCList] } { foreach sdc $SDCList { read_sdc $sdc } }
   if { [info exists IpSDCList] } {
     set i 0
     while {$i < [llength $IpSDCList]} {
@@ -114,15 +118,9 @@ proc read_design_fun {} {
 }
 proc opt_rtl_fun {} {
   upvar prj_name prj_name
-  upvar ADCList ADCList
-  upvar SDCList SDCList
   upvar singleRun singleRun
   if { ![info exists singleRun] } { commit_param -step rtl }
 
-  if { ![info exists sp] } {
-    if { [info exists ADCList] } { foreach adc $ADCList { read_adc $adc } }
-    if { [info exists SDCList] } { foreach sdc $SDCList { read_sdc $sdc } }
-  }
 
 ### Editable zone for opt_rtl ###
   upvar chipDebugger chipDebugger
@@ -166,13 +164,13 @@ proc opt_place_fun {} {
      insert_debugger
   } else { insert_debugger $chipDebugger }
   if { [info exists bkaADCList] } { 
+     clear_inst_adc
      foreach adc $bkaADCList { read_adc $adc } 
   }
 
 ### Editable zone for opt_place ###
   place
   update_timing -mode manhattan
-  report_timing_status -file ${prj_name}_place.ts
   report_timing_summary -file ${prj_name}_place.timing
   report_area -io_info -file ${prj_name}_phy.area
   flow_status -file place_flow.status
@@ -208,7 +206,6 @@ proc opt_route_fun {} {
   report_timing_status -file ${prj_name}_phy.ts
   report_timing_summary -file ${prj_name}_pr.timing
   report_timing_exception -file ${prj_name}_exception.timing
-  check_timing -verbose -file ${prj_name}_chk.timing
   flow_status -file route_flow.status
   report_clock_utilization -file route_clock_utilization.txt
 ###################################
@@ -217,16 +214,21 @@ proc opt_route_fun {} {
 }
 proc bitgen_fun {} {
   upvar prj_name prj_name
+  upvar cpcList cpcList
   upvar singleRun singleRun
   if { ![info exists singleRun] } { commit_param -step bitgen }
+  if { [info exists cpcList] } {
+    import_chipprobe_config $cpcList
+    compile_probe
+  }
 
 ### Editable zone for bitgen ###
   bitgen -bit $prj_name.bit
 ################################
   upvar chipDebugger chipDebugger
   if { ![info exists chipDebugger] } {
-    setup_debugger -prj $prj_name
-  } else { setup_debugger $chipDebugger -prj $prj_name }
+    setup_debugger
+  } else { setup_debugger $chipDebugger }
   export_bitgen_param -file .bitgen_param.f 
 }
 foreach s [lrange $stepList $l $r] {

@@ -1,0 +1,8 @@
+{
+    "FPGA_Tree_TOP": {
+        "filePaths": [
+            "d:\\2026fpga\\lab_hd_1_mipi_hdmi\\user_source\\hdl_source\\design_top_wrapper.v"
+        ],
+        "fileName": "design_top_wrapper.v"
+    }
+}

@@ -69,6 +69,7 @@ always @(posedge I_clk or posedge I_rst) begin
 end
 	
 //	Use button to add / sub idelay values. I_button[0]:IncDatDly, [1]DecDatDly, [2]IncI_clkDly, [3]DecI_clkDly
+//使用按键增加 / 减少延迟数值。I_button [0]: 增加数据延迟，[1] 减少数据延迟，[2] 增加输入时钟延迟，[3] 减少输入时钟延迟
 reg 	[3:0] 	r_button_0 = 0, r_button_1 = 0; 
 reg 	[15:0] 	r_ae_set = 3000, r_ag_set = 80; 
 always @(posedge I_clk or posedge I_rst) begin

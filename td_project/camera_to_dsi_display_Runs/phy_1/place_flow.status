@@ -1,21 +1,21 @@
-Location         : D:\2026fpga\al\lab_hd_1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\phy_1
-Running with     : Tang Dynasty v6.2.190657
-                   Copyright (c) 2012-2026 Anlogic Inc.
+Location         : D:\2026fpga\lab_hd_1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\phy_1
+Running with     : Tang Dynasty v6.2.168116
+                   Copyright (c) 2012-2025 Anlogic Inc.
 Top Model        : design_top_wrapper
 Device           : PH1P35MDG324
 Speed            : 3
 
 Timing Mode      : manhattan
-Setup            : WNS  2612ps  TNS        0ps  NUM_FEPS     0
-Hold             : WNS 2147483647ps  TNS        0ps  NUM_FEPS     0
+Setup            : WNS  2698ps  TNS        0ps  NUM_FEPS     0
+Hold             : WNS  -274ps  TNS   -75684ps  NUM_FEPS   565
 
 Flow Statistics  :
---------------------------------------------------------------------------------------------------
-     command     |  #calls  |  wall time  |  cpu time(s)  |  used memory(mb)  |  peak memory(mb)  
---------------------------------------------------------------------------------------------------
-      place      |    1     |  2m6s(98%)  |   735(99%)    |       1135        |       1135        
-  import_device  |    1     |   2s(1%)    |     2(0%)     |        317        |        317        
-    import_db    |    1     |   0s(0%)    |     0(0%)     |        509        |        509        
---------------------------------------------------------------------------------------------------
-      total      |    3     |    2m8s     |      737      |       1135        |       1135        
---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+     command     |  #calls  |  wall time   |  cpu time(s)  |  used memory(mb)  |  peak memory(mb)  
+---------------------------------------------------------------------------------------------------
+      place      |    1     |  2m43s(98%)  |   494(99%)    |       1134        |       1134        
+  import_device  |    1     |    2s(1%)    |     2(0%)     |        323        |        323        
+    import_db    |    1     |    0s(0%)    |     0(0%)     |        511        |        511        
+---------------------------------------------------------------------------------------------------
+      total      |    3     |    2m45s     |      496      |       1134        |       1134        
+---------------------------------------------------------------------------------------------------

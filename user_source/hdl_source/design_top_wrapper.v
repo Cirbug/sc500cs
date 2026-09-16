@@ -818,6 +818,7 @@ isp_top u_isp_top (
         .V_OFFSET   ( 0    ),
         .IMG_WIDTH  ( `DISPLAY_WIDTH ),
         .IMG_HEIGHT ( `DISPLAY_HEIGHT ),
+        // 正常摄像头显示模式；改为 1 可输出全屏彩条进行 HDMI 链路诊断。
         .DEBUG_MODE ( 0    )
     )u_hdmi_mixer(
         .I_clk           ( S_hdmi_pixel_clk   ),

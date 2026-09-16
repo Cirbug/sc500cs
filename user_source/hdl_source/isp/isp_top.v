@@ -99,11 +99,12 @@ awb #(
     .O_tready(awb_O_tready)
 );
 
-    // Full RGB 图像先等比例缩小到 1920x1440，再从上下中心裁剪为
-    // 1920x1080。缩放发生在 DDR 前，可显著降低帧缓存带宽。
+    // Full RGB 图像先去掉去马赛克产生的左右边界伪像，再等比例缩小到
+    // 1920x1440，最后从上下中心裁剪为 1920x1080。
     rgb96_downscale_crop #(
         .SRC_WIDTH    (`SENSOR_WIDTH),
         .SRC_HEIGHT   (`SENSOR_HEIGHT),
+        .SRC_CROP_X   (`SENSOR_EDGE_CROP_X),
         .SCALE_WIDTH  (`SCALE_WIDTH),
         .SCALE_HEIGHT (`SCALE_HEIGHT),
         .OUT_HEIGHT   (`PIPE_HEIGHT),
@@ -144,11 +145,12 @@ endmodule
 
 
 // 每拍包含从高位到低位排列的 4 个连续 RGB888 像素。
-// 水平方向逐像素进行相位抽取，并对相邻源像素求平均；垂直方向对当前行
-// 与上一源行求平均后再相位抽取。这样可抑制直接抽点产生的锯齿和马赛克。
+// 水平方向先裁掉左右边界，再逐像素进行相位抽取，并对相邻源像素求平均；
+// 垂直方向对当前行与上一源行求平均后再相位抽取。
 module rgb96_downscale_crop #(
     parameter SRC_WIDTH    = 2592,
     parameter SRC_HEIGHT   = 1944,
+    parameter SRC_CROP_X   = 4,
     parameter SCALE_WIDTH  = 1920,
     parameter SCALE_HEIGHT = 1440,
     parameter OUT_HEIGHT   = 1080,
@@ -165,9 +167,12 @@ module rgb96_downscale_crop #(
     output reg  [95:0] O_data
 );
 
-    localparam integer SRC_GROUPS   = SRC_WIDTH / 4;
-    localparam integer SCALE_GROUPS = SCALE_WIDTH / 4;
-    localparam integer H_ACC_INIT   = SRC_WIDTH - SCALE_WIDTH;
+    localparam integer SRC_GROUPS        = SRC_WIDTH / 4;
+    localparam integer SRC_CROP_GROUPS   = SRC_CROP_X / 4;
+    localparam integer ACTIVE_SRC_WIDTH  = SRC_WIDTH - (SRC_CROP_X * 2);
+    localparam integer ACTIVE_GROUPS     = ACTIVE_SRC_WIDTH / 4;
+    localparam integer SCALE_GROUPS      = SCALE_WIDTH / 4;
+    localparam integer H_ACC_INIT        = ACTIVE_SRC_WIDTH - SCALE_WIDTH;
     localparam integer V_ACC_INIT   = SRC_HEIGHT - SCALE_HEIGHT;
 
     function [23:0] average_pixel;
@@ -218,8 +223,12 @@ module rgb96_downscale_crop #(
     wire [23:0] S_source_pixel1 = I_data[71:48];
     wire [23:0] S_source_pixel2 = I_data[47:24];
     wire [23:0] S_source_pixel3 = I_data[23:0];
+    wire        S_inside_source_crop =
+                    (S_cur_src_group >= SRC_CROP_GROUPS) &&
+                    (S_cur_src_group < SRC_CROP_GROUPS + ACTIVE_GROUPS);
+    wire        S_first_active_group = (S_cur_src_group == SRC_CROP_GROUPS);
 
-    wire [23:0] S_filtered_pixel0 = (S_cur_src_group == 0) ?
+    wire [23:0] S_filtered_pixel0 = S_first_active_group ?
                                      S_source_pixel0 :
                                      average_pixel(S_prev_source_pixel, S_source_pixel0);
     wire [23:0] S_filtered_pixel1 = average_pixel(S_source_pixel0, S_source_pixel1);
@@ -228,17 +237,21 @@ module rgb96_downscale_crop #(
 
     // 4 个像素依次通过同一个 2592 -> 1920 相位规则。
     wire [13:0] S_h_sum0 = S_cur_h_acc + SCALE_WIDTH;
-    wire        S_select_pixel0 = (S_h_sum0 >= SRC_WIDTH);
-    wire [12:0] S_h_acc1 = S_select_pixel0 ? S_h_sum0 - SRC_WIDTH : S_h_sum0;
+    wire        S_select_pixel0_raw = (S_h_sum0 >= ACTIVE_SRC_WIDTH);
+    wire [12:0] S_h_acc1 = S_select_pixel0_raw ? S_h_sum0 - ACTIVE_SRC_WIDTH : S_h_sum0;
     wire [13:0] S_h_sum1 = S_h_acc1 + SCALE_WIDTH;
-    wire        S_select_pixel1 = (S_h_sum1 >= SRC_WIDTH);
-    wire [12:0] S_h_acc2 = S_select_pixel1 ? S_h_sum1 - SRC_WIDTH : S_h_sum1;
+    wire        S_select_pixel1_raw = (S_h_sum1 >= ACTIVE_SRC_WIDTH);
+    wire [12:0] S_h_acc2 = S_select_pixel1_raw ? S_h_sum1 - ACTIVE_SRC_WIDTH : S_h_sum1;
     wire [13:0] S_h_sum2 = S_h_acc2 + SCALE_WIDTH;
-    wire        S_select_pixel2 = (S_h_sum2 >= SRC_WIDTH);
-    wire [12:0] S_h_acc3 = S_select_pixel2 ? S_h_sum2 - SRC_WIDTH : S_h_sum2;
+    wire        S_select_pixel2_raw = (S_h_sum2 >= ACTIVE_SRC_WIDTH);
+    wire [12:0] S_h_acc3 = S_select_pixel2_raw ? S_h_sum2 - ACTIVE_SRC_WIDTH : S_h_sum2;
     wire [13:0] S_h_sum3 = S_h_acc3 + SCALE_WIDTH;
-    wire        S_select_pixel3 = (S_h_sum3 >= SRC_WIDTH);
-    wire [12:0] S_h_acc_next = S_select_pixel3 ? S_h_sum3 - SRC_WIDTH : S_h_sum3;
+    wire        S_select_pixel3_raw = (S_h_sum3 >= ACTIVE_SRC_WIDTH);
+    wire [12:0] S_h_acc_next = S_select_pixel3_raw ? S_h_sum3 - ACTIVE_SRC_WIDTH : S_h_sum3;
+    wire        S_select_pixel0 = S_inside_source_crop && S_select_pixel0_raw;
+    wire        S_select_pixel1 = S_inside_source_crop && S_select_pixel1_raw;
+    wire        S_select_pixel2 = S_inside_source_crop && S_select_pixel2_raw;
+    wire        S_select_pixel3 = S_inside_source_crop && S_select_pixel3_raw;
 
     wire [13:0] S_v_sum = S_cur_v_acc + SCALE_HEIGHT;
     wire        S_select_v = (S_v_sum >= SRC_HEIGHT);
@@ -488,7 +501,8 @@ module rgb96_downscale_crop #(
 
             if(I_valid) begin
                 S_prev_source_pixel <= S_source_pixel3;
-                S_h_acc <= S_h_acc_next;
+                if(S_inside_source_crop)
+                    S_h_acc <= S_h_acc_next;
                 S_selected_valid <= 1'b1;
                 S_selected_count <= S_selected_count_comb;
                 S_selected_pixel0 <= S_selected_pixel0_comb;

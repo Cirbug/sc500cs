@@ -8,24 +8,24 @@ IO Statistics
   #inout                   35
 
 Gate Statistics
-#Basic gates            24261
-  #and                    930
+#Basic gates            24267
+  #and                    937
   #nand                     0
   #or                     716
   #nor                      0
   #xor                     95
   #xnor                     0
   #buf                      0
-  #not                    830
+  #not                    828
   #bufif1                   1
-  #MX21                  4366
+  #MX21                  4390
   #FADD                     0
-  #DFF                  17323
+  #DFF                  17300
   #LATCH                    0
-#MACRO_ADD                459
-#MACRO_EQ                 295
+#MACRO_ADD                461
+#MACRO_EQ                 296
 #MACRO_MULT                 8
-#MACRO_MUX               6210
+#MACRO_MUX               6226
 #MACRO_OTHERS              16
 
 LUT Statistics
@@ -40,12 +40,12 @@ Report Hierarchy Area:
 +-----------------------------------------------------------------------------------------------------------------------------------------+
 |Instance                                                         |Module                                         |gates  |seq    |macros |
 +-----------------------------------------------------------------------------------------------------------------------------------------+
-|top                                                              |design_top_wrapper                             |6938   |17323  |778    |
+|top                                                              |design_top_wrapper                             |6967   |17300  |781    |
 |  u_PLL                                                          |PLL                                            |0      |0      |1      |
 |    ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst                       |ph1p_phy_pll_wrapper_25a56e5ce2f9              |0      |0      |0      |
 |  u_ae_set                                                       |ae_set                                         |10     |43     |8      |
 |  u_csi_unpacket                                                 |csi_unpacket_2lane                             |10     |88     |6      |
-|  u_hdmi_mixer                                                   |hdmi_mixer                                     |0      |54     |0      |
+|  u_hdmi_mixer                                                   |hdmi_mixer                                     |0      |30     |0      |
 |  u_hdmi_tx                                                      |hdmi_tx                                        |387    |1291   |151    |
 |    u_hdmi2phy_wrapper                                           |hdmi_phy_wrapper                               |2      |54     |4      |
 |      u0_lane_lvds_8_1                                           |lane_lvds_10_1                                 |2      |18     |1      |
@@ -70,7 +70,7 @@ Report Hierarchy Area:
 |        u_video_axi_stream_receiver                              |video_axi_stream_receiver                      |9      |2      |1      |
 |          u_w24_d1024_fifo                                       |w24_d1024_fifo                                 |0      |0      |1      |
 |  u_hdmi_vtc                                                     |uivtc                                          |7      |30     |10     |
-|  u_isp_top                                                      |isp_top                                        |938    |10795  |168    |
+|  u_isp_top                                                      |isp_top                                        |967    |10796  |171    |
 |    u_awb                                                        |awb                                            |119    |8839   |29     |
 |      div_gen_G_R_r1                                             |divider                                        |0      |4346   |0      |
 |      divide_G_B_r1                                              |divider                                        |0      |3768   |0      |
@@ -91,7 +91,7 @@ Report Hierarchy Area:
 |        zhenghe_d                                                |zhenghe                                        |51     |133    |20     |
 |          blk_mem_gen_zhenghe_d1                                 |blk_mem_gen_zhenghe                            |0      |0      |1      |
 |            ram_d32970204f32_Inst                                |ram_d32970204f32                               |0      |0      |1      |
-|    u_rgb96_downscale_crop                                       |rgb96_downscale_crop                           |709    |554    |77     |
+|    u_rgb96_downscale_crop                                       |rgb96_downscale_crop                           |738    |555    |80     |
 |      u_scale_line_buffer                                        |blk_mem_gen_awb_delay_signal                   |0      |0      |1      |
 |        ram_f84573da5ab5_Inst                                    |ram_f84573da5ab5                               |0      |0      |1      |
 |  u_mc_to_user_interface                                         |mc_to_user_interface                           |12     |181    |7      |

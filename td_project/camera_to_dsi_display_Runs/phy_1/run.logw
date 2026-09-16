@@ -4,12 +4,12 @@
    Executable = F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/run.exe
    Built at =   16:32:07 Jun 12 2025
    Run by =     pc
-   Run Date =   Tue Sep 15 20:14:21 2026
+   Run Date =   Wed Sep 16 14:44:53 2026
 
    Run on =     CIRBUG
 ============================================================
-PHY-5060 CRITICAL-WARNING: Clock net candidate O_cam_24m_syn_3 has mixed fanouts of 102 clock pins; 1 data/ctrl pins. Please check connection of the net in design.
 PHY-5060 CRITICAL-WARNING: Clock net candidate u_uicfgcs500/uii2c_inst/scl_clk has mixed fanouts of 1 clock pins; 2 data/ctrl pins. Please check connection of the net in design.
+PHY-5060 CRITICAL-WARNING: Clock net candidate O_cam_24m_syn_3 has mixed fanouts of 102 clock pins; 1 data/ctrl pins. Please check connection of the net in design.
 PHY-5016 WARNING: PLL clkc is driving an IO without location.
 PHY-5016 WARNING: PLL clkc is not driving a clock-capable IO.
 PHY-5016 WARNING: PLL clkc is driving an IO without location.

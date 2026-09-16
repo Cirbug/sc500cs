@@ -33,31 +33,20 @@ module hdmi_mixer #(
     reg        S_video_hsync_2d;
     reg        S_video_de_1d;
     reg        S_video_de_2d;
-    reg [23:0] S_video_data_1d;
-    reg [23:0] S_video_data_2d;
     reg [11:0] S_x;
-    reg [11:0] S_y;
 
     assign O_video_rd_en = I_video_de;
 
+    // Count pixels in the same delayed active-video domain used by O_hdmi_de.
+    // Resetting from the undelayed I_video_last made the final pixels of every
+    // line reuse x=0, which appeared as a red stripe on the right edge.
     always @(posedge I_clk or negedge I_rst_n) begin
-        if(!I_rst_n) begin
+        if(!I_rst_n)
             S_x <= 12'd0;
-            S_y <= 12'd0;
-        end
-        else if(I_video_user) begin
+        else if(!S_video_de_2d)
             S_x <= 12'd0;
-            S_y <= 12'd0;
-        end
-        else if(I_video_de) begin
-            if(I_video_last) begin
-                S_x <= 12'd0;
-                S_y <= S_y + 12'd1;
-            end
-            else begin
-                S_x <= S_x + 12'd1;
-            end
-        end
+        else
+            S_x <= S_x + 12'd1;
     end
 
     always @(posedge I_clk or negedge I_rst_n) begin
@@ -85,27 +74,25 @@ module hdmi_mixer #(
             S_video_de_1d    <= I_video_de;
             S_video_de_2d    <= S_video_de_1d;
             O_hdmi_de        <= S_video_de_2d;
-            S_video_data_1d  <= I_video_rd_data;
-            S_video_data_2d  <= S_video_data_1d;
 
             if(DEBUG_MODE == 1) begin
                 if(S_video_de_2d) begin
-                    if(S_x < 12'd128)
+                    if(S_x < ((IMG_WIDTH*1)/8))
                         O_hdmi_data <= 24'hff0000;
-                    else if(S_x < 12'd256)
+                    else if(S_x < ((IMG_WIDTH*2)/8))
                         O_hdmi_data <= 24'h00ff00;
-                    else if(S_x < 12'd384)
+                    else if(S_x < ((IMG_WIDTH*3)/8))
                         O_hdmi_data <= 24'h0000ff;
-                    else if(S_x < 12'd512)
+                    else if(S_x < ((IMG_WIDTH*4)/8))
                         O_hdmi_data <= 24'hffff00;
-                    else if(S_x < 12'd640)
+                    else if(S_x < ((IMG_WIDTH*5)/8))
                         O_hdmi_data <= 24'h00ffff;
-                    else if(S_x < 12'd768)
+                    else if(S_x < ((IMG_WIDTH*6)/8))
                         O_hdmi_data <= 24'hff00ff;
-                    else if(S_x < 12'd896)
+                    else if(S_x < ((IMG_WIDTH*7)/8))
                         O_hdmi_data <= 24'hffffff;
                     else
-                        O_hdmi_data <= 24'h202020;
+                        O_hdmi_data <= 24'h808080;
                 end
                 else begin
                     O_hdmi_data <= 24'd0;
@@ -128,11 +115,11 @@ module hdmi_mixer #(
             end
             else if(DEBUG_MODE == 3) begin
                 if(S_video_de_2d) begin
-                    if(S_x < 12'd256)
+                    if(S_x < (IMG_WIDTH/4))
                         O_hdmi_data <= I_debug_status[0] ? 24'hff8000 : 24'h201000;
-                    else if(S_x < 12'd512)
+                    else if(S_x < (IMG_WIDTH/2))
                         O_hdmi_data <= I_debug_status[1] ? 24'hffff00 : 24'h202000;
-                    else if(S_x < 12'd768)
+                    else if(S_x < ((IMG_WIDTH*3)/4))
                         O_hdmi_data <= I_debug_status[2] ? 24'hff0000 : 24'h200000;
                     else
                         O_hdmi_data <= I_debug_status[3] ? 24'h00ffff : 24'h002020;
@@ -142,9 +129,9 @@ module hdmi_mixer #(
                 end
             end
             else begin
-                // video_out 的同步 FIFO 读数据比 I_video_de 晚一拍。
-                // 使用一级数据延时与三级控制延时对齐，避免每行首像素形成左侧竖线。
-                O_hdmi_data <= S_video_data_1d;
+                // video_out 在读使能后一拍给出像素；本级再寄存一拍，
+                // 正好与从 I_video_de 到 O_hdmi_de 的两拍延时对齐。
+                O_hdmi_data <= I_video_rd_data;
             end
         end
     end

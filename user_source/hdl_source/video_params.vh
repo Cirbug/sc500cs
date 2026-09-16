@@ -8,6 +8,9 @@
 `define SENSOR_WIDTH       2592
 `define SENSOR_HEIGHT      1944
 
+// 去掉去马赛克算法左右边界各 8 个不完整邻域像素，消除画面边缘彩色竖线。
+`define SENSOR_EDGE_CROP_X 8
+
 // RGB 缩放中间尺寸：Full 图像等比例缩小为 1920x1440。
 `define SCALE_WIDTH        1920
 `define SCALE_HEIGHT       1440

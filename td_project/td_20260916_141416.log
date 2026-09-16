@@ -1,0 +1,26 @@
+============================================================
+   Tang Dynasty, V6.2.168116
+   Copyright (c) 2012-2025 Anlogic Inc.
+   Executable = F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/td_commands_prompt.exe
+   Built at =   16:32:07 Jun 12 2025
+   Run by =     pc
+   Run Date =   Wed Sep 16 14:14:16 2026
+
+   Run on =     CIRBUG
+============================================================
+RUN-1002 : start command "download -bit D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/camera_to_dsi_display_Runs/best_result/camera_to_dsi_display_colorbar_test.bit -mode jtag -spd 7 -cable 0"
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9505 ERROR: USB device open error, please re-connect the USB cable!
+PRG-9525 ERROR: Chip validation failed! Please check the connection or type of chip!
+RUN-1003 : finish command "download -bit D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/camera_to_dsi_display_Runs/best_result/camera_to_dsi_display_colorbar_test.bit -mode jtag -spd 7 -cable 0" in  10.068904s wall, 0.000000s user + 0.015625s system = 0.015625s CPU (0.2%)
+
+RUN-1004 : used memory is 38 MB, reserved memory is 36 MB, peak memory is 38 MB

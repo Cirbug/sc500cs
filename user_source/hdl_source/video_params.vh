@@ -30,7 +30,7 @@
 // 1920x1440 缩放结果上下各裁剪 180 行，得到 1920x1080。
 `define SCALE_CROP_Y       ((`SCALE_HEIGHT - `PIPE_HEIGHT) / 2)
 
-// 1920x1080@30 HDMI 时序参数。
+// 1920x1080@30 HDMI 标准时序。
 // 水平方向：有效区、总周期、同步起始位置、同步结束位置。
 `define HDMI_H_ACTIVE      1920
 `define HDMI_H_TOTAL       2200

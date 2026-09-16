@@ -46,7 +46,7 @@ module video_out (
 
     localparam IMAGE_BASE_ADDR_0 = 25'd0;
     localparam IMAGE_BASE_ADDR_1 = `DDR_FRAME_STRIDE_ADDR;
-    // The full-resolution frame is about 15.12 MB; use two DDR frame buffers.
+    // 缩放裁剪后的 1920x1080 RGB888 每帧约 5.93 MB，使用两个 DDR 帧缓冲区。
     localparam IMAGE_BASE_ADDR_2 = IMAGE_BASE_ADDR_0;
     localparam IMAGE_BASE_ADDR_3 = IMAGE_BASE_ADDR_1;
 

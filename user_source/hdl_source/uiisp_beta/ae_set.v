@@ -26,8 +26,8 @@
 *7) _r delay or register
 *8) _s state mechine
 *********************************************************************/
-/*********ae_set ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AE ***********
---ï¿½æ±¾ï¿½ï¿½1.0
+/*********ae_set æ‰‹åŠ¨è°ƒèŠ‚æ›å…‰ ***********
+--ç‰ˆæœ¬ï¼š2.0
 *********************************************************************/
 
 module ae_set
@@ -43,58 +43,45 @@ output wire [15:0] O_ag
 );
 	
 
-reg 	[19:0] 	rc_ae_tick = 0; 
-reg 			r_ae_tick = 0; 
-reg 	[4:0] 	rc_ag_tick = 0; 
-reg 			r_ag_tick = 0; 
-	
+// Full 30 fps æ¨¡å¼ï¼šVTS=2000ï¼Œæ‰‹å†Œè§„å®šæ›å…‰èŒƒå›´ä¸º 3 åˆ° 2*VTS-10ã€‚
+// æ›å…‰å•ä½æ˜¯åŠè¡Œï¼Œå½“å‰è¡Œæ—¶é—´çº¦ 16.67 usï¼Œå› æ­¤ 120/600 åˆ†åˆ«çº¦ä¸º 1 ms å’Œ 5 msã€‚
+localparam [15:0] AE_MIN         = 16'd3;
+localparam [15:0] AE_MAX         = 16'd3990;
+localparam [15:0] AE_INIT        = 16'd2246;
+localparam [15:0] AE_STEP_FINE   = 16'd120;
+localparam [15:0] AE_STEP_COARSE = 16'd600;
+
+wire [3:0] S_key_pressed;
+genvar key_index;
+generate
+    for(key_index = 0; key_index < 4; key_index = key_index + 1) begin : g_key_debounce
+        key_remove_shakes u_key_remove_shakes (
+            .I_clk          (I_clk),
+            .I_rst_n        (~I_rst),
+            .I_key_in       (I_btn[key_index]),
+            .O_key_trig_out (S_key_pressed[key_index])
+        );
+    end
+endgenerate
+
+reg [15:0] r_ae_set = AE_INIT;
 always @(posedge I_clk or posedge I_rst) begin
 	if(I_rst) begin
-		rc_ae_tick <= 0; 
-		r_ae_tick <= 0; 
-		rc_ag_tick <= 0; 
-		r_ag_tick <= 0; 
-	end else begin
-	//	Trigger AE Inc / Dec per 1 ms. 
-		rc_ae_tick <= rc_ae_tick + 1; 
-		r_ae_tick <= 0; 
-		if(rc_ae_tick >= 99999) begin
-			rc_ae_tick <= 0; 
-			r_ae_tick <= 1; 
-		end 
-	//	Trigger AG Inc / Dec per 32 ms. 
-		rc_ag_tick <= rc_ag_tick + r_ae_tick; 
-		r_ag_tick <= (&rc_ag_tick) && r_ae_tick; 
+		r_ae_set <= AE_INIT;
+	end else if(S_key_pressed[0]) begin
+		r_ae_set <= (r_ae_set > AE_MIN + AE_STEP_FINE) ?
+		            r_ae_set - AE_STEP_FINE : AE_MIN;
+	end else if(S_key_pressed[1]) begin
+		r_ae_set <= (r_ae_set < AE_MAX - AE_STEP_FINE) ?
+		            r_ae_set + AE_STEP_FINE : AE_MAX;
+	end else if(S_key_pressed[2]) begin
+		r_ae_set <= (r_ae_set > AE_MIN + AE_STEP_COARSE) ?
+		            r_ae_set - AE_STEP_COARSE : AE_MIN;
+	end else if(S_key_pressed[3]) begin
+		r_ae_set <= (r_ae_set < AE_MAX - AE_STEP_COARSE) ?
+		            r_ae_set + AE_STEP_COARSE : AE_MAX;
 	end
 end
-	
-//	Use button to add / sub idelay values. I_button[0]:IncDatDly, [1]DecDatDly, [2]IncI_clkDly, [3]DecI_clkDly
-//Ê¹ÓÃ°´¼üÔö¼Ó / ¼õÉÙÑÓ³ÙÊıÖµ¡£I_button [0]: Ôö¼ÓÊı¾İÑÓ³Ù£¬[1] ¼õÉÙÊı¾İÑÓ³Ù£¬[2] Ôö¼ÓÊäÈëÊ±ÖÓÑÓ³Ù£¬[3] ¼õÉÙÊäÈëÊ±ÖÓÑÓ³Ù
-reg 	[3:0] 	r_button_0 = 0, r_button_1 = 0; 
-reg 	[15:0] 	r_ae_set = 3000, r_ag_set = 80; 
-always @(posedge I_clk or posedge I_rst) begin
-	if(I_rst) begin
-		r_button_0 <= 0; 
-		r_button_1 <= 0; 
-		r_ae_set <= 3000; 
-		r_ag_set <= 80; 
-	end else begin
-	//	When button pressed, r_button_1 bit is 1. 
-		r_button_0 <= ~I_btn; 
-		r_button_1 <= r_button_0; 
-	
-		if(r_button_1[0]) begin
-			r_ae_set <= (r_ae_set > 2) ? r_ae_set - r_ae_tick : r_ae_set; 
-		end else if(r_button_1[1]) begin
-			r_ae_set <= (r_ae_set < 2246) ? r_ae_set + r_ae_tick : r_ae_set; 
-		end 
-		if(r_button_1[2]) begin
-				r_ag_set <= (r_ag_set > 16) ? r_ag_set - r_ag_tick : r_ag_set; 
-		end else if(r_button_1[3]) begin
-				r_ag_set <= (r_ag_set < 89) ? r_ag_set + r_ag_tick : r_ag_set; 
-		end 
-		end
-	end
 	
 //	Update AG / AE when changed. 
 reg 	[15:0] 	r_ae ; 
@@ -107,19 +94,15 @@ assign O_ae_req = r_ae_req;
 always @(posedge I_clk or posedge I_rst) begin
 	if(I_rst) begin
 		r_ae_req <= 0; 
-		r_ae     <= 3000; 
+		r_ae     <= AE_INIT;
 		r_ag     <= 80; 
 	end else if(r_ae_req) begin
 		r_ae_req <= 0; 
-	end else if(((r_ae != r_ae_set) || (r_ag != r_ag_set))&&(I_cam_cfg_done==1'b1)&&(I_ae_cfg_done==1'b1)) begin
+	end else if((r_ae != r_ae_set)&&(I_cam_cfg_done==1'b1)&&(I_ae_cfg_done==1'b1)) begin
 		r_ae     <= r_ae_set; 
-		r_ag     <= r_ag_set; 
 		r_ae_req <= 1; 
 	end
 end
 
 
 endmodule
-
-
-	

@@ -11,7 +11,7 @@ module design_top_wrapper (
     output wire       O_cam_24m,
     output wire       O_cam_rst,
       
-    inout wire [1:0]  I_button,
+    input wire [3:0]  I_button,
 
     output wire       O_screen_pwm,
     output wire       O_tmds_ch0_p,
@@ -507,7 +507,7 @@ module design_top_wrapper (
   ae_set u_ae_set (
       .I_clk(S_24m_clk),
       .I_rst(~S_rst_n),
-      .I_btn({I_button,2'b11}),
+      .I_btn(I_button),
       .I_cam_cfg_done(S_cam_cfg_done),
       .I_ae_cfg_done(S_ae_cfg_done),
       .O_ae_req(S_ae_req),

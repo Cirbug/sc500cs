@@ -1,0 +1,416 @@
+/*
+ * Copyright (c 2023, Anlogic Inc. and Contributors. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#ifndef __AL_DMA_HW_H_
+#define __AL_DMA_HW_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/***************************** Include Files ********************************/
+#include "al_core.h"
+
+/************************** Constant Definitions ****************************/
+
+/**************************** Type Definitions ******************************/
+
+/***************** Macros (Inline Functions) Definitions ********************/
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_CH0_CFG_MSRCADDR
+// Source Data Base Address Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_CH0_CFG_MSRCADDR_ADDR 0x8ULL
+#define UDMA_TOP_DMA_CH0_CFG_MSRCADDR_NUM  0x1
+
+#define UDMA_TOP_DMA_CH0_CFG_MSRCADDR_SRC_BASE_SHIFT    0
+
+#define UDMA_TOP_DMA_CH0_CFG_MSRCADDR_SRC_BASE_MASK    0xffffffff
+
+#define UDMA_TOP_DMA_CH0_CFG_MSRCADDR_SRC_BASE_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_CH0_CFG_MDSTADDR
+// Destination Data Base Address Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_CH0_CFG_MDSTADDR_ADDR 0xCULL
+#define UDMA_TOP_DMA_CH0_CFG_MDSTADDR_NUM  0x1
+
+#define UDMA_TOP_DMA_CH0_CFG_MDSTADDR_DST_BASE_SHIFT    0
+
+#define UDMA_TOP_DMA_CH0_CFG_MDSTADDR_DST_BASE_MASK    0xffffffff
+
+#define UDMA_TOP_DMA_CH0_CFG_MDSTADDR_DST_BASE_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_CH0_CFG_MCTRL
+// Mem2mem control Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_ADDR 0x10ULL
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_NUM  0x1
+
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_EN_SHIFT    0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_STAT_SHIFT    1
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED0_SHIFT    2
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_MODE_SHIFT    6
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_PRIORITY_SHIFT    8
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED1_SHIFT    10
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDNA_SHIFT    12
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSNA_SHIFT    13
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED2_SHIFT    14
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDWIDTH_SHIFT    16
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED3_SHIFT    19
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSWIDTH_SHIFT    21
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDBURST_SHIFT    24
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSBURST_SHIFT    28
+
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_EN_MASK    0x00000001
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_STAT_MASK    0x00000002
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED0_MASK    0x0000003c
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_MODE_MASK    0x000000c0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_PRIORITY_MASK    0x00000300
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED1_MASK    0x00000c00
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDNA_MASK    0x00001000
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSNA_MASK    0x00002000
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED2_MASK    0x0000c000
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDWIDTH_MASK    0x00070000
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED3_MASK    0x00180000
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSWIDTH_MASK    0x00e00000
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDBURST_MASK    0x0f000000
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSBURST_MASK    0xf0000000
+
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_STAT_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_MODE_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_PRIORITY_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDNA_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSNA_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDWIDTH_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_RESERVED_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSWIDTH_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MDBURST_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_MSBURST_POR_VALUE    0x0
+
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_TRANS_MODE_SIZE    2
+#define UDMA_TOP_DMA_CH0_CFG_MCTRL_PRIORITY_SIZE    2
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_CH0_CFG_MRPT
+// Transfer Repeat Number Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_ADDR 0x14ULL
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_NUM  0x1
+
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_TRANS_RPT_SHIFT    0
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_RPT_IRQ_EN_SHIFT    12
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_RESERVED_SHIFT    13
+
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_TRANS_RPT_MASK    0x00000fff
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_RPT_IRQ_EN_MASK    0x00001000
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_RESERVED_MASK    0xffffe000
+
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_TRANS_RPT_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_RPT_IRQ_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_RESERVED_POR_VALUE    0x0
+
+#define UDMA_TOP_DMA_CH0_CFG_MRPT_TRANS_RPT_SIZE    11
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_CH0_CFG_MSIZE
+// Transfer Size Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_CH0_CFG_MSIZE_ADDR 0x18ULL
+#define UDMA_TOP_DMA_CH0_CFG_MSIZE_NUM  0x1
+
+#define UDMA_TOP_DMA_CH0_CFG_MSIZE_TSIZE_SHIFT    0
+#define UDMA_TOP_DMA_CH0_CFG_MSIZE_RESERVED_SHIFT    20
+
+#define UDMA_TOP_DMA_CH0_CFG_MSIZE_TSIZE_MASK    0x000fffff
+#define UDMA_TOP_DMA_CH0_CFG_MSIZE_RESERVED_MASK    0xfff00000
+
+#define UDMA_TOP_DMA_CH0_CFG_MSIZE_TSIZE_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_CFG_MSIZE_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_PA_CH0_CFG_MSRCADDR
+// Source Data Base Address Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSRCADDR_ADDR 0x400ULL
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSRCADDR_NUM  0x1
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSRCADDR_SRC_BASE_SHIFT    0
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSRCADDR_SRC_BASE_MASK    0xffffffff
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSRCADDR_SRC_BASE_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_PA_CH0_CFG_MDSTADDR
+// Destination Data Base Address Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MDSTADDR_ADDR 0x404ULL
+#define UDMA_TOP_DMA_PA_CH0_CFG_MDSTADDR_NUM  0x1
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MDSTADDR_DST_BASE_SHIFT    0
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MDSTADDR_DST_BASE_MASK    0xffffffff
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MDSTADDR_DST_BASE_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_PA_CH0_CFG_MCTRL
+// PA type of mem2mem control Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_ADDR 0x408ULL
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_NUM  0x1
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_EN_SHIFT    0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_PER_SEL_SHIFT    1
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED0_SHIFT    4
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_MODE_SHIFT    6
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED1_SHIFT    8
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MDNA_SHIFT    12
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MSNA_SHIFT    13
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED2_SHIFT    14
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MWIDTH_SHIFT    16
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED3_SHIFT    19
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_EN_MASK    0x00000001
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_PER_SEL_MASK    0x0000000e
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED0_MASK    0x00000030
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_MODE_MASK    0x000000c0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED1_MASK    0x00000f00
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MDNA_MASK    0x00001000
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MSNA_MASK    0x00002000
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED2_MASK    0x0000c000
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MWIDTH_MASK    0x00070000
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED3_MASK    0xfff80000
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_PER_SEL_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_TRANS_MODE_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MDNA_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MSNA_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_MWIDTH_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MCTRL_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_PA_CH0_CFG_MSIZE
+// Transfer Size Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSIZE_ADDR 0x40CULL
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSIZE_NUM  0x1
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSIZE_TSIZE_SHIFT    0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSIZE_RESERVED_SHIFT    20
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSIZE_TSIZE_MASK    0x000fffff
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSIZE_RESERVED_MASK    0xfff00000
+
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSIZE_TSIZE_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_CFG_MSIZE_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_CH0_IRQ_EN
+// M2M Channel0 Interrupt Enable Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_CH0_IRQ_EN_ADDR 0x800ULL
+#define UDMA_TOP_DMA_CH0_IRQ_EN_NUM  0x1
+
+#define UDMA_TOP_DMA_CH0_IRQ_EN_FTRANS_IRQ_EN_SHIFT    0
+#define UDMA_TOP_DMA_CH0_IRQ_EN_HTRANS_IRQ_EN_SHIFT    1
+#define UDMA_TOP_DMA_CH0_IRQ_EN_RSP_ERR_IRQ_EN_SHIFT    2
+#define UDMA_TOP_DMA_CH0_IRQ_EN_RESERVED_SHIFT    3
+
+#define UDMA_TOP_DMA_CH0_IRQ_EN_FTRANS_IRQ_EN_MASK    0x00000001
+#define UDMA_TOP_DMA_CH0_IRQ_EN_HTRANS_IRQ_EN_MASK    0x00000002
+#define UDMA_TOP_DMA_CH0_IRQ_EN_RSP_ERR_IRQ_EN_MASK    0x00000004
+#define UDMA_TOP_DMA_CH0_IRQ_EN_RESERVED_MASK    0xfffffff8
+
+#define UDMA_TOP_DMA_CH0_IRQ_EN_FTRANS_IRQ_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_EN_HTRANS_IRQ_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_EN_RSP_ERR_IRQ_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_EN_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_CH0_IRQ_STAT
+// M2M Channel0 Interrupt Status Flag Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_ADDR 0x804ULL
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_NUM  0x1
+
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_FTRANS_IRQ_STAT_SHIFT    0
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_HTRANS_IRQ_STAT_SHIFT    1
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_RSP_ERR_IRQ_STAT_SHIFT    2
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_RESERVED_SHIFT    3
+
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_FTRANS_IRQ_STAT_MASK    0x00000001
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_HTRANS_IRQ_STAT_MASK    0x00000002
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_RSP_ERR_IRQ_STAT_MASK    0x00000004
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_RESERVED_MASK    0xfffffff8
+
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_FTRANS_IRQ_STAT_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_HTRANS_IRQ_STAT_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_RSP_ERR_IRQ_STAT_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_STAT_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_CH0_IRQ_CLR
+// M2M Channel0 Interrupt Clear Status Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_ADDR 0x808ULL
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_NUM  0x1
+
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_FTRANS_IRQ_CLR_SHIFT    0
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_HTRANS_IRQ_CLR_SHIFT    1
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_RSP_ERR_IRQ_CLR_SHIFT    2
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_RESERVED_SHIFT    3
+
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_FTRANS_IRQ_CLR_MASK    0x00000001
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_HTRANS_IRQ_CLR_MASK    0x00000002
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_RSP_ERR_IRQ_CLR_MASK    0x00000004
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_RESERVED_MASK    0xfffffff8
+
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_FTRANS_IRQ_CLR_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_HTRANS_IRQ_CLR_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_RSP_ERR_IRQ_CLR_POR_VALUE    0x0
+#define UDMA_TOP_DMA_CH0_IRQ_CLR_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_PA_CH0_IRQ_EN
+// PA-type Channel0 Interrupt Enable Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_ADDR 0xA00ULL
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_NUM  0x1
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_FTRANS_IRQ_EN_SHIFT    0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_HTRANS_IRQ_EN_SHIFT    1
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_RSP_ERR_IRQ_EN_SHIFT    2
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_RESERVED_SHIFT    3
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_FTRANS_IRQ_EN_MASK    0x00000001
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_HTRANS_IRQ_EN_MASK    0x00000002
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_RSP_ERR_IRQ_EN_MASK    0x00000004
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_RESERVED_MASK    0xfffffff8
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_FTRANS_IRQ_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_HTRANS_IRQ_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_RSP_ERR_IRQ_EN_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_EN_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_PA_CH0_IRQ_STAT
+// PA-type Channel0 Interrupt Status Flag Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_ADDR 0xA04ULL
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_NUM  0x1
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_FTRANS_IRQ_STAT_SHIFT    0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_HTRANS_IRQ_STAT_SHIFT    1
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_RSP_ERR_IRQ_STAT_SHIFT    2
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_RESERVED_SHIFT    3
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_FTRANS_IRQ_STAT_MASK    0x00000001
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_HTRANS_IRQ_STAT_MASK    0x00000002
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_RSP_ERR_IRQ_STAT_MASK    0x00000004
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_RESERVED_MASK    0xfffffff8
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_FTRANS_IRQ_STAT_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_HTRANS_IRQ_STAT_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_RSP_ERR_IRQ_STAT_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_STAT_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: DMA_PA_CH0_IRQ_CLR
+// PA-type Channel0 Interrupt Clear Status Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_ADDR 0xA08ULL
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_NUM  0x1
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_FTRANS_IRQ_CLR_SHIFT    0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_HTRANS_IRQ_CLR_SHIFT    1
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_RSP_ERR_IRQ_CLR_SHIFT    2
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_RESERVED_SHIFT    3
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_FTRANS_IRQ_CLR_MASK    0x00000001
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_HTRANS_IRQ_CLR_MASK    0x00000002
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_RSP_ERR_IRQ_CLR_MASK    0x00000004
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_RESERVED_MASK    0xfffffff8
+
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_FTRANS_IRQ_CLR_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_HTRANS_IRQ_CLR_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_RSP_ERR_IRQ_CLR_POR_VALUE    0x0
+#define UDMA_TOP_DMA_PA_CH0_IRQ_CLR_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: 0xFFC
+// uDMA Version Register
+///////////////////////////////////////////////////////
+
+#define UDMA_TOP_0XFFC_ADDR 0xFFCULL
+#define UDMA_TOP_0XFFC_NUM  0x1
+
+#define UDMA_TOP_0XFFC_VER_SHIFT    0
+
+#define UDMA_TOP_0XFFC_VER_MASK    0xffffffff
+
+#define UDMA_TOP_0XFFC_VER_POR_VALUE    0x0
+
+
+
+/**************************** Type Definitions ******************************/
+typedef struct
+{
+    AL_U32                  DeviceId;
+    AL_U32                  BaseAddress;
+    AL_U32                  InputClockHz;
+    AL_U32                  InterruptNum;
+} AL_DMA_HwConfigStruct;
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

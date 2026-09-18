@@ -13,13 +13,13 @@ clk1_out_ce; 0
 clk1_out_rst; 0
 clk1_out_divout; 0
 clk2_en; 0
-clk2_out; 0
+clk2_out; 1
 clkb2_out; 0
 clk2_out_ce; 0
 clk2_out_rst; 0
 clk2_out_divout; 0
 clk3_en; 0
-clk3_out; 0
+clk3_out; 1
 clkb3_out; 0
 clk3_out_ce; 0
 clk3_out_rst; 0

@@ -3,7 +3,7 @@
 **	All Right Reserved.
 \************************************************************/
 /************************************************************\
-**	Build time: Sep 16 2026 19:02:11
+**	Build time: Sep 18 2026 15:24:29
 **	TD version	:	6.2.168116
 ************************************************************/
 ///////////////////////////////////////////////////////////////////////////////
@@ -14,7 +14,9 @@
 //		Clock name	| Frequency 	| Phase shift 
 //		C0        	| 100.000000   MHz	    |  0.0000 DEG 
 //		C1        	| 23.809524   MHz	    |  0.0000 DEG 
-//		C4        	| 75.000000    MHz		|  0.0000 DEG 
+//		C2        	| 50.000000   MHz		|  0.0000 DEG 
+//		C3        	| 300.000000   MHz		|  0.0000 DEG 
+//		C4        	| 75.000000   MHz		|  0.0000 DEG 
 //		C5        	| 375.000000   MHz		|  0.0000 DEG 
 ///////////////////////////////////////////////////////////////////////////////
 `timescale 1 ns / 100 fs 
@@ -24,6 +26,8 @@ module PLL
   input                         refclk,
   output                        clk0_out,
   output                        clk1_out,
+  output                        clk2_out,
+  output                        clk3_out,
   output                        clk4_out,
   output                        clk5_out,
   output                        lock,
@@ -36,8 +40,8 @@ PH1P_LOGIC_BUFG bufg_feedback (
  ); 
 
  
-
-
+ 
+ 
  
  
 
@@ -63,6 +67,20 @@ PH1P_LOGIC_BUFG bufg_feedback (
       .CLKC1_FPHASE_RSTSEL(0),
       .CLKC1_DUTY50("ENABLE"),
       .CLKC1_DUTY_INT(32),
+      .CLKC2_ENABLE("ENABLE"),
+      .CLKC2_DIV(30),
+      .CLKC2_CPHASE(29),
+      .CLKC2_FPHASE(0),
+      .CLKC2_FPHASE_RSTSEL(0),
+      .CLKC2_DUTY50("ENABLE"),
+      .CLKC2_DUTY_INT(15),
+      .CLKC3_ENABLE("ENABLE"),
+      .CLKC3_DIV(5),
+      .CLKC3_CPHASE(4),
+      .CLKC3_FPHASE(0),
+      .CLKC3_FPHASE_RSTSEL(0),
+      .CLKC3_DUTY50("ENABLE"),
+      .CLKC3_DUTY_INT(3),
       .CLKC4_ENABLE("ENABLE"),
       .CLKC4_DIV(20),
       .CLKC4_CPHASE(19),
@@ -93,12 +111,6 @@ PH1P_LOGIC_BUFG bufg_feedback (
       .DYN_CPHASE_EN("DISABLE")
   )ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst
   (
-      .clk2_en(1'b0),
-      .clk2_out(),
-      .clkb2_out(),
-      .clk3_en(1'b0),
-      .clk3_out(),
-      .clkb3_out(),
       .clk6_en(1'b0),
       .clk6_out(),
       .clkb6_out(),
@@ -131,6 +143,12 @@ PH1P_LOGIC_BUFG bufg_feedback (
       .clk1_en(1'b1),
       .clkb1_out(),
       .clk1_out(clk1_out),
+      .clk2_en(1'b1),
+      .clkb2_out(),
+      .clk2_out(clk2_out),
+      .clk3_en(1'b1),
+      .clkb3_out(),
+      .clk3_out(clk3_out),
       .clk4_en(1'b1),
       .clkb4_out(),
       .clk4_out(clk4_out),

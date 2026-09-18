@@ -1,0 +1,13 @@
+[Info] HPF_EXPORT_TIME: 2026/09/17 20:54:18
+[Info] idePath: F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/td.exe
+[Info] write tdInfo pass
+[Warning] Cannot find device default config: freq_default
+[Warning] Cannot find device default config: subip_default
+[Warning] Cannot find device default config: ddr_default
+[Error] Can't open ps dts config file: F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/ip/depot/RISCV_F6F1D1P0_1.0//static/config/dts_config.json
+[Error] exportPsDtsFile fail 
+[Info] exportCfg pass
+[Warning] address.xml is null
+[Warning] design.xml is null
+[Info] exportPlDts pass
+[Error] Can't open ps dts config file: F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/ip/depot/RISCV_F6F1D1P0_1.0//static/config/pl_core_config.json

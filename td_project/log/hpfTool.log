@@ -1,0 +1,22 @@
+#[INFO] hpfTool V2025.07 (APP rel6.2), Windows 64bit (Release), Build , 15:19:13 Jul  9 2025 on WIN10-204
+#[INFO] Run at Thu Sep 17 20:54:05 2026
+#F:\AnlogicFpga\TD_6.2.1_Engineer_6.2.168.116\bin\hpfTool.exe -prj_path D:/2026fpga/lab_hd_1_mipi_hdmi/td_project -prj_name camera_to_dsi_display -ps_path D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/al_ip/RISCV_F6F1D1P0_0 -model_id com.anlogic.36525444 -bitstream_path D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/camera_to_dsi_display_Runs/phy_1\camera_to_dsi_display.bit -bitstream_status out of date -ip_catalog F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/ip/depot
+#[INFO] idePath: F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/td.exe
+#[INFO] F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/ip/depot
+#[INFO] Loading D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/al_ip/RISCV_F6F1D1P0_0/Design.xml
+#[INFO] hpfcfgDir: F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/ip/depot/RISCV_F6F1D1P0_1.0/static
+si_select_dialog HpfToolDialog
+si_select_combobox_item HpfToolDialog HpfToolDialog.ExportTo Choose_Location... 1
+si_select_file_dialog HpfExportPathFileDialog D:/2026fpga/lab_hd_1_mipi_hdmi/td_project
+si_select_dialog HpfToolDialog
+si_click_push_button HpfToolDialog HpfToolDialog.OK
+#[INFO] ipCfgPath:F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/ip/depot/RISCV_F6F1D1P0_1.0 outHpfPath:D:/2026fpga/lab_hd_1_mipi_hdmi/td_project
+#[INFO] plipAddressPath:
+#[INFO] param_val count:24
+#[INFO] bitstream_path: D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/camera_to_dsi_display_Runs/phy_1\camera_to_dsi_display.bit
+#[INFO] device:PH1P35MDG324 speed:-3
+#[INFO] Remove HPFs folder success!
+si_select_dialog StandardMessageBox #Info
+si_click_push_button StandardMessageBox Ok
+#[INFO] exit hpf tool
+si_select_dialog HpfToolDialog

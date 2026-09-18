@@ -2,30 +2,30 @@ standard
 ***Report Model: design_top_wrapper Device: PH1P35MDG324***
 
 IO Statistics
-#IO                        70
-  #input                    6
-  #output                  31
+#IO                        72
+  #input                    7
+  #output                  32
   #inout                   33
 
 Gate Statistics
-#Basic gates            24383
-  #and                    952
+#Basic gates            25278
+  #and                   1070
   #nand                     0
-  #or                     713
+  #or                     782
   #nor                      0
   #xor                     95
   #xnor                     0
   #buf                      0
-  #not                    851
+  #not                    979
   #bufif1                   1
-  #MX21                  4405
+  #MX21                  4773
   #FADD                     0
-  #DFF                  17366
+  #DFF                  17578
   #LATCH                    0
-#MACRO_ADD                466
-#MACRO_EQ                 300
+#MACRO_ADD                648
+#MACRO_EQ                 325
 #MACRO_MULT                 8
-#MACRO_MUX               6325
+#MACRO_MUX               6440
 #MACRO_OTHERS              14
 
 LUT Statistics
@@ -40,14 +40,10 @@ Report Hierarchy Area:
 +-----------------------------------------------------------------------------------------------------------------------------------------+
 |Instance                                                         |Module                                         |gates  |seq    |macros |
 +-----------------------------------------------------------------------------------------------------------------------------------------+
-|top                                                              |design_top_wrapper                             |7017   |17366  |788    |
+|top                                                              |design_top_wrapper                             |7700   |17578  |995    |
 |  u_PLL                                                          |PLL                                            |0      |0      |1      |
 |    ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst                       |ph1p_phy_pll_wrapper_25a56e5ce2f9              |0      |0      |0      |
-|  u_ae_set                                                       |ae_set                                         |49     |119    |17     |
-|    g_key_debounce[0]$u_key_remove_shakes                        |key_remove_shakes                              |7      |24     |2      |
-|    g_key_debounce[1]$u_key_remove_shakes                        |key_remove_shakes                              |7      |24     |2      |
-|    g_key_debounce[2]$u_key_remove_shakes                        |key_remove_shakes                              |7      |24     |2      |
-|    g_key_debounce[3]$u_key_remove_shakes                        |key_remove_shakes                              |7      |24     |2      |
+|  u_ae_set                                                       |ae_set                                         |8      |43     |6      |
 |  u_csi_unpacket                                                 |csi_unpacket_2lane                             |10     |88     |6      |
 |  u_hdmi_mixer                                                   |hdmi_mixer                                     |0      |30     |0      |
 |  u_hdmi_tx                                                      |hdmi_tx                                        |387    |1291   |151    |
@@ -102,6 +98,13 @@ Report Hierarchy Area:
 |    U_w155_d512_fifo                                             |w155_d512_fifo                                 |6      |181    |7      |
 |      soft_fifo_al_f58e8b3e1f3d_Inst                             |soft_fifo_al_f58e8b3e1f3d                      |6      |181    |7      |
 |        ram_inst                                                 |ram_infer_f58e8b3e1f3d                         |0      |152    |0      |
+|  u_mcu                                                          |RISCV_F6F1D1P0_0                               |0      |0      |0      |
+|    MCU_521bd43d073e_Inst                                        |MCU_521bd43d073e                               |0      |0      |0      |
+|  u_mcu_ui_apb_regs                                              |mcu_ui_apb_regs                                |125    |126    |19     |
+|    g_key[0]$u_key                                               |key_remove_shakes                              |7      |24     |2      |
+|    g_key[1]$u_key                                               |key_remove_shakes                              |7      |24     |2      |
+|    g_key[2]$u_key                                               |key_remove_shakes                              |7      |24     |2      |
+|    g_key[3]$u_key                                               |key_remove_shakes                              |7      |24     |2      |
 |  u_mipi_dphy_rx_ph1p_mipiio_wrapper                             |mipi_dphy_rx_ph1p_mipiio_wrapper               |113    |342    |33     |
 |    u_byte_aligner_wrapper                                       |byte_aligner_wrapper                           |87     |114    |18     |
 |      BYTE_ALIGNER_GEN[0]$u_byte_aligner                         |byte_aligner                                   |45     |58     |9      |
@@ -184,10 +187,12 @@ Report Hierarchy Area:
 |            byteIdx_1[0]$u_wfifo_sync                            |ph1p_ddr_fifo_dram_sync                        |6      |15     |6      |
 |            byteIdx_1[1]$u_wfifo_sync                            |ph1p_ddr_fifo_dram_sync                        |5      |11     |5      |
 |  u_raw10_unpacket                                               |raw10_unpacket_2lane                           |98     |144    |4      |
+|  u_ui_osd                                                       |ui_osd                                         |591    |68     |199    |
 |  u_uial2axis                                                    |uial2axis                                      |19     |28     |8      |
-|  u_uicfgcs500                                                   |uicfgcs500                                     |320    |81     |16     |
-|    uics500regAE_inst                                            |uics500regAE                                   |21     |0      |0      |
-|    uics500reg_inst                                              |uics500reg                                     |164    |0      |0      |
+|  u_uicfgcs500                                                   |uicfgcs500                                     |314    |89     |16     |
+|    gain_tbl                                                     |SC500GainTbl                                   |0      |8      |0      |
+|    uics500regAE_inst                                            |uics500regAE                                   |22     |0      |0      |
+|    uics500reg_inst                                              |uics500reg                                     |158    |0      |0      |
 |    uii2c_inst                                                   |uii2c                                          |53     |33     |13     |
 |  u_video_in                                                     |video_in                                       |51     |265    |12     |
 |    U_w128_d512_fifo                                             |w128_d512_fifo                                 |38     |222    |6      |

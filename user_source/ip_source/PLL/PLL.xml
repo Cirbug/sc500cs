@@ -55,6 +55,20 @@
                 </ipxact:wire>
             </ipxact:port>
             <ipxact:port>
+                <ipxact:name>clk2_out</ipxact:name>
+                <ipxact:displayName>clk2_out</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>clk3_out</ipxact:name>
+                <ipxact:displayName>clk3_out</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
                 <ipxact:name>clk4_out</ipxact:name>
                 <ipxact:displayName>clk4_out</ipxact:displayName>
                 <ipxact:wire>
@@ -120,6 +134,48 @@
                             </ipxact:logicalPort>
                             <ipxact:physicalPort>
                                 <ipxact:name>clk1_out</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                    </ipxact:portMaps>
+                </ipxact:abstractionType>
+            </ipxact:abstractionTypes>
+            <ipxact:master/>
+        </ipxact:busInterface>
+        <ipxact:busInterface>
+            <ipxact:name>CLKC2</ipxact:name>
+            <ipxact:displayName>CLKC2</ipxact:displayName>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="clock" version="1.0"/>
+            <ipxact:abstractionTypes>
+                <ipxact:abstractionType>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="clock_rtl" version="1.0"/>
+                    <ipxact:portMaps>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>CLK</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>clk2_out</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                    </ipxact:portMaps>
+                </ipxact:abstractionType>
+            </ipxact:abstractionTypes>
+            <ipxact:master/>
+        </ipxact:busInterface>
+        <ipxact:busInterface>
+            <ipxact:name>CLKC3</ipxact:name>
+            <ipxact:displayName>CLKC3</ipxact:displayName>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="clock" version="1.0"/>
+            <ipxact:abstractionTypes>
+                <ipxact:abstractionType>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="clock_rtl" version="1.0"/>
+                    <ipxact:portMaps>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>CLK</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>clk3_out</ipxact:name>
                             </ipxact:physicalPort>
                         </ipxact:portMap>
                     </ipxact:portMaps>

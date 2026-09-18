@@ -1,11 +1,11 @@
 Created by          : Tang Dynasty v6.2.168116
                     : Copyright (c) 2012-2025 Anlogic Inc.
-Generated           : Wed Sep 16 21:57:12 2026
+Generated           : Fri Sep 18 18:33:12 2026
 
 Top Model           : design_top_wrapper
 Device              : PH1P35MDG324
 Speed               : 3
-STA coverage        : 95.25%
+STA coverage        : 95.26%
 Constraint File     : D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/camera_to_dsi_display.sdc;
 Confidence          : Routed
 Check Corner        : Both (Slow and Fast)
@@ -27,18 +27,34 @@ MCP/SMD Summary
 		Max Check
 		--------------------
 		     Total    Dominated     Shadowed      Ignored   Constraint
+		       336          336            0            0   set_multicycle_path -setup 6 -start -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 		        18            0            0           18   set_max_delay -from [get_regs -nowarn {*/primary_addr_gray_reg[*]}] -to [get_regs -nowarn {*/sync_r1[*]}] -datapath_only 8.588
 		        18            0            0           18   set_max_delay -from [get_regs -nowarn {*/primary_addr_gray_reg[*]}] -to [get_regs -nowarn {*/sync_r1[*]}] -datapath_only 13.033
 
 		Min Check
 		--------------------
 		     Total    Dominated     Shadowed      Ignored   Constraint
+		       336          336            0            0   set_multicycle_path -hold 5 -start -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 
 Status of timing exceptions
 --------------------------------------------------
 
 MCP/SMD Details
 --------------------
+
+
+Constraint     :   set_multicycle_path -setup 6 -start -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+Check Type     :   Max
+--------------------------------------------------------------------------------
+Total Paths    :          336
+Dominated      :          336,        100.0%
+
+
+Constraint     :   set_multicycle_path -hold 5 -start -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+Check Type     :   Min
+--------------------------------------------------------------------------------
+Total Paths    :          336
+Dominated      :          336,        100.0%
 
 
 Constraint     :   set_max_delay -from [get_regs -nowarn {*/primary_addr_gray_reg[*]}] -to [get_regs -nowarn {*/sync_r1[*]}] -datapath_only 8.588
@@ -61,6 +77,1477 @@ Ignored        :           18,        100.0%
 
 Details on timing exceptions
 --------------------------------------------------
+
+Timing details for constraint:
+	set_multicycle_path -setup 6 -start -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+	set_multicycle_path -hold 5 -start -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+--------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+Path Group     :     
+set_multicycle_path -setup 6 -start -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_multicycle_path -hold 5 -start -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+
+Type           :     MCP
+
+Statistics:
+Max            : SWNS      9.354ns, STNS      0.000ns,         0 Viol Endpoints,        72 Total Endpoints,       336 Paths Analyzed
+Min            : HWNS      1.286ns, HTNS      0.000ns,         0 Viol Endpoints,        72 Total Endpoints,       336 Paths Analyzed
+----------------------------------------------------------------------------------------------------
+
+Max Paths
+----------------------------------------------------------------------------------------------------
+Slack               : 9.354ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[0] (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 10.920ns (cell 6.832ns (62%), net 4.088ns (38%))
+Clock Skew          : 0.274ns
+Logic Level         : 5 ( LUT6=3  LUT3=1  LUT2=1 )
+Max Fanout          : 4
+Clock Uncertainty   : 0.000ns (sdc uncertainty: 0.000ns, default uncertainty: 0.000ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y035            5.123          6.784          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0]
+net (fo=2)                              0.875          7.659          net: u_mcu_ui_apb_regs/I_paddr[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(15)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_94.ic
+LUT3                x045y018z5          0.283    r     7.942       1  pin: u_mcu_ui_apb_regs/mux0_syn_94.ofb
+net (fo=3)                              0.183          8.125          net: u_mcu_ui_apb_regs/mux0_syn_49,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_89.ib
+LUT6                x045y018z3          0.427    f     8.552       2  pin: u_mcu_ui_apb_regs/mux0_syn_89.ofb
+net (fo=4)                              0.703          9.255          net: u_mcu_ui_apb_regs/O_edit_enable_n3,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_88.ia
+LUT6                x044y012z5          0.408    f     9.663       3  pin: u_mcu_ui_apb_regs/mux0_syn_88.ofb
+net (fo=1)                              0.179          9.842          net: u_mcu_ui_apb_regs/mux0_syn_71,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_80.ib
+LUT6                x044y012z0          0.427    f    10.269       4  pin: u_mcu_ui_apb_regs/mux0_syn_80.ofb
+net (fo=1)                              0.430         10.699          net: u_mcu_ui_apb_regs/mux0_syn_73,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[0]_syn_2.ic
+LUT2                x044y012z3          0.283    r    10.982       5  pin: u_mcu_ui_apb_regs/O_gain_reg[0]_syn_2.ofb
+net (fo=1)          x047y034            1.718         12.700          net: u_mcu_ui_apb_regs/mux0_syn_2,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[0]
+--------------------------------------------------------------------  ---------------
+Arrival                                               12.700               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)         x047y036            0.638          1.799          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.apb_clk
+capture edge                           20.000    r    21.799               
+--------------------------------------------------------------------  ---------------
+output (hard ip)    x047y034            0.119         21.918               
+clock uncertainty                       0.000         21.918               
+clock pessimism                         0.136         22.054               
+--------------------------------------------------------------------  ---------------
+Required                                              22.054               
+--------------------------------------------------------------------  ---------------
+Slack                                                  9.354               
+
+Slack               : 9.512ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[1] (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 10.762ns (cell 6.814ns (63%), net 3.948ns (37%))
+Clock Skew          : 0.274ns
+Logic Level         : 5 ( LUT6=3  LUT3=1  LUT2=1 )
+Max Fanout          : 5
+Clock Uncertainty   : 0.000ns (sdc uncertainty: 0.000ns, default uncertainty: 0.000ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y035            5.123          6.784          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0]
+net (fo=2)                              0.875          7.659          net: u_mcu_ui_apb_regs/I_paddr[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(15)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_93.ic
+LUT3                x045y018z7          0.283    r     7.942       1  pin: u_mcu_ui_apb_regs/mux0_syn_93.ofb
+net (fo=4)                              0.200          8.142          net: u_mcu_ui_apb_regs/mux0_syn_40,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_91.ia
+LUT6                x045y017z7          0.408    f     8.550       2  pin: u_mcu_ui_apb_regs/mux0_syn_91.ofb
+net (fo=5)                              1.186          9.736          net: u_mcu_ui_apb_regs/O_exposure_b1_n,  NOFILE(0)
+                                                                      pin: S_ag_sync1_reg[1]_syn_2.ib
+LUT6                x045y011z1          0.427    f    10.163       3  pin: S_ag_sync1_reg[1]_syn_2.ofb
+net (fo=1)                              0.193         10.356          net: u_mcu_ui_apb_regs/mux0_syn_76,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_81.ia
+LUT6                x045y012z0          0.408    f    10.764       4  pin: u_mcu_ui_apb_regs/mux0_syn_81.ofb
+net (fo=1)                              0.079         10.843          net: u_mcu_ui_apb_regs/mux0_syn_78,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_82.imb
+LUT2                x045y012z6          0.271    r    11.114       5  pin: u_mcu_ui_apb_regs/mux0_syn_82.ofb
+net (fo=1)          x047y034            1.415         12.529          net: u_mcu_ui_apb_regs/mux0_syn_4,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[1]
+--------------------------------------------------------------------  ---------------
+Arrival                                               12.529               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)         x047y036            0.638          1.799          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.apb_clk
+capture edge                           20.000    r    21.799               
+--------------------------------------------------------------------  ---------------
+output (hard ip)    x047y034            0.106         21.905               
+clock uncertainty                       0.000         21.905               
+clock pessimism                         0.136         22.041               
+--------------------------------------------------------------------  ---------------
+Required                                              22.041               
+--------------------------------------------------------------------  ---------------
+Slack                                                  9.512               
+
+Slack               : 9.782ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[16] (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 10.492ns (cell 6.544ns (62%), net 3.948ns (38%))
+Clock Skew          : 0.274ns
+Logic Level         : 4 ( LUT2=2  LUT6=1  LUT3=1 )
+Max Fanout          : 5
+Clock Uncertainty   : 0.000ns (sdc uncertainty: 0.000ns, default uncertainty: 0.000ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y035            5.123          6.784          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0]
+net (fo=2)                              0.875          7.659          net: u_mcu_ui_apb_regs/I_paddr[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(15)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_93.ic
+LUT3                x045y018z7          0.283    r     7.942       1  pin: u_mcu_ui_apb_regs/mux0_syn_93.ofb
+net (fo=4)                              0.391          8.333          net: u_mcu_ui_apb_regs/mux0_syn_40,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_95.ia
+LUT6                x045y018z2          0.408    f     8.741       2  pin: u_mcu_ui_apb_regs/mux0_syn_95.ofb
+net (fo=5)                              1.010          9.751          net: u_mcu_ui_apb_regs/O_prdata_n,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.imb
+LUT2                x042y011z3          0.271    r    10.022       3  pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.ofb
+net (fo=3)                              0.396         10.418          net: u_mcu_ui_apb_regs/mux0_syn_52,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: S_ui_ag_p1_reg[1]_syn_2.ib
+LUT2                x045y010z7          0.487    r    10.905       4  pin: S_ui_ag_p1_reg[1]_syn_2.ofa
+net (fo=1)          x047y034            1.276         12.181          net: u_mcu_ui_apb_regs/mux0_syn_34,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[16]
+--------------------------------------------------------------------  ---------------
+Arrival                                               12.181               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)         x047y036            0.638          1.799          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.apb_clk
+capture edge                           20.000    r    21.799               
+--------------------------------------------------------------------  ---------------
+output (hard ip)    x047y034            0.028         21.827               
+clock uncertainty                       0.000         21.827               
+clock pessimism                         0.136         21.963               
+--------------------------------------------------------------------  ---------------
+Required                                              21.963               
+--------------------------------------------------------------------  ---------------
+Slack                                                  9.782               
+
+Slack               : 9.813ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[4] (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 10.461ns (cell 6.391ns (61%), net 4.070ns (39%))
+Clock Skew          : 0.274ns
+Logic Level         : 4 ( LUT6=2  LUT3=1  LUT2=1 )
+Max Fanout          : 5
+Clock Uncertainty   : 0.000ns (sdc uncertainty: 0.000ns, default uncertainty: 0.000ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y035            5.123          6.784          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0]
+net (fo=2)                              0.875          7.659          net: u_mcu_ui_apb_regs/I_paddr[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(15)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_93.ic
+LUT3                x045y018z7          0.283    r     7.942       1  pin: u_mcu_ui_apb_regs/mux0_syn_93.ofb
+net (fo=4)                              0.391          8.333          net: u_mcu_ui_apb_regs/mux0_syn_40,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_95.ia
+LUT6                x045y018z2          0.408    f     8.741       2  pin: u_mcu_ui_apb_regs/mux0_syn_95.ofb
+net (fo=5)                              1.010          9.751          net: u_mcu_ui_apb_regs/O_prdata_n,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.imb
+LUT2                x042y011z3          0.271    r    10.022       3  pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.ofb
+net (fo=3)                              0.596         10.618          net: u_mcu_ui_apb_regs/mux0_syn_52,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_86.ia
+LUT6                x045y011z3          0.408    f    11.026       4  pin: u_mcu_ui_apb_regs/mux0_syn_86.ofb
+net (fo=1)          x047y034            1.198         12.224          net: u_mcu_ui_apb_regs/mux0_syn_10,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[4]
+--------------------------------------------------------------------  ---------------
+Arrival                                               12.224               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)         x047y036            0.638          1.799          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.apb_clk
+capture edge                           20.000    r    21.799               
+--------------------------------------------------------------------  ---------------
+output (hard ip)    x047y034            0.102         21.901               
+clock uncertainty                       0.000         21.901               
+clock pessimism                         0.136         22.037               
+--------------------------------------------------------------------  ---------------
+Required                                              22.037               
+--------------------------------------------------------------------  ---------------
+Slack                                                  9.813               
+
+Slack               : 9.863ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[2] (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 10.411ns (cell 6.372ns (61%), net 4.039ns (39%))
+Clock Skew          : 0.274ns
+Logic Level         : 4 ( LUT6=1  LUT5=1  LUT3=1  LUT2=1 )
+Max Fanout          : 5
+Clock Uncertainty   : 0.000ns (sdc uncertainty: 0.000ns, default uncertainty: 0.000ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y035            5.123          6.784          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0]
+net (fo=2)                              0.875          7.659          net: u_mcu_ui_apb_regs/I_paddr[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(15)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_93.ic
+LUT3                x045y018z7          0.283    r     7.942       1  pin: u_mcu_ui_apb_regs/mux0_syn_93.ofb
+net (fo=4)                              0.391          8.333          net: u_mcu_ui_apb_regs/mux0_syn_40,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_95.ia
+LUT6                x045y018z2          0.408    f     8.741       2  pin: u_mcu_ui_apb_regs/mux0_syn_95.ofb
+net (fo=5)                              1.010          9.751          net: u_mcu_ui_apb_regs/O_prdata_n,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.imb
+LUT2                x042y011z3          0.271    r    10.022       3  pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.ofb
+net (fo=3)                              0.596         10.618          net: u_mcu_ui_apb_regs/mux0_syn_52,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_87.ia
+LUT5                x045y011z0          0.399    f    11.017       4  pin: u_mcu_ui_apb_regs/mux0_syn_87.ofb
+net (fo=1)          x047y034            1.167         12.184          net: u_mcu_ui_apb_regs/mux0_syn_6,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[2]
+--------------------------------------------------------------------  ---------------
+Arrival                                               12.184               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)         x047y036            0.638          1.799          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.apb_clk
+capture edge                           20.000    r    21.799               
+--------------------------------------------------------------------  ---------------
+output (hard ip)    x047y034            0.112         21.911               
+clock uncertainty                       0.000         21.911               
+clock pessimism                         0.136         22.047               
+--------------------------------------------------------------------  ---------------
+Required                                              22.047               
+--------------------------------------------------------------------  ---------------
+Slack                                                  9.863               
+
+Slack               : 10.197ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[11] (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 10.077ns (cell 6.391ns (63%), net 3.686ns (37%))
+Clock Skew          : 0.274ns
+Logic Level         : 4 ( LUT6=1  LUT4=1  LUT3=1  LUT2=1 )
+Max Fanout          : 5
+Clock Uncertainty   : 0.000ns (sdc uncertainty: 0.000ns, default uncertainty: 0.000ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y035            5.123          6.784          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0]
+net (fo=2)                              0.875          7.659          net: u_mcu_ui_apb_regs/I_paddr[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(15)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_93.ic
+LUT3                x045y018z7          0.283    r     7.942       1  pin: u_mcu_ui_apb_regs/mux0_syn_93.ofb
+net (fo=4)                              0.391          8.333          net: u_mcu_ui_apb_regs/mux0_syn_40,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_95.ia
+LUT6                x045y018z2          0.408    f     8.741       2  pin: u_mcu_ui_apb_regs/mux0_syn_95.ofb
+net (fo=5)                              1.010          9.751          net: u_mcu_ui_apb_regs/O_prdata_n,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.imb
+LUT2                x042y011z3          0.271    r    10.022       3  pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.ofb
+net (fo=3)                              0.396         10.418          net: u_mcu_ui_apb_regs/mux0_syn_52,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: S_ui_ag_p1_reg[1]_syn_2.ib
+LUT4                x045y010z7          0.408    f    10.826       4  pin: S_ui_ag_p1_reg[1]_syn_2.ofb
+net (fo=1)          x047y034            1.014         11.840          net: u_mcu_ui_apb_regs/mux0_syn_24,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[11]
+--------------------------------------------------------------------  ---------------
+Arrival                                               11.840               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)         x047y036            0.638          1.799          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.apb_clk
+capture edge                           20.000    r    21.799               
+--------------------------------------------------------------------  ---------------
+output (hard ip)    x047y034            0.102         21.901               
+clock uncertainty                       0.000         21.901               
+clock pessimism                         0.136         22.037               
+--------------------------------------------------------------------  ---------------
+Required                                              22.037               
+--------------------------------------------------------------------  ---------------
+Slack                                                 10.197               
+
+Slack               : 10.208ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[1] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_gain_reg[0]_syn_2.imb (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 9.825ns (cell 5.757ns (58%), net 4.068ns (42%))
+Clock Skew          : 0.210ns
+Logic Level         : 8 ( LUT6=3  LUT5=2  LUT2=2  LUT4=1 )
+Max Fanout          : 11
+Clock Uncertainty   : 0.113ns (sdc uncertainty: 0.000ns, default uncertainty: 0.113ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            3.014          4.675          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[1]
+net (fo=5)                              1.390          6.065          net: u_mcu_ui_apb_regs/I_pwdata[1],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_18.ib
+LUT6                x045y019z2          0.427    f     6.492       1  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_18.ofb
+net (fo=1)                              0.079          6.571          net: u_mcu_ui_apb_regs/lt1_syn_132,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(79)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_16.ib
+LUT6                x045y019z1          0.427    f     6.998       2  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_16.ofb
+net (fo=1)                              0.079          7.077          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_3,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_19.ia
+LUT6                x045y019z3          0.408    f     7.485       3  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_19.ofb
+net (fo=11)                             0.601          8.086          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_5,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[10]_syn_2.id
+LUT2                x045y014z4          0.266    f     8.352       4  pin: u_mcu_ui_apb_regs/O_exposure_reg[10]_syn_2.ofa
+net (fo=1)                              0.085          8.437          net: u_mcu_ui_apb_regs/O_exposure_b4[10],  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_15.ie
+LUT5                x045y014z3          0.189    r     8.626       5  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_15.ofb
+net (fo=8)                              0.184          8.810          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_10,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.id
+LUT2                x045y013z1          0.266    f     9.076       6  pin: u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.ofa
+net (fo=1)                              0.401          9.477          net: u_mcu_ui_apb_regs/O_gain_b4[7],  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[5]_syn_2.ic
+LUT4                x045y009z3          0.283    r     9.760       7  pin: u_mcu_ui_apb_regs/O_gain_reg[5]_syn_2.ofb
+net (fo=7)                              1.070         10.830          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_13,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[0]_syn_2.ia
+LUT5                x044y011z6          0.399    f    11.229       8  pin: u_mcu_ui_apb_regs/O_exposure_b2[0]_syn_2.ofb
+net (fo=1)                              0.179         11.408          net: u_mcu_ui_apb_regs/O_exposure_b2[0],  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[0]_syn_2.imb
+reg                 x044y012z3          0.078    r    11.486          net: u_mcu_ui_apb_regs/O_exposure[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(28)
+--------------------------------------------------------------------  ---------------
+Arrival                                               11.486               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.574          1.735          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[0]_syn_2.clk
+capture edge                           20.000    r    21.735               
+--------------------------------------------------------------------  ---------------
+setup                                  -0.064         21.671               
+clock uncertainty                      -0.113         21.558               
+clock pessimism                         0.136         21.694               
+--------------------------------------------------------------------  ---------------
+Required                                              21.694               
+--------------------------------------------------------------------  ---------------
+Slack                                                 10.208               
+
+Slack               : 10.453ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[7] (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 9.821ns (cell 6.056ns (61%), net 3.765ns (39%))
+Clock Skew          : 0.274ns
+Logic Level         : 3 ( LUT6=1  LUT5=1  LUT3=1 )
+Max Fanout          : 12
+Clock Uncertainty   : 0.000ns (sdc uncertainty: 0.000ns, default uncertainty: 0.000ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y035            5.123          6.784          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.paddr[0]
+net (fo=2)                              0.875          7.659          net: u_mcu_ui_apb_regs/I_paddr[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(15)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_93.ic
+LUT3                x045y018z7          0.283    r     7.942       1  pin: u_mcu_ui_apb_regs/mux0_syn_93.ofb
+net (fo=4)                              0.200          8.142          net: u_mcu_ui_apb_regs/mux0_syn_40,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu_ui_apb_regs/mux0_syn_83.ia
+LUT6                x045y017z5          0.408    f     8.550       2  pin: u_mcu_ui_apb_regs/mux0_syn_83.ofb
+net (fo=12)                             1.336          9.886          net: u_mcu_ui_apb_regs/O_exposure_b1_n2,  NOFILE(0)
+                                                                      pin: S_ui_ae_p1_reg[5]_syn_2.ic
+LUT5                x044y010z4          0.410    f    10.296       3  pin: S_ui_ae_p1_reg[5]_syn_2.ofa
+net (fo=1)          x047y034            1.354         11.650          net: u_mcu_ui_apb_regs/mux0_syn_16,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(90)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.prdata[7]
+--------------------------------------------------------------------  ---------------
+Arrival                                               11.650               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)         x047y036            0.638          1.799          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.apb_clk
+capture edge                           20.000    r    21.799               
+--------------------------------------------------------------------  ---------------
+output (hard ip)    x047y034            0.168         21.967               
+clock uncertainty                       0.000         21.967               
+clock pessimism                         0.136         22.103               
+--------------------------------------------------------------------  ---------------
+Required                                              22.103               
+--------------------------------------------------------------------  ---------------
+Slack                                                 10.453               
+
+Slack               : 10.577ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[1] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_gain_reg[1]_syn_2.ima (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 9.456ns (cell 5.635ns (59%), net 3.821ns (41%))
+Clock Skew          : 0.210ns
+Logic Level         : 8 ( LUT6=3  LUT2=2  LUT5=1  LUT4=1  LUT3=1 )
+Max Fanout          : 11
+Clock Uncertainty   : 0.113ns (sdc uncertainty: 0.000ns, default uncertainty: 0.113ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            3.014          4.675          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[1]
+net (fo=5)                              1.390          6.065          net: u_mcu_ui_apb_regs/I_pwdata[1],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_18.ib
+LUT6                x045y019z2          0.427    f     6.492       1  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_18.ofb
+net (fo=1)                              0.079          6.571          net: u_mcu_ui_apb_regs/lt1_syn_132,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(79)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_16.ib
+LUT6                x045y019z1          0.427    f     6.998       2  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_16.ofb
+net (fo=1)                              0.079          7.077          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_3,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_19.ia
+LUT6                x045y019z3          0.408    f     7.485       3  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_19.ofb
+net (fo=11)                             0.601          8.086          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_5,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[10]_syn_2.id
+LUT2                x045y014z4          0.266    f     8.352       4  pin: u_mcu_ui_apb_regs/O_exposure_reg[10]_syn_2.ofa
+net (fo=1)                              0.085          8.437          net: u_mcu_ui_apb_regs/O_exposure_b4[10],  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_15.ie
+LUT5                x045y014z3          0.189    r     8.626       5  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_15.ofb
+net (fo=8)                              0.184          8.810          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_10,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.id
+LUT2                x045y013z1          0.266    f     9.076       6  pin: u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.ofa
+net (fo=1)                              0.401          9.477          net: u_mcu_ui_apb_regs/O_gain_b4[7],  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[5]_syn_2.ic
+LUT4                x045y009z3          0.283    r     9.760       7  pin: u_mcu_ui_apb_regs/O_gain_reg[5]_syn_2.ofb
+net (fo=7)                              1.002         10.762          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_13,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[1]_syn_2.ima
+LUT3 (reg)          x044y011z2          0.355    f    11.117       8  net: u_mcu_ui_apb_regs/O_gain[1],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(29)
+--------------------------------------------------------------------  ---------------
+Arrival                                               11.117               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.574          1.735          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[1]_syn_2.clk
+capture edge                           20.000    r    21.735               
+--------------------------------------------------------------------  ---------------
+setup                                  -0.064         21.671               
+clock uncertainty                      -0.113         21.558               
+clock pessimism                         0.136         21.694               
+--------------------------------------------------------------------  ---------------
+Required                                              21.694               
+--------------------------------------------------------------------  ---------------
+Slack                                                 10.577               
+
+Slack               : 10.581ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[1] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_gain_reg[3]_syn_2.ima (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : setup
+Process             : slow_m40c
+Budget              : 20.000ns { u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@20.000ns - u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns }
+Data Path Delay     : 9.452ns (cell 5.635ns (59%), net 3.817ns (41%))
+Clock Skew          : 0.210ns
+Logic Level         : 8 ( LUT6=3  LUT2=2  LUT5=1  LUT4=1  LUT3=1 )
+Max Fanout          : 11
+Clock Uncertainty   : 0.113ns (sdc uncertainty: 0.000ns, default uncertainty: 0.113ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.684          1.494          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.115          1.609          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.639         -0.030          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.838          0.808          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.016          0.824          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.372          1.196          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.079          1.275          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.386          1.661          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.661               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            3.014          4.675          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[1]
+net (fo=5)                              1.390          6.065          net: u_mcu_ui_apb_regs/I_pwdata[1],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_18.ib
+LUT6                x045y019z2          0.427    f     6.492       1  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_18.ofb
+net (fo=1)                              0.079          6.571          net: u_mcu_ui_apb_regs/lt1_syn_132,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(79)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_16.ib
+LUT6                x045y019z1          0.427    f     6.998       2  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_16.ofb
+net (fo=1)                              0.079          7.077          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_3,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_19.ia
+LUT6                x045y019z3          0.408    f     7.485       3  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_19.ofb
+net (fo=11)                             0.601          8.086          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_5,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[10]_syn_2.id
+LUT2                x045y014z4          0.266    f     8.352       4  pin: u_mcu_ui_apb_regs/O_exposure_reg[10]_syn_2.ofa
+net (fo=1)                              0.085          8.437          net: u_mcu_ui_apb_regs/O_exposure_b4[10],  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_15.ie
+LUT5                x045y014z3          0.189    r     8.626       5  pin: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_15.ofb
+net (fo=8)                              0.184          8.810          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_10,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.id
+LUT2                x045y013z1          0.266    f     9.076       6  pin: u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.ofa
+net (fo=1)                              0.401          9.477          net: u_mcu_ui_apb_regs/O_gain_b4[7],  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[5]_syn_2.ic
+LUT4                x045y009z3          0.283    r     9.760       7  pin: u_mcu_ui_apb_regs/O_gain_reg[5]_syn_2.ofb
+net (fo=7)                              0.998         10.758          net: u_mcu_ui_apb_regs/O_exposure_b2[1]_syn_13,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[3]_syn_2.ima
+LUT3 (reg)          x044y012z2          0.355    f    11.113       8  net: u_mcu_ui_apb_regs/O_gain[3],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(29)
+--------------------------------------------------------------------  ---------------
+Arrival                                               11.113               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.745          0.745          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.629          1.374          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.099          1.473          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -1.405          0.068          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.695          0.763          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.014          0.777          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.316          1.093          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.068          1.161          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.574          1.735          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[3]_syn_2.clk
+capture edge                           20.000    r    21.735               
+--------------------------------------------------------------------  ---------------
+setup                                  -0.064         21.671               
+clock uncertainty                      -0.113         21.558               
+clock pessimism                         0.136         21.694               
+--------------------------------------------------------------------  ---------------
+Required                                              21.694               
+--------------------------------------------------------------------  ---------------
+Slack                                                 10.581               
+
+
+
+Min Paths
+----------------------------------------------------------------------------------------------------
+Slack               : 1.288ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[7] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.imf (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.422ns (cell 1.041ns (73%), net 0.381ns (27%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT2=1 )
+Max Fanout          : 4
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.978          2.108          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[7]
+net (fo=4)                              0.381          2.489          net: u_mcu_ui_apb_regs/I_pwdata[7],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.imf
+LUT2 (reg)          x045y013z1          0.063    f     2.552       1  net: u_mcu_ui_apb_regs/O_gain[7],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(29)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.552               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[7]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.288               
+
+Slack               : 1.295ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[2] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_exposure_reg[1]_syn_2.id (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.429ns (cell 1.048ns (73%), net 0.381ns (27%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT5=1 )
+Max Fanout          : 7
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.990          2.120          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[2]
+net (fo=7)                              0.381          2.501          net: u_mcu_ui_apb_regs/I_pwdata[2],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[1]_syn_2.id
+LUT5 (reg)          x045y011z7          0.058    f     2.559       1  net: u_mcu_ui_apb_regs/O_exposure[1],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(28)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.559               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[1]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.295               
+
+Slack               : 1.296ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[0] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_gain_reg[0]_syn_2.imf (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.430ns (cell 1.011ns (70%), net 0.419ns (30%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT3=1 )
+Max Fanout          : 5
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.948          2.078          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[0]
+net (fo=5)                              0.419          2.497          net: u_mcu_ui_apb_regs/I_pwdata[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[0]_syn_2.imf
+LUT3 (reg)          x044y012z3          0.063    f     2.560       1  net: u_mcu_ui_apb_regs/O_gain[0],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(29)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.560               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_gain_reg[0]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.296               
+
+Slack               : 1.297ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[11] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_exposure_reg[11]_syn_2.imf (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.431ns (cell 1.082ns (75%), net 0.349ns (25%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT2=1 )
+Max Fanout          : 3
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            1.019          2.149          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[11]
+net (fo=3)                              0.349          2.498          net: u_mcu_ui_apb_regs/I_pwdata[11],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[11]_syn_2.imf
+LUT2 (reg)          x045y011z6          0.063    f     2.561       1  net: u_mcu_ui_apb_regs/O_exposure[11],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(28)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.561               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[11]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.297               
+
+Slack               : 1.320ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[8] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_exposure_reg[12]_syn_2.ie (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.454ns (cell 0.981ns (67%), net 0.473ns (33%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT2=1 )
+Max Fanout          : 3
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.937          2.067          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[8]
+net (fo=3)                              0.473          2.540          net: u_mcu_ui_apb_regs/I_pwdata[8],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[12]_syn_2.ie
+LUT2 (reg)          x045y012z4          0.044    f     2.584       1  net: u_mcu_ui_apb_regs/O_exposure[8],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(28)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.584               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[12]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.320               
+
+Slack               : 1.345ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[2] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_exposure_reg[2]_syn_2.imf (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.479ns (cell 1.053ns (71%), net 0.426ns (29%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT2=1 )
+Max Fanout          : 7
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.990          2.120          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[2]
+net (fo=7)                              0.426          2.546          net: u_mcu_ui_apb_regs/I_pwdata[2],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[2]_syn_2.imf
+LUT2 (reg)          x044y011z5          0.063    f     2.609       1  net: u_mcu_ui_apb_regs/O_exposure[2],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(28)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.609               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[2]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.345               
+
+Slack               : 1.350ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[7] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_exposure_reg[7]_syn_2.imf (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.484ns (cell 1.041ns (70%), net 0.443ns (30%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT2=1 )
+Max Fanout          : 4
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.978          2.108          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[7]
+net (fo=4)                              0.443          2.551          net: u_mcu_ui_apb_regs/I_pwdata[7],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[7]_syn_2.imf
+LUT2 (reg)          x044y014z0          0.063    f     2.614       1  net: u_mcu_ui_apb_regs/O_exposure[7],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(28)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.614               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[7]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.350               
+
+Slack               : 1.371ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[4] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_exposure_reg[2]_syn_2.ie (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.505ns (cell 0.989ns (65%), net 0.516ns (35%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT3=1 )
+Max Fanout          : 5
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.945          2.075          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[4]
+net (fo=5)                              0.516          2.591          net: u_mcu_ui_apb_regs/I_pwdata[4],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[2]_syn_2.ie
+LUT3 (reg)          x044y011z5          0.044    f     2.635       1  net: u_mcu_ui_apb_regs/O_gain[4],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(29)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.635               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[2]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.371               
+
+Slack               : 1.373ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[2] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.id (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.511ns (cell 1.048ns (69%), net 0.463ns (31%))
+Clock Skew          : 0.076ns
+Logic Level         : 1 ( LUT3=1 )
+Max Fanout          : 7
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.990          2.120          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[2]
+net (fo=7)                              0.463          2.583          net: u_mcu_ui_apb_regs/I_pwdata[2],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.id
+LUT3 (reg)          x042y011z3          0.058    f     2.641       1  net: u_mcu_ui_apb_regs/O_info_enable,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(26)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.641               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.258          1.347          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_info_enable_reg_syn_6.clk
+capture edge                            0.000    r     1.347               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.359               
+clock uncertainty                       0.050          1.409               
+clock pessimism                        -0.141          1.268               
+--------------------------------------------------------------------  ---------------
+Required                                               1.268               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.373               
+
+Slack               : 1.381ns
+Begin Point         : u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[12] (rising edge triggered by clock u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk  { rise@0.000000ns  fall@1.666000ns  period=3.333000 })
+End Point           : u_mcu_ui_apb_regs/O_exposure_reg[12]_syn_2.imf (rising edge triggered by clock u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]  { rise@0.000000ns  fall@10.000000ns  period=20.000000 })
+Check Type          : hold
+Process             : fast_m40c
+Budget              : 0.000ns { u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk rising@0.000ns - u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] rising@0.000ns }
+Data Path Delay     : 1.515ns (cell 1.024ns (67%), net 0.491ns (33%))
+Clock Skew          : 0.072ns
+Logic Level         : 1 ( LUT2=1 )
+Max Fanout          : 3
+Clock Uncertainty   : 0.050ns (sdc uncertainty: 0.000ns, default uncertainty: 0.050ns)
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.810          0.810          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.257          1.067          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.040          1.107          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.620          0.487          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]
+net (fo=1)                              0.320          0.807          net: u_mcu/MCU_521bd43d073e_Inst/core_clk,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z23         0.006          0.813          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout
+net (fo=1)                              0.135          0.948          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1,  ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(37)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkin
+SCLK                x023y019z18         0.025          0.973          pin: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7.clkout
+net (fo=1)          x047y020            0.157          1.130          net: u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst_auto_created_sclk_s_0_r_bk7_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk
+launch edge                             0.000    r     1.130               
+--------------------------------------------------------------------  ---------------
+input (hard ip)     x047y037            0.961          2.091          pin: u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.pwdata[12]
+net (fo=3)                              0.491          2.582          net: u_mcu_ui_apb_regs/I_pwdata[12],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(19)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[12]_syn_2.imf
+LUT2 (reg)          x045y012z4          0.063    f     2.645       1  net: u_mcu_ui_apb_regs/O_exposure[12],  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(28)
+--------------------------------------------------------------------  ---------------
+Arrival                                                2.645               
+
+source latency                          0.000          0.000               
+port                C4                  0.000          0.000          pin: I_sys_clk
+hierarchy                               0.000          0.000          pin: I_sys_clk_syn_7.ipad
+HDIO                x033y078            0.915          0.915          pin: I_sys_clk_syn_7.sg09_di
+HDIO                x033y078            0.290          1.205          pin: I_sys_clk_syn_7.di
+net (fo=3)          x043y079            0.043          1.248          net: I_sys_clk_dup_6,  ../../../user_source/hdl_source/design_top_wrapper.v(6)
+                                                                      pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.refclk
+PLL                 x043y079           -0.675          0.573          pin: u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]
+net (fo=1)                              0.333          0.906          net: u_mcu_ui_apb_regs/I_clk,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkin[0]
+GCLK                x023y039z19         0.007          0.913          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst.clkout
+net (fo=3)                              0.146          1.059          net: u_mcu_ui_apb_regs/I_clk_syn_1,  ../../../user_source/hdl_source/mcu_ui_apb_regs.v(12)
+                                                                      pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkin
+SCLK                x023y019z15         0.030          1.089          pin: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4.clkout
+net (fo=52)                             0.254          1.343          net: u_mcu_ui_apb_regs/I_clk_created_gclkinst_auto_created_sclk_s_0_r_bk4_sclk_outnet,  NOFILE(0)
+                                                                      pin: u_mcu_ui_apb_regs/O_exposure_reg[12]_syn_2.clk
+capture edge                            0.000    r     1.343               
+--------------------------------------------------------------------  ---------------
+hold                                    0.012          1.355               
+clock uncertainty                       0.050          1.405               
+clock pessimism                        -0.141          1.264               
+--------------------------------------------------------------------  ---------------
+Required                                               1.264               
+--------------------------------------------------------------------  ---------------
+Slack                                                  1.381               
+
+
 
 
 

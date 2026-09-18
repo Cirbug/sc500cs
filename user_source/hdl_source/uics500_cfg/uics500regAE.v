@@ -39,8 +39,8 @@ input      [15:0]  I_AE,
 input      [15:0]  I_AG
 );
 
-// Group 0 将三个曝光字节在同一生效点提交，避免运行时出现撕裂曝光值。
-assign	REG_SIZE = 9'd6;
+// Group 0 将曝光和模拟增益在同一生效点提交，避免运行时参数更新撕裂。
+assign	REG_SIZE = 9'd8;
 //-----------------------------------------------------------------
 /////////////////////	Config Data REG	  //////////////////////////	
 always@(*)
@@ -49,8 +49,10 @@ always@(*)
 		1:	REG_DATA = {16'h3e00, 4'h0, I_AE[15:12]};
 		2:	REG_DATA = {16'h3e01, I_AE[11: 4]};
 		3:	REG_DATA = {16'h3e02, I_AE[3:0], 4'h0};
-		4:	REG_DATA = {16'h3800, 8'h10};
-		5:	REG_DATA = {16'h3800, 8'h60};
+		4:	REG_DATA = {16'h3e08, I_AG[15:8]};
+		5:	REG_DATA = {16'h3e09, I_AG[7 :0]};
+		6:	REG_DATA = {16'h3800, 8'h10};
+		7:	REG_DATA = {16'h3800, 8'h60};
 		default:REG_DATA    =   {16'h0000, 8'h00};
    endcase
 

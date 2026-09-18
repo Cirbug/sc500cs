@@ -1,0 +1,542 @@
+/*
+ * Copyright (c) 2023, Anlogic Inc. and Contributors. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#ifndef __AL_USART_HW_H_
+#define __AL_USART_HW_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/***************************** Include Files ********************************/
+#include "al_core.h"
+
+/************************** Constant Definitions ****************************/
+
+/**************************** Type Definitions ******************************/
+
+/***************** Macros (Inline Functions  Definitions) ********************/
+
+///////////////////////////////////////////////////////
+// Register: UART_TXDATA
+// Transmit data
+///////////////////////////////////////////////////////
+
+#define USART_UART_TXDATA_ADDR 0x0ULL
+#define USART_UART_TXDATA_NUM  0x1
+
+#define USART_UART_TXDATA_TX_DATA_SHIFT    0
+
+#define USART_UART_TXDATA_TX_DATA_MASK    0x000001ff
+
+#define USART_UART_TXDATA_TX_DATA_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: UART_RXDATA
+// Receive data
+///////////////////////////////////////////////////////
+
+#define USART_UART_RXDATA_ADDR 0x4ULL
+#define USART_UART_RXDATA_NUM  0x1
+
+#define USART_UART_RXDATA_RX_DATA_SHIFT    0
+
+#define USART_UART_RXDATA_RX_DATA_MASK    0x000001ff
+
+#define USART_UART_RXDATA_RX_DATA_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: UART_TXCTRL
+// Transmit contro
+//
+//
+//
+///////////////////////////////////////////////////////
+
+#define USART_UART_TXCTRL_ADDR 0x8ULL
+#define USART_UART_TXCTRL_NUM  0x1
+
+#define USART_UART_TXCTRL_TXEN_SHIFT    0
+#define USART_UART_TXCTRL_CFG_STOP_BIT_SHIFT    1
+#define USART_UART_TXCTRL_CONTINUOUS_SHIFT    3
+#define USART_UART_TXCTRL_CLR_SHIFT    4
+#define USART_UART_TXCTRL_RESERVED5_SHIFT    5
+#define USART_UART_TXCTRL_TXCNT_SHIFT    16
+#define USART_UART_TXCTRL_RESERVED21_SHIFT    21
+
+#define USART_UART_TXCTRL_TXEN_MASK    0x00000001
+#define USART_UART_TXCTRL_CFG_STOP_BIT_MASK    0x00000006
+#define USART_UART_TXCTRL_CONTINUOUS_MASK    0x00000008
+#define USART_UART_TXCTRL_CLR_MASK    0x00000010
+#define USART_UART_TXCTRL_RESERVED5_MASK    0x0000ffe0
+#define USART_UART_TXCTRL_TXCNT_MASK    0x001f0000
+#define USART_UART_TXCTRL_RESERVED21_MASK    0xffe00000
+
+#define USART_UART_TXCTRL_TXEN_POR_VALUE    0x0
+#define USART_UART_TXCTRL_CFG_STOP_BIT_POR_VALUE    0x0
+#define USART_UART_TXCTRL_CONTINUOUS_POR_VALUE    0x0
+#define USART_UART_TXCTRL_CLR_POR_VALUE    0x0
+#define USART_UART_TXCTRL_RESERVED_POR_VALUE    0x0
+#define USART_UART_TXCTRL_TXCNT_POR_VALUE    0x0
+#define USART_UART_TXCTRL_RESERVED_POR_VALUE    0x0
+
+#define USART_UART_TXCTRL_CFG_STOP_BIT_SIZE    2
+#define USART_UART_TXCTRL_TXCNT_SIZE    5
+
+
+///////////////////////////////////////////////////////
+// Register: UART_RXCTRL
+// Receive contro
+//
+//
+//
+///////////////////////////////////////////////////////
+
+#define USART_UART_RXCTRL_ADDR 0xCULL
+#define USART_UART_RXCTRL_NUM  0x1
+
+#define USART_UART_RXCTRL_RXEN_SHIFT    0
+#define USART_UART_RXCTRL_CONTINUOUS_SHIFT    1
+#define USART_UART_RXCTRL_CLR_SHIFT    2
+#define USART_UART_RXCTRL_RESERVED0_SHIFT    3
+#define USART_UART_RXCTRL_RXCNT_SHIFT    16
+#define USART_UART_RXCTRL_RESERVED1_SHIFT    21
+
+#define USART_UART_RXCTRL_RXEN_MASK    0x00000001
+#define USART_UART_RXCTRL_CONTINUOUS_MASK    0x00000002
+#define USART_UART_RXCTRL_CLR_MASK    0x00000004
+#define USART_UART_RXCTRL_RESERVED0_MASK    0x0000fff8
+#define USART_UART_RXCTRL_RXCNT_MASK    0x001f0000
+#define USART_UART_RXCTRL_RESERVED1_MASK    0xffe00000
+
+#define USART_UART_RXCTRL_RXEN_POR_VALUE    0x0
+#define USART_UART_RXCTRL_CONTINUOUS_POR_VALUE    0x0
+#define USART_UART_RXCTRL_CLR_POR_VALUE    0x0
+#define USART_UART_RXCTRL_RESERVED0_POR_VALUE    0x0
+#define USART_UART_RXCTRL_RXCNT_POR_VALUE    0x0
+#define USART_UART_RXCTRL_RESERVED1_POR_VALUE    0x0
+
+#define USART_UART_RXCTRL_RXCNT_SIZE    5
+
+///////////////////////////////////////////////////////
+// Register: UART_INT_EN
+// Interrupt contro
+//
+//
+//
+///////////////////////////////////////////////////////
+
+#define USART_UART_INT_EN_ADDR 0x10ULL
+#define USART_UART_INT_EN_NUM  0x1
+
+#define USART_UART_INT_EN_TXIE_SHIFT    0
+#define USART_UART_INT_EN_RXIE_SHIFT    1
+#define USART_UART_INT_EN_OW_IRQ_EN_SHIFT    2
+#define USART_UART_INT_EN_PARITY_IRQ_EN_SHIFT    3
+#define USART_UART_INT_EN_CTSIE_RISE_EN_SHIFT    4
+#define USART_UART_INT_EN_CTSIE_FALL_EN_SHIFT    5
+#define USART_UART_INT_EN_RX_FRAME_ERR_EN_SHIFT    6
+#define USART_UART_INT_EN_STOP_BIT_IRQ_EN_SHIFT    7
+#define USART_UART_INT_EN_RESERVED0_SHIFT    8
+#define USART_UART_INT_EN_RX_IDLE_TOUT_IRQ_EN_SHIFT    10
+#define USART_UART_INT_EN_RX_WM_TOUT_IRQ_EN_SHIFT    11
+#define USART_UART_INT_EN_TX_EOT_IRQ_EN_SHIFT    12
+#define USART_UART_INT_EN_RX_EOT_IRQ_EN_SHIFT    13
+#define USART_UART_INT_EN_RESERVED1_SHIFT    14
+
+#define USART_UART_INT_EN_TXIE_MASK    0x00000001
+#define USART_UART_INT_EN_RXIE_MASK    0x00000002
+#define USART_UART_INT_EN_OW_IRQ_EN_MASK    0x00000004
+#define USART_UART_INT_EN_PARITY_IRQ_EN_MASK    0x00000008
+#define USART_UART_INT_EN_CTSIE_RISE_EN_MASK    0x00000010
+#define USART_UART_INT_EN_CTSIE_FALL_EN_MASK    0x00000020
+#define USART_UART_INT_EN_RX_FRAME_ERR_EN_MASK    0x00000040
+#define USART_UART_INT_EN_STOP_BIT_IRQ_EN_MASK    0x00000080
+#define USART_UART_INT_EN_RESERVED0_MASK    0x00000300
+#define USART_UART_INT_EN_RX_IDLE_TOUT_IRQ_EN_MASK    0x00000400
+#define USART_UART_INT_EN_RX_WM_TOUT_IRQ_EN_MASK    0x00000800
+#define USART_UART_INT_EN_TX_EOT_IRQ_EN_MASK    0x00001000
+#define USART_UART_INT_EN_RX_EOT_IRQ_EN_MASK    0x00002000
+#define USART_UART_INT_EN_RESERVED1_MASK    0xffffc000
+
+#define USART_UART_INT_EN_TXIE_POR_VALUE    0x0
+#define USART_UART_INT_EN_RXIE_POR_VALUE    0x0
+#define USART_UART_INT_EN_OW_IRQ_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_PARITY_IRQ_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_CTSIE_RISE_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_CTSIE_FALL_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_RX_FRAME_ERR_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_STOP_BIT_IRQ_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_RESERVED_POR_VALUE    0x0
+#define USART_UART_INT_EN_RX_IDLE_TOUT_IRQ_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_RX_WM_TOUT_IRQ_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_TX_EOT_IRQ_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_RX_EOT_IRQ_EN_POR_VALUE    0x0
+#define USART_UART_INT_EN_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: UART_STATUS
+// Interrupt status
+///////////////////////////////////////////////////////
+
+#define USART_UART_STATUS_ADDR 0x14ULL
+#define USART_UART_STATUS_NUM  0x1
+
+#define USART_UART_STATUS_TXIP_SHIFT    0
+#define USART_UART_STATUS_RXIP_SHIFT    1
+#define USART_UART_STATUS_TX_BUSY_SHIFT    2
+#define USART_UART_STATUS_RX_BUSY_SHIFT    3
+#define USART_UART_STATUS_RX_ERROR_FLOW_SHIFT    4
+#define USART_UART_STATUS_RX_ERROR_PARITY_SHIFT    5
+#define USART_UART_STATUS_CTS_RISE_FLAG_SHIFT    6
+#define USART_UART_STATUS_CTS_FALL_FLAG_SHIFT    7
+#define USART_UART_STATUS_RX_FRAME_ERR_FLAG_SHIFT    8
+#define USART_UART_STATUS_STOP_BIT_ERR_FLAG_SHIFT    9
+#define USART_UART_STATUS_RESERVED0_SHIFT    10
+#define USART_UART_STATUS_RX_IDLE_TOUT_STATUS_SHIFT    12
+#define USART_UART_STATUS_RX_WM_TOUT_STATUS_SHIFT    13
+#define USART_UART_STATUS_FULL_SHIFT    14
+#define USART_UART_STATUS_EMPTY_SHIFT    15
+#define USART_UART_STATUS_TX_EOT_SHIFT    16
+#define USART_UART_STATUS_RX_EOT_SHIFT    17
+#define USART_UART_STATUS_RESERVED1_SHIFT    18
+
+#define USART_UART_STATUS_TXIP_MASK    0x00000001
+#define USART_UART_STATUS_RXIP_MASK    0x00000002
+#define USART_UART_STATUS_TX_BUSY_MASK    0x00000004
+#define USART_UART_STATUS_RX_BUSY_MASK    0x00000008
+#define USART_UART_STATUS_RX_ERROR_FLOW_MASK    0x00000010
+#define USART_UART_STATUS_RX_ERROR_PARITY_MASK    0x00000020
+#define USART_UART_STATUS_CTS_RISE_FLAG_MASK    0x00000040
+#define USART_UART_STATUS_CTS_FALL_FLAG_MASK    0x00000080
+#define USART_UART_STATUS_RX_FRAME_ERR_FLAG_MASK    0x00000100
+#define USART_UART_STATUS_STOP_BIT_ERR_FLAG_MASK    0x00000200
+#define USART_UART_STATUS_RESERVED0_MASK    0x00000c00
+#define USART_UART_STATUS_RX_IDLE_TOUT_STATUS_MASK    0x00001000
+#define USART_UART_STATUS_RX_WM_TOUT_STATUS_MASK    0x00002000
+#define USART_UART_STATUS_FULL_MASK    0x00004000
+#define USART_UART_STATUS_EMPTY_MASK    0x00008000
+#define USART_UART_STATUS_TX_EOT_MASK    0x00010000
+#define USART_UART_STATUS_RX_EOT_MASK    0x00020000
+#define USART_UART_STATUS_RESERVED1_MASK    0xfffc0000
+
+#define USART_UART_STATUS_TXIP_POR_VALUE    0x0
+#define USART_UART_STATUS_RXIP_POR_VALUE    0x0
+#define USART_UART_STATUS_TX_BUSY_POR_VALUE    0x0
+#define USART_UART_STATUS_RX_BUSY_POR_VALUE    0x0
+#define USART_UART_STATUS_RX_ERROR_FLOW_POR_VALUE    0x0
+#define USART_UART_STATUS_RX_ERROR_PARITY_POR_VALUE    0x0
+#define USART_UART_STATUS_CTS_RISE_FLAG_POR_VALUE    0x0
+#define USART_UART_STATUS_CTS_FALL_FLAG_POR_VALUE    0x0
+#define USART_UART_STATUS_RX_FRAME_ERR_FLAG_POR_VALUE    0x0
+#define USART_UART_STATUS_STOP_BIT_ERR_FLAG_POR_VALUE    0x0
+#define USART_UART_STATUS_RESERVED_POR_VALUE    0x0
+#define USART_UART_STATUS_RX_IDLE_TOUT_STATUS_POR_VALUE    0x0
+#define USART_UART_STATUS_RX_WM_TOUT_STATUS_POR_VALUE    0x0
+#define USART_UART_STATUS_FULL_POR_VALUE    0x0
+#define USART_UART_STATUS_EMPTY_POR_VALUE    0x0
+#define USART_UART_STATUS_TX_EOT_POR_VALUE    0x0
+#define USART_UART_STATUS_RX_EOT_POR_VALUE    0x0
+#define USART_UART_STATUS_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: UART_DIV
+// Baud rate divider
+///////////////////////////////////////////////////////
+
+#define USART_UART_DIV_ADDR 0x18ULL
+#define USART_UART_DIV_NUM  0x1
+
+#define USART_UART_DIV_BAUD_DIV_SHIFT    0
+#define USART_UART_DIV_RESERVED_SHIFT    21
+
+#define USART_UART_DIV_BAUD_DIV_MASK    0x001fffff
+#define USART_UART_DIV_RESERVED_MASK    0xffe00000
+
+#define USART_UART_DIV_BAUD_DIV_POR_VALUE    0x0
+#define USART_UART_DIV_RESERVED_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: UART_SETUP
+// UART configurations and settings
+///////////////////////////////////////////////////////
+
+#define USART_UART_SETUP_ADDR 0x1CULL
+#define USART_UART_SETUP_NUM  0x1
+
+#define USART_UART_SETUP_PARITY_EN_SHIFT    0
+#define USART_UART_SETUP_PARITY_SEL_SHIFT    1
+#define USART_UART_SETUP_SEPARATE_EN_SHIFT    2
+#define USART_UART_SETUP_CLEAN_FIFO_SHIFT    3
+#define USART_UART_SETUP_BIT_LENGTH_SHIFT    4
+#define USART_UART_SETUP_CLK_EN_SHIFT    7
+#define USART_UART_SETUP_CPOL_SHIFT    8
+#define USART_UART_SETUP_CPHA_SHIFT    9
+#define USART_UART_SETUP_LBCL_SHIFT    10
+#define USART_UART_SETUP_HDSEL_SHIFT    11
+#define USART_UART_SETUP_RESERVED0_SHIFT    12
+#define USART_UART_SETUP_RTSE_SHIFT    13
+#define USART_UART_SETUP_CTSE_SHIFT    14
+#define USART_UART_SETUP_DMA_EN_SHIFT    15
+#define USART_UART_SETUP_VOTE_MAJORITY_EN_SHIFT    16
+#define USART_UART_SETUP_SAMPLE_POSITION_SHIFT    17
+#define USART_UART_SETUP_FRACTION_BAUD_SHIFT    19
+#define USART_UART_SETUP_RX_DMA_EN_SHIFT    20
+#define USART_UART_SETUP_RESERVED1_SHIFT    21
+
+#define USART_UART_SETUP_PARITY_EN_MASK    0x00000001
+#define USART_UART_SETUP_PARITY_SEL_MASK    0x00000002
+#define USART_UART_SETUP_SEPARATE_EN_MASK    0x00000004
+#define USART_UART_SETUP_CLEAN_FIFO_MASK    0x00000008
+#define USART_UART_SETUP_BIT_LENGTH_MASK    0x00000070
+#define USART_UART_SETUP_CLK_EN_MASK    0x00000080
+#define USART_UART_SETUP_CPOL_MASK    0x00000100
+#define USART_UART_SETUP_CPHA_MASK    0x00000200
+#define USART_UART_SETUP_LBCL_MASK    0x00000400
+#define USART_UART_SETUP_HDSEL_MASK    0x00000800
+#define USART_UART_SETUP_RESERVED0_MASK    0x00001000
+#define USART_UART_SETUP_RTSE_MASK    0x00002000
+#define USART_UART_SETUP_CTSE_MASK    0x00004000
+#define USART_UART_SETUP_DMA_EN_MASK    0x00008000
+#define USART_UART_SETUP_VOTE_MAJORITY_EN_MASK    0x00010000
+#define USART_UART_SETUP_SAMPLE_POSITION_MASK    0x000e0000
+#define USART_UART_SETUP_FRACTION_BAUD_MASK    0x00080000
+#define USART_UART_SETUP_RX_DMA_EN_MASK    0x00100000
+#define USART_UART_SETUP_RESERVED1_MASK    0xffe00000
+
+#define USART_UART_SETUP_PARITY_EN_POR_VALUE    0x0
+#define USART_UART_SETUP_PARITY_SEL_POR_VALUE    0x0
+#define USART_UART_SETUP_SEPARATE_EN_POR_VALUE    0x0
+#define USART_UART_SETUP_CLEAN_FIFO_POR_VALUE    0x0
+#define USART_UART_SETUP_BIT_LENGTH_POR_VALUE    0x0
+#define USART_UART_SETUP_CLK_EN_POR_VALUE    0x0
+#define USART_UART_SETUP_CPOL_POR_VALUE    0x0
+#define USART_UART_SETUP_CPHA_POR_VALUE    0x0
+#define USART_UART_SETUP_LBCL_POR_VALUE    0x0
+#define USART_UART_SETUP_HDSEL_POR_VALUE    0x0
+#define USART_UART_SETUP_RESERVED_POR_VALUE    0x0
+#define USART_UART_SETUP_RTSE_POR_VALUE    0x0
+#define USART_UART_SETUP_CTSE_POR_VALUE    0x0
+#define USART_UART_SETUP_DMA_EN_POR_VALUE    0x0
+#define USART_UART_SETUP_VOTE_MAJORITY_EN_POR_VALUE    0x0
+#define USART_UART_SETUP_SAMPLE_POSITION_POR_VALUE    0x0
+#define USART_UART_SETUP_FRACTION_BAUD_POR_VALUE    0x0
+#define USART_UART_SETUP_RX_DMA_EN_POR_VALUE    0x0
+#define USART_UART_SETUP_RESERVED_POR_VALUE    0x0
+
+#define USART_UART_SETUP_BIT_LENGTH_SIZE    3
+#define USART_UART_SETUP_SAMPLE_POSITION_SIZE    2
+
+
+///////////////////////////////////////////////////////
+// Register: UART_RX_SIZE
+// Total data size in rx-transmit mode
+///////////////////////////////////////////////////////
+
+#define USART_UART_RX_SIZE_ADDR 0x24ULL
+#define USART_UART_RX_SIZE_NUM  0x1
+
+#define USART_UART_RX_SIZE_RX_SIZE_SHIFT    0
+#define USART_UART_RX_SIZE_RESERVED_SHIFT    20
+
+#define USART_UART_RX_SIZE_RX_SIZE_MASK    0x000fffff
+#define USART_UART_RX_SIZE_RESERVED_MASK    0xfff00000
+
+#define USART_UART_RX_SIZE_RX_SIZE_POR_VALUE    0x0
+#define USART_UART_RX_SIZE_RESERVED_POR_VALUE    0x0
+
+#define USART_UART_RX_SIZE_RX_SIZE_SIZE    20
+
+
+///////////////////////////////////////////////////////
+// Register: UART_TX_SIZE
+// Total data size in tx-transmit mode
+///////////////////////////////////////////////////////
+
+#define USART_UART_TX_SIZE_ADDR 0x30ULL
+#define USART_UART_TX_SIZE_NUM  0x1
+
+#define USART_UART_TX_SIZE_TX_SIZE_SHIFT    0
+#define USART_UART_TX_SIZE_RESERVED_SHIFT    20
+
+#define USART_UART_TX_SIZE_TX_SIZE_MASK    0x000fffff
+#define USART_UART_TX_SIZE_RESERVED_MASK    0xfff00000
+
+#define USART_UART_TX_SIZE_TX_SIZE_POR_VALUE    0x0
+#define USART_UART_TX_SIZE_RESERVED_POR_VALUE    0x0
+
+#define USART_UART_TX_SIZE_TX_SIZE_SIZE    20
+
+
+///////////////////////////////////////////////////////
+// Register: UART_RX_IDLE
+// RX line idle time out setting
+///////////////////////////////////////////////////////
+
+#define USART_UART_RX_IDLE_ADDR 0x44ULL
+#define USART_UART_RX_IDLE_NUM  0x1
+
+#define USART_UART_RX_IDLE_IDLE_TOUT_NUM_SHIFT    0
+
+#define USART_UART_RX_IDLE_IDLE_TOUT_NUM_MASK    0xffffffff
+
+#define USART_UART_RX_IDLE_IDLE_TOUT_NUM_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: UART_RX_WM
+// RX water mark time out setting
+///////////////////////////////////////////////////////
+
+#define USART_UART_RX_WM_ADDR 0x48ULL
+#define USART_UART_RX_WM_NUM  0x1
+
+#define USART_UART_RX_WM_WM_TOUT_NUM_SHIFT    0
+
+#define USART_UART_RX_WM_WM_TOUT_NUM_MASK    0xffffffff
+
+#define USART_UART_RX_WM_WM_TOUT_NUM_POR_VALUE    0x0
+
+
+///////////////////////////////////////////////////////
+// Register: UART_RX_FIFO_LEFT_ENTRY
+// RX FIFO entry count
+///////////////////////////////////////////////////////
+
+#define USART_UART_RX_FIFO_LEFT_ENTRY_ADDR 0x4CULL
+#define USART_UART_RX_FIFO_LEFT_ENTRY_NUM  0x1
+
+#define USART_UART_RX_FIFO_LEFT_ENTRY_LEFT_ENTRY_SHIFT    0
+#define USART_UART_RX_FIFO_LEFT_ENTRY_RESERVED_SHIFT    5
+
+#define USART_UART_RX_FIFO_LEFT_ENTRY_LEFT_ENTRY_MASK    0x0000001f
+#define USART_UART_RX_FIFO_LEFT_ENTRY_RESERVED_MASK    0xffffffe0
+
+#define USART_UART_RX_FIFO_LEFT_ENTRY_LEFT_ENTRY_POR_VALUE    0x0
+#define USART_UART_RX_FIFO_LEFT_ENTRY_RESERVED_POR_VALUE    0x0
+
+#define USART_UART_RX_FIFO_LEFT_ENTRY_LEFT_ENTRY_SIZE    5
+
+///////////////////////////////////////////////////////
+// Register: UART_TX_FIFO_LEFT_ENTRY
+// TX FIFO entry count
+///////////////////////////////////////////////////////
+
+#define USART_UART_TX_FIFO_LEFT_ENTRY_ADDR 0x50ULL
+#define USART_UART_TX_FIFO_LEFT_ENTRY_NUM  0x1
+
+#define USART_UART_TX_FIFO_LEFT_ENTRY_LEFT_ENTRY_SHIFT    0
+#define USART_UART_TX_FIFO_LEFT_ENTRY_RESERVED_SHIFT    5
+
+#define USART_UART_TX_FIFO_LEFT_ENTRY_LEFT_ENTRY_MASK    0x0000001f
+#define USART_UART_TX_FIFO_LEFT_ENTRY_RESERVED_MASK    0xffffffe0
+
+#define USART_UART_TX_FIFO_LEFT_ENTRY_LEFT_ENTRY_POR_VALUE    0x0
+#define USART_UART_TX_FIFO_LEFT_ENTRY_RESERVED_POR_VALUE    0x0
+
+#define USART_UART_TX_FIFO_LEFT_ENTRY_LEFT_ENTRY_SIZE    5
+
+///////////////////////////////////////////////////////
+// Register: UART_TX_DATASIZE
+// TX data size register
+///////////////////////////////////////////////////////
+
+#define USART_UART_TX_DATASIZE_ADDR 0x54ULL
+#define USART_UART_TX_DATASIZE_NUM  0x1
+
+#define USART_UART_TX_DATASIZE_TX_DATASIZE_NUM_SHIFT    0
+#define USART_UART_TX_DATASIZE_RESERVED_SHIFT    3
+
+#define USART_UART_TX_DATASIZE_TX_DATASIZE_NUM_MASK    0x00000003
+#define USART_UART_TX_DATASIZE_RESERVED_MASK    0x1fffffff8
+
+#define USART_UART_TX_DATASIZE_TX_DATASIZE_NUM_POR_VALUE    0x0
+#define USART_UART_TX_DATASIZE_RESERVED_POR_VALUE    0x0
+
+#define USART_UART_TX_DATASIZE_TX_DATASIZE_NUM_SIZE    2
+
+///////////////////////////////////////////////////////
+// Register: UART_RX_DATASIZE
+// RX data size register
+///////////////////////////////////////////////////////
+
+#define USART_UART_RX_DATASIZE_ADDR 0x58ULL
+#define USART_UART_RX_DATASIZE_NUM  0x1
+
+#define USART_UART_RX_DATASIZE_RX_DATASIZE_NUM_SHIFT    0
+#define USART_UART_RX_DATASIZE_RESERVED_SHIFT    3
+
+#define USART_UART_RX_DATASIZE_RX_DATASIZE_NUM_MASK    0x00000003
+#define USART_UART_RX_DATASIZE_RESERVED_MASK    0x1fffffff8
+
+#define USART_UART_RX_DATASIZE_RX_DATASIZE_NUM_POR_VALUE    0x0
+#define USART_UART_RX_DATASIZE_RESERVED_POR_VALUE    0x0
+
+#define USART_UART_RX_DATASIZE_RX_DATASIZE_NUM_SIZE    2
+
+///////////////////////////////////////////////////////
+// Register: RX_LOW_LEVEL_CNT
+// RX low level time measurement
+///////////////////////////////////////////////////////
+
+#define USART_RX_LOW_LEVEL_CNT_ADDR 0x5CULL
+#define USART_RX_LOW_LEVEL_CNT_NUM  0x1
+
+#define USART_RX_LOW_LEVEL_CNT_RX_LOW_LEVEL_LENGTH_SHIFT    0
+#define USART_RX_LOW_LEVEL_CNT_RESERVED_SHIFT    20
+#define USART_RX_LOW_LEVEL_CNT_RX_HIGH_LEVEL_DETECT_SHIFT    31
+
+#define USART_RX_LOW_LEVEL_CNT_RX_LOW_LEVEL_LENGTH_MASK    0x000fffff
+#define USART_RX_LOW_LEVEL_CNT_RESERVED_MASK    0x7ff00000
+#define USART_RX_LOW_LEVEL_CNT_RX_HIGH_LEVEL_DETECT_MASK    0x80000000
+
+#define USART_RX_LOW_LEVEL_CNT_RX_LOW_LEVEL_LENGTH_POR_VALUE    0x0
+#define USART_RX_LOW_LEVEL_CNT_RESERVED_POR_VALUE    0x0
+#define USART_RX_LOW_LEVEL_CNT_RX_HIGH_LEVEL_DETECT_POR_VALUE    0x0
+
+#define USART_RX_LOW_LEVEL_CNT_RX_LOW_LEVEL_LENGTH_SIZE    20
+
+///////////////////////////////////////////////////////
+// Register: IP_VERSION
+// The IP version of USART-Contro
+//
+//
+// ller.
+///////////////////////////////////////////////////////
+
+#define USART_IP_VERSION_ADDR 0x80ULL
+#define USART_IP_VERSION_NUM  0x1
+
+#define USART_IP_VERSION_VERSION_SHIFT    0
+
+#define USART_IP_VERSION_VERSION_MASK    0xffffffff
+
+#define USART_IP_VERSION_VERSION_POR_VALUE    0x0
+
+
+
+
+
+/**************************** Type Definitions ******************************/
+typedef struct
+{
+    AL_U32                  DeviceId;
+    AL_U32                  BaseAddress;
+    AL_U32                  InputClockHz;
+    AL_U32                  InterruptNum;
+} AL_USART_HwConfigStruct;
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

@@ -5,6 +5,9 @@
 module design_top_wrapper (
     input wire        I_sys_clk,
     input wire        I_rst_n,
+
+    input wire        I_mcu_uart_rx,
+    output wire       O_mcu_uart_tx,
       
     output wire       O_cam_scl,
     inout  wire       IO_cam_sda,
@@ -42,6 +45,9 @@ module design_top_wrapper (
 
 
     wire        	S_100m_clk;
+    // RISC-V core clock: PLL clk3_out, configured to 300 MHz.
+    // Keep the 100 MHz clock for APB, timer and the video logic.
+    wire        	S_mcu_300m_clk;
     wire        	S_24m_clk;
     wire        	S_aux_50m_clk;
 	wire        	S_10m_clk;
@@ -152,6 +158,37 @@ module design_top_wrapper (
     wire        S_hdmi_out_hsync;
     wire        S_hdmi_out_de;
     wire[23:0]  S_hdmi_out_data;
+    wire        S_mcu_apb_clk;
+    wire [19:0] S_mcu_paddr;
+    wire        S_mcu_psel;
+    wire        S_mcu_penable;
+    wire        S_mcu_pwrite;
+    wire [31:0] S_mcu_pwdata;
+    wire [3:0]  S_mcu_pstrobe;
+    wire [2:0]  S_mcu_pprot;
+    wire [31:0] S_mcu_prdata;
+    wire        S_mcu_pready;
+    wire        S_mcu_pslverr;
+    wire        S_ui_enable_apb;
+    wire        S_ui_edit_apb;
+    wire        S_ui_info_apb;
+    wire [1:0]  S_ui_index_apb;
+    wire [15:0] S_ui_ae_apb;
+    wire [15:0] S_ui_ag_apb;
+    reg [15:0]  S_ae_sync1;
+    reg [15:0]  S_ae_sync2;
+    reg [15:0]  S_ag_sync1;
+    reg [15:0]  S_ag_sync2;
+    reg         S_ui_enable_p1, S_ui_enable_p2;
+    reg         S_ui_edit_p1, S_ui_edit_p2;
+    reg         S_ui_info_p1, S_ui_info_p2;
+    reg [1:0]   S_ui_index_p1, S_ui_index_p2;
+    reg [15:0]  S_ui_ae_p1, S_ui_ae_p2;
+    reg [15:0]  S_ui_ag_p1, S_ui_ag_p2;
+    wire        S_osd_vsync;
+    wire        S_osd_hsync;
+    wire        S_osd_de;
+    wire [23:0] S_osd_data;
 
     wire[23:0]  S_video_rd_data;
     reg         S_dbg_raw_seen;
@@ -482,6 +519,50 @@ module design_top_wrapper (
 	
 	assign O_cam_rst 	= 1'b1;
     assign O_cam_24m 	= S_24m_clk;
+
+    always @(posedge S_24m_clk or negedge S_rst_n) begin
+        if(!S_rst_n) begin
+            S_ae_sync1 <= 16'd2246;
+            S_ae_sync2 <= 16'd2246;
+            S_ag_sync1 <= 16'd80;
+            S_ag_sync2 <= 16'd80;
+        end else begin
+            S_ae_sync1 <= S_ui_ae_apb;
+            S_ae_sync2 <= S_ae_sync1;
+            S_ag_sync1 <= S_ui_ag_apb;
+            S_ag_sync2 <= S_ag_sync1;
+        end
+    end
+
+    always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
+        if(!S_hdmi_rst_n) begin
+            S_ui_enable_p1 <= 1'b0;
+            S_ui_enable_p2 <= 1'b0;
+            S_ui_edit_p1   <= 1'b0;
+            S_ui_edit_p2   <= 1'b0;
+            S_ui_info_p1   <= 1'b0;
+            S_ui_info_p2   <= 1'b0;
+            S_ui_index_p1  <= 2'd0;
+            S_ui_index_p2  <= 2'd0;
+            S_ui_ae_p1     <= 16'd2246;
+            S_ui_ae_p2     <= 16'd2246;
+            S_ui_ag_p1     <= 16'd80;
+            S_ui_ag_p2     <= 16'd80;
+        end else begin
+            S_ui_enable_p1 <= S_ui_enable_apb;
+            S_ui_enable_p2 <= S_ui_enable_p1;
+            S_ui_edit_p1   <= S_ui_edit_apb;
+            S_ui_edit_p2   <= S_ui_edit_p1;
+            S_ui_info_p1   <= S_ui_info_apb;
+            S_ui_info_p2   <= S_ui_info_p1;
+            S_ui_index_p1  <= S_ui_index_apb;
+            S_ui_index_p2  <= S_ui_index_p1;
+            S_ui_ae_p1     <= S_ui_ae_apb;
+            S_ui_ae_p2     <= S_ui_ae_p1;
+            S_ui_ag_p1     <= S_ui_ag_apb;
+            S_ui_ag_p2     <= S_ui_ag_p1;
+        end
+    end
 	
 	
 	
@@ -492,12 +573,63 @@ module design_top_wrapper (
         
         .clk0_out    ( S_100m_clk        ),
         .clk1_out    ( S_24m_clk         ),
+        .clk2_out    ( S_mcu_apb_clk     ),
+        .clk3_out    ( S_mcu_300m_clk    ),
 
         .clk4_out    ( S_hdmi_pixel_clk  ),
         .clk5_out    ( S_hdmi_serial_clk ),
 
         .lock        ( S_pll_lock        )
 
+    );
+
+    RISCV_F6F1D1P0_0 u_mcu (
+        .core_sysrst (                    ),
+        .jtag_tck    ( 1'b0               ),
+        .jtag_tms    ( 1'b0               ),
+        .jtag_tdi    ( 1'b0               ),
+        .jtag_tdo    (                    ),
+        .uart1_tx    ( O_mcu_uart_tx      ),
+        .uart1_rx    ( I_mcu_uart_rx      ),
+        .apb_clk     ( S_mcu_apb_clk      ),
+        .apb_rst     ( ~S_rst_n           ),
+        .paddr       ( S_mcu_paddr        ),
+        .psel        ( S_mcu_psel         ),
+        .penable     ( S_mcu_penable      ),
+        .pwrite      ( S_mcu_pwrite       ),
+        .pwdata      ( S_mcu_pwdata       ),
+        .pstrobe     ( S_mcu_pstrobe      ),
+        .pprot       ( S_mcu_pprot        ),
+        .prdata      ( S_mcu_prdata       ),
+        .pready      ( S_mcu_pready       ),
+        .pslverr     ( S_mcu_pslverr      ),
+        .core_clk    ( S_mcu_300m_clk     ),
+        .timer_clk   ( S_100m_clk         ),
+        .core_reset  ( ~S_rst_n           ),
+        .por_reset   ( ~S_rst_n           ),
+        .nmi         ( 1'b0               ),
+        .clic_irq    ( 23'd0              )
+    );
+
+    mcu_ui_apb_regs u_mcu_ui_apb_regs (
+        .I_clk         ( S_mcu_apb_clk ),
+        .I_rst         ( ~S_rst_n ),
+        .I_button      ( I_button ),
+        .I_paddr       ( S_mcu_paddr ),
+        .I_psel        ( S_mcu_psel ),
+        .I_penable     ( S_mcu_penable ),
+        .I_pwrite      ( S_mcu_pwrite ),
+        .I_pwdata      ( S_mcu_pwdata ),
+        .I_pstrobe     ( S_mcu_pstrobe ),
+        .O_prdata      ( S_mcu_prdata ),
+        .O_pready      ( S_mcu_pready ),
+        .O_pslverr     ( S_mcu_pslverr ),
+        .O_menu_enable ( S_ui_enable_apb ),
+        .O_edit_enable ( S_ui_edit_apb ),
+        .O_info_enable ( S_ui_info_apb ),
+        .O_menu_index  ( S_ui_index_apb ),
+        .O_exposure    ( S_ui_ae_apb ),
+        .O_gain        ( S_ui_ag_apb )
     );
 
 
@@ -507,7 +639,10 @@ module design_top_wrapper (
   ae_set u_ae_set (
       .I_clk(S_24m_clk),
       .I_rst(~S_rst_n),
-      .I_btn(I_button),
+      .I_btn(4'b1111),
+      .I_mcu_control_en(1'b1),
+      .I_mcu_ae(S_ae_sync2),
+      .I_mcu_ag(S_ag_sync2),
       .I_cam_cfg_done(S_cam_cfg_done),
       .I_ae_cfg_done(S_ae_cfg_done),
       .O_ae_req(S_ae_req),
@@ -837,6 +972,28 @@ isp_top u_isp_top (
         .O_hdmi_data     ( S_hdmi_out_data    )
     );
 
+    ui_osd #(
+        .H_ACTIVE(`HDMI_H_ACTIVE),
+        .V_ACTIVE(`HDMI_V_ACTIVE)
+    ) u_ui_osd (
+        .I_clk          ( S_hdmi_pixel_clk ),
+        .I_rst_n        ( S_hdmi_rst_n ),
+        .I_vsync        ( S_hdmi_out_vsync ),
+        .I_hsync        ( S_hdmi_out_hsync ),
+        .I_de           ( S_hdmi_out_de ),
+        .I_data         ( S_hdmi_out_data ),
+        .I_menu_enable  ( S_ui_enable_p2 ),
+        .I_edit_enable  ( S_ui_edit_p2 ),
+        .I_info_enable  ( S_ui_info_p2 ),
+        .I_menu_index   ( S_ui_index_p2 ),
+        .I_exposure     ( S_ui_ae_p2 ),
+        .I_gain         ( S_ui_ag_p2 ),
+        .O_vsync        ( S_osd_vsync ),
+        .O_hsync        ( S_osd_hsync ),
+        .O_de           ( S_osd_de ),
+        .O_data         ( S_osd_data )
+    );
+
     hdmi_tx u_hdmi_tx(
         .I_pixel_clk        ( S_hdmi_pixel_clk  ),
         .I_serial_clk       ( S_hdmi_serial_clk ),
@@ -846,13 +1003,13 @@ isp_top u_isp_top (
         .O_edid_read_valid  (                   ),
         .O_edid_read_data   (                   ),
         .I_video_rgb_enable ( 1'b1              ),
-        .I_video_in_vs      ( S_hdmi_out_vsync  ),
-        .I_video_in_de      ( S_hdmi_out_de     ),
+        .I_video_in_vs      ( S_osd_vsync       ),
+        .I_video_in_de      ( S_osd_de          ),
         .I_video_in_user    ( 1'b0              ),
         .I_video_in_valid   ( 1'b0              ),
         .I_video_in_last    ( 1'b0              ),
         .O_video_in_ready   (                   ),
-        .I_video_in_data    ( S_hdmi_out_data   ),
+        .I_video_in_data    ( S_osd_data        ),
         .I_audio_valid      ( 1'b0              ),
         .I_audio_left_data  ( 24'd0             ),
         .I_audio_right_data ( 24'd0             ),

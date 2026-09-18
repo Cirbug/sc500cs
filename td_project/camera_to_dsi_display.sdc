@@ -10,6 +10,16 @@ rename_clock -name {HDMI_SERIAL_CLK} [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a
 
 rename_clock -name {MIPI_RX_BYTE_CLK} [get_clocks {u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/u_PH1P_LOGIC_DPHY_MIPI_RX.o_fabric_div4_8_clk}]
 
+# The PH1P MCU timing model launches the external APB address/control pins on
+# core_clk.  APB holds them for one 50 MHz bus cycle, equal to six 300 MHz core
+# cycles, so constrain the external APB return path with the protocol latency.
+set_multicycle_path -setup 6 -start \
+    -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] \
+    -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_multicycle_path -hold 5 -start \
+    -from [get_clocks {u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk}] \
+    -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+
 
 set_clock_groups -asynchronous \
     -group [get_clocks {mipi_rx_ck_pad MIPI_RX_BYTE_CLK}] \

@@ -1,0 +1,7 @@
+CHIP=ph1p35
+MSS_FILE=system.mss
+OS=standalone
+PROJECT_LOCATION=D:/2026fpga/lab_hd_1_mipi_hdmi/FDwork/anlu
+PROCESSOR=rpu
+HPF_FILE=camera_to_dsi_display.hpf
+PROJECT_NAME=anlu

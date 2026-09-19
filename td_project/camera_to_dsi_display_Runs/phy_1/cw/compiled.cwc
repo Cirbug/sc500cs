@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HMAC is: 4e65eb81928bb73480f42dfc7a8d656fddbaa8fdbdc650561b81f74989d021e7 -->
+<chipwatcher version="3.040000" project_name="camera_to_dsi_display" chip_name="PH1P35MDG324">
+	<watcher_nodes>
+		<net name="u_mcu_ui_apb_regs/I_psel" clock="u_mcu_ui_apb_regs/I_clk" inst="auto_created_cwc1" type="USER_PROBE" is_enabled="yes" const="false" trig="enable" data="enable"/>
+		<net name="u_mcu_ui_apb_regs/I_pwrite" clock="u_mcu_ui_apb_regs/I_clk" inst="auto_created_cwc1" type="USER_PROBE" is_enabled="yes" const="false" trig="enable" data="enable"/>
+		<bus name="u_mcu_ui_apb_regs/I_paddr[7:0]" clock="u_mcu_ui_apb_regs/I_clk" inst="auto_created_cwc1" type="USER_PROBE" is_enabled="yes">
+			<net name="u_mcu_ui_apb_regs/I_paddr[7]" const="false" data="enable" trig="enable"/>
+			<net name="u_mcu_ui_apb_regs/I_paddr[6]" const="false" data="enable" trig="enable"/>
+			<net name="u_mcu_ui_apb_regs/I_paddr[5]" const="false" data="enable" trig="enable"/>
+			<net name="u_mcu_ui_apb_regs/I_paddr[4]" const="false" data="enable" trig="enable"/>
+			<net name="u_mcu_ui_apb_regs/I_paddr[3]" const="false" data="enable" trig="enable"/>
+			<net name="u_mcu_ui_apb_regs/I_paddr[2]" const="false" data="enable" trig="enable"/>
+			<net name="u_mcu_ui_apb_regs/I_paddr[1]" const="false" data="enable" trig="enable"/>
+			<net name="u_mcu_ui_apb_regs/I_paddr[0]" const="false" data="enable" trig="enable"/>
+		</bus>
+		<net name="u_mcu_ui_apb_regs/I_penable" clock="u_mcu_ui_apb_regs/I_clk" inst="auto_created_cwc1" type="USER_PROBE" is_enabled="yes" const="false" trig="enable" data="enable"/>
+	</watcher_nodes>
+	<instance name="auto_created_cwc1" id="0" ipgen="false" inst_enable="true">
+		<clock clk_name="u_mcu_ui_apb_regs/I_clk"/>
+		<config bram_name="auto_created_cwc1/wrapper_cwc_top/U_cwc_ram" debughub_name="" input_pipe_num="0" output_pipe_num="0" pwr_on_trigger="disable" capture_mode="disable" sample_depth="1024"/>
+		<signal_vec>
+			<watcher_nodes>
+				<net name="u_mcu_ui_apb_regs/I_psel" cond="high" capture_cond="any"/>
+				<net name="u_mcu_ui_apb_regs/I_pwrite" cond="any" capture_cond="any"/>
+				<bus name="u_mcu_ui_apb_regs/I_paddr[7:0]" op="dont_care" capture_op="dont_care">
+					<net name="u_mcu_ui_apb_regs/I_paddr[7]" cond="low" capture_cond="low"/>
+					<net name="u_mcu_ui_apb_regs/I_paddr[6]" cond="low" capture_cond="low"/>
+					<net name="u_mcu_ui_apb_regs/I_paddr[5]" cond="low" capture_cond="low"/>
+					<net name="u_mcu_ui_apb_regs/I_paddr[4]" cond="low" capture_cond="low"/>
+					<net name="u_mcu_ui_apb_regs/I_paddr[3]" cond="low" capture_cond="low"/>
+					<net name="u_mcu_ui_apb_regs/I_paddr[2]" cond="low" capture_cond="low"/>
+					<net name="u_mcu_ui_apb_regs/I_paddr[1]" cond="low" capture_cond="low"/>
+					<net name="u_mcu_ui_apb_regs/I_paddr[0]" cond="low" capture_cond="low"/>
+				</bus>
+				<net name="u_mcu_ui_apb_regs/I_penable" cond="any" capture_cond="any"/>
+			</watcher_nodes>
+		</signal_vec>
+		<trigger name="auto_created_cwc1_trigger" position="127" window_num="1" window_depth="1024">
+			<condition level="1" enabled="yes" type="basic_and" capture_type="basic_and"/>
+		</trigger>
+		<logic_eram name="auto_created_cwc1/wrapper_cwc_top/U_cwc_ram" width="11" depth="1024">
+			<phy_eram name="auto_created_cwc1/wrapper_cwc_top/U_cwc_ram/ramread0_syn_9" wid="0X00000403" rid="0X00000403" model_type="AL_PHY_ERAM" width_a="20" width_b="20" debuggable="enable" initialized="enable" width="11" depth="1024" address_offset="0" data_offset="0" address_step="1" num_section="1" section_size="11" width_per_section="11" bytes_in_per_section="1" working_mode_depth="1024" working_mode_width="20" working_mode_ecc="disable" working_mode_num_byte="2" working_mode_super_wide="disable"/>
+		</logic_eram>
+	</instance>
+</chipwatcher>

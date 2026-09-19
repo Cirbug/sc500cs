@@ -27,6 +27,15 @@
 #define KEY_BACK    (1u << 2)
 #define KEY_OK      (1u << 3)
 
+/* FD Expressions 可查看这些变量；即使串口未接通，也能定位启动阶段。
+ * stage: 1=进入 main，2=串口启动提示已返回，3=APB ID 已返回，
+ *        4=菜单寄存器初始化完成，5=正在处理按键，6=正在延时，
+ *        0xe1=APB ID 不匹配（停止菜单寄存器访问）。 */
+volatile uint32_t g_ui_debug_stage;
+volatile uint32_t g_ui_debug_id;
+volatile uint32_t g_ui_debug_events;
+volatile uint32_t g_ui_debug_loops;
+
 static inline volatile uint32_t *ui_reg(uint32_t offset)
 {
     return (volatile uint32_t *)(UI_APB_BASE + offset);
@@ -51,7 +60,7 @@ AL_S32 main(void)
 {
     uint32_t id;
     uint32_t events;
-    uint32_t menu = 0;
+    uint32_t menu = 1;
     uint32_t edit = 0;
     uint32_t info = 0;
     uint32_t index = 0;
@@ -59,17 +68,35 @@ AL_S32 main(void)
     uint32_t gain = 80;
     uint32_t last_report = 0;
 
+    g_ui_debug_stage = 1;
+    al_printf("UI boot: USART1 115200; before APB read at 0x%08x\r\n",
+              (uint32_t)UI_APB_BASE);
+    g_ui_debug_stage = 2;
     id = ui_read(UI_ID);
+    g_ui_debug_id = id;
+    g_ui_debug_stage = 3;
     al_printf("SoC Started, UI APB ID=0x%08x\r\n", id);
-    if(id != 0x55494d55u)
-        al_printf("UI APB ID mismatch; check UI_APB_BASE (currently 0x%08x)\r\n", (uint32_t)UI_APB_BASE);
+    if(id != 0x55494d55u) {
+        g_ui_debug_stage = 0xe1;
+        while(1) {
+            al_printf("UI APB ID mismatch: got 0x%08x, expected 0x55494d55; base=0x%08x\r\n",
+                      id, (uint32_t)UI_APB_BASE);
+            AlSys_MDelay(1000);
+        }
+    }
 
     exposure = ui_read(UI_EXPOSURE);
     gain = ui_read(UI_GAIN);
-    ui_ctrl(0, 0, 0);
+    /* APB 检查通过后自动显示菜单，便于直接确认 CPU 到 OSD 的链路。 */
+    ui_write(UI_INDEX, index);
+    ui_ctrl(menu, edit, info);
+    g_ui_debug_stage = 4;
 
     while(1) {
+        g_ui_debug_stage = 5;
         events = ui_read(UI_KEY) & 0x0fu;
+        g_ui_debug_events = events;
+        g_ui_debug_loops++;
         if(events) {
             ui_write(UI_KEY, events); // write-one-to-clear
 
@@ -118,9 +145,11 @@ AL_S32 main(void)
             ui_ctrl(menu, edit, info);
         }
 
+        /* Repeat the APB ID once per approximately 1.024 seconds.  This
+         * keeps a visible UART heartbeat while checking the board connection. */
         if((last_report++ & 0x3ffu) == 0)
-            al_printf("UI menu=%u edit=%u item=%u exposure=%u gain=%u\r\n",
-                      menu, edit, index, exposure, gain);
+            al_printf("SoC Started, UI APB ID=0x%08x\r\n", id);
+        g_ui_debug_stage = 6;
         AlSys_MDelay(1);
     }
 }

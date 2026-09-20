@@ -23,14 +23,14 @@
 |     #insts in MACRO       |         3771                |
 -----------------------------------------------------------
 | kept_net                  |                             |
-|     #syn_keep             |         2500                |
+|     #syn_keep             |         2578                |
 |     #keep_hier            |          844                |
 |     #dont_touch           |            0                |
 |     #mark_debug           |            0                |
 |     #max_fanout_keep      |            0                |
 |     #async_reg            |            0                |
 -----------------------------------------------------------
-| Top 10% datanet fanout#   |        31.48                |
+| Top 10% datanet fanout#   |        31.40                |
 | dff(single fanout)->dff   |          985                |
 | dff(single fanout)->dram  |          129                |
 -----------------------------------------------------------
@@ -72,7 +72,7 @@ Hierarchical Rent Exponent Report
 +---------------------------------------------------------------------------------------------+
 |Inst                       |Model                     |Rent     |Cell     |Pin     |Term     |
 +---------------------------------------------------------------------------------------------+
-|top                        |design_top_wrapper        |0.20     |34421    |138583  |32       |
+|top                        |design_top_wrapper        |0.20     |34577    |138894  |32       |
 |  u_hdmi_tx                |hdmi_tx_5                 |0.48     |2309     |8311    |145      |
 |  u_ph1p35_324_ddr_wrapper |ph1p35_324_ddr_wrapper_12 |0.47     |9973     |44970   |332      |
 |  u_isp_top                |isp_top_7                 |0.39     |16733    |66463   |181      |

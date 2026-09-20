@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ipxact:design xmlns:xsi="http" xmlns:ipxact="http" xmlns:anlogic="http" xsi:schemaLocation="http">
+    <ipxact:vendor>anlogic.com</ipxact:vendor>
+    <ipxact:library>customized</ipxact:library>
+    <ipxact:name>design_design_0</ipxact:name>
+    <ipxact:version>1.0</ipxact:version>
+    <ipxact:componentInstances>
+        <ipxact:componentInstance>
+            <ipxact:instanceName>hdmi_phy_wrapper_0</ipxact:instanceName>
+            <ipxact:componentRef vendor="anlogic.com" library="customized" name="hdmi_phy_wrapper" version="1.0"/>
+            <ipxact:instancePath>ip/design_0_hdmi_phy_wrapper_0</ipxact:instancePath>
+            <ipxact:ipPath>../../user_source/hdl_source/hdmi_phy_warpper.v</ipxact:ipPath>
+            <ipxact:customTool>use_rtl</ipxact:customTool>
+        </ipxact:componentInstance>
+    </ipxact:componentInstances>
+    <ipxact:designPorts/>
+    <ipxact:adHocConnections/>
+    <ipxact:interconnections/>
+    <ipxact:ipCatalogDir>
+        <ipxact:name>F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/ip/depot</ipxact:name>
+    </ipxact:ipCatalogDir>
+    <ipxact:vendorExtensions>
+        <anlogic:device>PH1P35MDG324</anlogic:device>
+        <anlogic:version>167996 2025/07/10</anlogic:version>
+        <anlogic:customTool>use_integrator</anlogic:customTool>
+        <anlogic:directives>
+            <anlogic:instantiations/>
+            <anlogic:instPorts/>
+            <anlogic:designPorts/>
+            <anlogic:adHocConnections/>
+        </anlogic:directives>
+    </ipxact:vendorExtensions>
+</ipxact:design>

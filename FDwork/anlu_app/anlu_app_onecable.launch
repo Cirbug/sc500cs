@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="ilg.gnumcueclipse.debug.gdbjtag.openocd.launchConfigurationType">
-    <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.bitstreamFile" value=""/>
+    <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.bitstreamFile" value="D:\2026fpga\lab_hd_1_mipi_hdmi\td_project\camera_to_dsi_display_Runs\best_result\camera_to_dsi_display_compress.bit"/>
     <booleanAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.doAllocateTelnetConsole" value="true"/>
     <booleanAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.doContinue" value="true"/>
     <booleanAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.doFirstReset" value="false"/>

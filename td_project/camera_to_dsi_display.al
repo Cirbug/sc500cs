@@ -11,14 +11,6 @@
     </HardWare>
     <Source_Files>
         <Verilog>
-            <File Path="../user_source/hdl_source/design_top_wrapper.v">
-                <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true"/>
-                    <Attr Name="UsedInP&R" Val="true"/>
-                    <Attr Name="BelongTo" Val="design_1"/>
-                    <Attr Name="CompileOrder" Val="1"/>
-                </FileInfo>
-            </File>
             <File Path="../user_source/hdl_source/video_in.v">
                 <FileInfo>
                     <Attr Name="UsedInSyn" Val="true"/>
@@ -317,6 +309,14 @@
                     <Attr Name="CompileOrder" Val="54"/>
                 </FileInfo>
             </File>
+            <File Path="../user_source/hdl_source/design_top_wrapper.v">
+                <FileInfo>
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="1"/>
+                </FileInfo>
+            </File>
         </Verilog>
         <System_Verilog>
             <File Path="../user_source/hdl_source/mipi_dphy_rx/mipi_dphy_rx_ph1p_mipiio_wrapper.sv">
@@ -497,6 +497,9 @@
     <Runs>
         <Run Name="syn_1" Type="Synthesis" ConstraintSet="constraint_1" Description="" Active="true" useDefaultScript="false">
             <Strategy Name="Default_Synthesis_Strategy">
+                <GlobalProperty>
+                    <thread>16</thread>
+                </GlobalProperty>
             </Strategy>
             <UserParams>
             </UserParams>

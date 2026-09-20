@@ -10,9 +10,9 @@
 #include <stdlib.h>
 
 #ifndef UI_APB_BASE
-/* PH1P fabric APB occupies the upper 2 GB CPU address window.  The hard IP
- * removes the high address bits and exports the low 20 bits as paddr. */
-#define UI_APB_BASE 0x80000000UL
+/* PH1P MCU APB window.  The APB bridge exports the low 20 address bits as
+ * paddr; 0x70000000 is the address used by the Anlogic TD/FD flow. */
+#define UI_APB_BASE 0x70000000UL
 #endif
 
 #define UI_ID       0x00

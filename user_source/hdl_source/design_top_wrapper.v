@@ -169,6 +169,31 @@ module design_top_wrapper (
     wire [31:0] S_mcu_prdata;
     wire        S_mcu_pready;
     wire        S_mcu_pslverr;
+    // MCU AHB/QSPI ports enabled in the regenerated IP.  AHB has no slave in
+    // this design, so its return channel is tied to an always-ready response.
+    wire        S_mcu_core_sysrst;
+    wire        S_mcu_qspi1_clk;
+    wire        S_mcu_qspi1_ss;
+    wire        S_mcu_qspi1_d0_out;
+    wire        S_mcu_qspi1_d1_out;
+    wire        S_mcu_qspi1_d2_out;
+    wire        S_mcu_qspi1_d3_out;
+    wire [3:0]  S_mcu_qspi1_dir;
+    (* keep *) wire        S_mcu_ahb_clk;
+    (* keep *) wire [1:0]  S_mcu_htrans;
+    (* keep *) wire        S_mcu_hwrite;
+    (* keep *) wire [30:0] S_mcu_haddr;
+    (* keep *) wire [2:0]  S_mcu_hsize;
+    (* keep *) wire [2:0]  S_mcu_hburst;
+    (* keep *) wire [3:0]  S_mcu_hprot;
+    (* keep *) wire        S_mcu_hmastlock;
+    (* keep *) wire [31:0] S_mcu_hwdata;
+    wire [31:0] S_mcu_hrdata;
+    wire [1:0]  S_mcu_hresp;
+    wire        S_mcu_hready;
+    assign S_mcu_hrdata = 32'd0;
+    assign S_mcu_hresp  = 2'b00;
+    assign S_mcu_hready = 1'b1;
     wire        S_ui_enable_apb;
     wire        S_ui_edit_apb;
     wire        S_ui_info_apb;
@@ -584,13 +609,44 @@ module design_top_wrapper (
     );
 
     RISCV_F6F1D1P0_0 u_mcu (
-        .core_sysrst (                    ),
+        .core_sysrst ( S_mcu_core_sysrst ),
+        // Constant inputs require MCU_JTAG_SEL="0" (PAD path) in the IP.
+        // MCU_JTAG_SEL="1" selects the fabric/PIB inputs below; tying those
+        // inputs low does not provide an active MCU debug connection.
         .jtag_tck    ( 1'b0               ),
         .jtag_tms    ( 1'b0               ),
         .jtag_tdi    ( 1'b0               ),
         .jtag_tdo    (                    ),
         .uart1_tx    ( O_mcu_uart_tx      ),
         .uart1_rx    ( I_mcu_uart_rx      ),
+        // No external QSPI flash is used by this image.  Keep input pins at
+        // a defined level; the generated QSPI outputs remain available for
+        // future flash/XIP connection.
+        .qspi1_clk   ( S_mcu_qspi1_clk    ),
+        .qspi1_ss    ( S_mcu_qspi1_ss     ),
+        .qspi1_d0_in ( 1'b0               ),
+        .qspi1_d1_in ( 1'b0               ),
+        .qspi1_d2_in ( 1'b0               ),
+        .qspi1_d3_in ( 1'b0               ),
+        .qspi1_d0_out( S_mcu_qspi1_d0_out ),
+        .qspi1_d1_out( S_mcu_qspi1_d1_out ),
+        .qspi1_d2_out( S_mcu_qspi1_d2_out ),
+        .qspi1_d3_out( S_mcu_qspi1_d3_out ),
+        .qspi1_dir   ( S_mcu_qspi1_dir    ),
+        // AHB is enabled in the regenerated IP.  There is no AHB slave in
+        // this design, so return an idle, zero-data, zero-error response.
+        .ahb_clk     ( S_mcu_ahb_clk      ),
+        .htrans      ( S_mcu_htrans       ),
+        .hwrite      ( S_mcu_hwrite       ),
+        .haddr       ( S_mcu_haddr        ),
+        .hsize       ( S_mcu_hsize        ),
+        .hburst      ( S_mcu_hburst       ),
+        .hprot       ( S_mcu_hprot        ),
+        .hmastlock   ( S_mcu_hmastlock    ),
+        .hwdata      ( S_mcu_hwdata       ),
+        .hrdata      ( S_mcu_hrdata       ),
+        .hresp       ( S_mcu_hresp        ),
+        .hready      ( S_mcu_hready       ),
         .apb_clk     ( S_mcu_apb_clk      ),
         .apb_rst     ( ~S_rst_n           ),
         .paddr       ( S_mcu_paddr        ),

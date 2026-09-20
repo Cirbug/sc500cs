@@ -12,3 +12,7 @@ PRG-8000 ERROR: host cast error: bad lexical cast: source type value could not b
 PRG-8000 ERROR: Connect server failed.
 PRG-8000 ERROR: host cast error: bad lexical cast: source type value could not be interpreted as target, using default: 5555
 PRG-8000 ERROR: Connect server failed.
+HDL-5007 WARNING: /* is inside a comment in ../user_source/hdl_source/isp/demosaic_4x_2_0/demosaic.v(89)
+HDL-5007 WARNING: /* is inside a comment in ../user_source/hdl_source/isp/demosaic_4x_2_0/demosaic.v(100)
+HDL-5007 WARNING: /* is inside a comment in ../user_source/hdl_source/isp/demosaic_4x_2_0/demosaic.v(89)
+HDL-5007 WARNING: /* is inside a comment in ../user_source/hdl_source/isp/demosaic_4x_2_0/demosaic.v(100)

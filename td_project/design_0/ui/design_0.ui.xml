@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ipxact:position xmlns:xsi="http" xmlns:ipxact="http" xmlns:anlogic="http" xsi:schemaLocation="http">
+    <ipxact:instances>
+        <ipxact:instance vendor="anlogic.com" library="ip" name="hdmi_phy_wrapper_0" version="1.0">
+            <ipxact:xPos>-189.167</ipxact:xPos>
+            <ipxact:yPos>-95.8333</ipxact:yPos>
+            <ipxact:width>301</ipxact:width>
+            <ipxact:height>236</ipxact:height>
+            <ipxact:isPin>false</ipxact:isPin>
+            <ipxact:instBusPorts/>
+        </ipxact:instance>
+    </ipxact:instances>
+    <ipxact:designPorts/>
+    <ipxact:scrollBar>
+        <ipxact:hValue>0</ipxact:hValue>
+        <ipxact:vValue>0</ipxact:vValue>
+    </ipxact:scrollBar>
+    <ipxact:scale>
+        <ipxact:xScale>1.2</ipxact:xScale>
+        <ipxact:yScale>1.2</ipxact:yScale>
+    </ipxact:scale>
+</ipxact:position>

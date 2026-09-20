@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ipxact:root xmlns:xsi="http" xmlns:ipxact="http" xmlns:anlogic="http" xsi:schemaLocation="http">
+    <ipxact:compositeFile compositeFileTopName="design_0">
+        <ipxact:fileCollection>
+            <ipxact:file name="ip/design_0_hdmi_phy_wrapper_0/design_0_hdmi_phy_wrapper_0.xml">
+                <ipxact:instanceName>hdmi_phy_wrapper_0</ipxact:instanceName>
+                <ipxact:ipPath>D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/../user_source/hdl_source/hdmi_phy_warpper.v</ipxact:ipPath>
+                <ipxact:customTool>use_rtl</ipxact:customTool>
+            </ipxact:file>
+        </ipxact:fileCollection>
+    </ipxact:compositeFile>
+</ipxact:root>

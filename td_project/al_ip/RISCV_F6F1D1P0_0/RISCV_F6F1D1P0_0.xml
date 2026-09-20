@@ -1,9 +1,9 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<ipxact:component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:anlogic="http" xsi:schemaLocation="http://www.accellera.org/XMLSchema/IPXACT/1685-2014 http://www.accellera.org/XMLSchema/IPXACT/1685-2014/index.xsd" xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2014">
+<?xml version="1.0" encoding="UTF-8"?>
+<ipxact:component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2014" xmlns:anlogic="http" xsi:schemaLocation="http://www.accellera.org/XMLSchema/IPXACT/1685-2014 http://www.accellera.org/XMLSchema/IPXACT/1685-2014/index.xsd">
     <ipxact:vendor>anlogic.com</ipxact:vendor>
     <ipxact:library>customized</ipxact:library>
     <ipxact:name>RISCV_F6F1D1P0_0</ipxact:name>
-    <ipxact:displayName/>
+    <ipxact:displayName></ipxact:displayName>
     <ipxact:version>1.0</ipxact:version>
     <ipxact:model>
         <ipxact:views>
@@ -25,11 +25,11 @@
             </ipxact:componentInstantiation>
             <ipxact:designInstantiation>
                 <ipxact:name>design_RISCV_F6F1D1P0_0_Inst</ipxact:name>
-                <ipxact:designRef vendor="anlogic.com" library="customized" version="1.0" name="design_RISCV_F6F1D1P0_0"/>
+                <ipxact:designRef vendor="anlogic.com" library="customized" name="design_RISCV_F6F1D1P0_0" version="1.0"/>
             </ipxact:designInstantiation>
             <ipxact:designConfigurationInstantiation>
                 <ipxact:name>designConfig_RISCV_F6F1D1P0_0_Inst</ipxact:name>
-                <ipxact:designConfigurationRef vendor="anlogic.com" library="customized" version="1.0" name="designConfig_RISCV_F6F1D1P0_0"/>
+                <ipxact:designConfigurationRef vendor="anlogic.com" library="customized" name="designConfig_RISCV_F6F1D1P0_0" version="1.0"/>
             </ipxact:designConfigurationInstantiation>
         </ipxact:instantiations>
         <ipxact:ports>
@@ -78,6 +78,221 @@
             <ipxact:port>
                 <ipxact:name>uart1_rx</ipxact:name>
                 <ipxact:displayName>uart1_rx</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>in</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_clk</ipxact:name>
+                <ipxact:displayName>qspi1_clk</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_ss</ipxact:name>
+                <ipxact:displayName>qspi1_ss</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_d0_in</ipxact:name>
+                <ipxact:displayName>qspi1_d0_in</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>in</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_d1_in</ipxact:name>
+                <ipxact:displayName>qspi1_d1_in</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>in</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_d2_in</ipxact:name>
+                <ipxact:displayName>qspi1_d2_in</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>in</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_d3_in</ipxact:name>
+                <ipxact:displayName>qspi1_d3_in</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>in</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_d0_out</ipxact:name>
+                <ipxact:displayName>qspi1_d0_out</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_d1_out</ipxact:name>
+                <ipxact:displayName>qspi1_d1_out</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_d2_out</ipxact:name>
+                <ipxact:displayName>qspi1_d2_out</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_d3_out</ipxact:name>
+                <ipxact:displayName>qspi1_d3_out</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>qspi1_dir</ipxact:name>
+                <ipxact:displayName>qspi1_dir</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>3</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>ahb_clk</ipxact:name>
+                <ipxact:displayName>ahb_clk</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>htrans</ipxact:name>
+                <ipxact:displayName>htrans</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>1</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hwrite</ipxact:name>
+                <ipxact:displayName>hwrite</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>haddr</ipxact:name>
+                <ipxact:displayName>haddr</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>30</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hsize</ipxact:name>
+                <ipxact:displayName>hsize</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>2</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hburst</ipxact:name>
+                <ipxact:displayName>hburst</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>2</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hprot</ipxact:name>
+                <ipxact:displayName>hprot</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>3</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hmastlock</ipxact:name>
+                <ipxact:displayName>hmastlock</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hwdata</ipxact:name>
+                <ipxact:displayName>hwdata</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>out</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>31</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hrdata</ipxact:name>
+                <ipxact:displayName>hrdata</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>in</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>31</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hresp</ipxact:name>
+                <ipxact:displayName>hresp</ipxact:displayName>
+                <ipxact:wire>
+                    <ipxact:direction>in</ipxact:direction>
+                    <ipxact:vectors>
+                        <ipxact:vector>
+                            <ipxact:left>1</ipxact:left>
+                            <ipxact:right>0</ipxact:right>
+                        </ipxact:vector>
+                    </ipxact:vectors>
+                </ipxact:wire>
+            </ipxact:port>
+            <ipxact:port>
+                <ipxact:name>hready</ipxact:name>
+                <ipxact:displayName>hready</ipxact:displayName>
                 <ipxact:wire>
                     <ipxact:direction>in</ipxact:direction>
                 </ipxact:wire>
@@ -250,10 +465,10 @@
         <ipxact:busInterface>
             <ipxact:name>APB</ipxact:name>
             <ipxact:displayName>APB</ipxact:displayName>
-            <ipxact:busType vendor="anlogic.com" library="bus" version="1.0" name="APB"/>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="APB" version="1.0"/>
             <ipxact:abstractionTypes>
                 <ipxact:abstractionType>
-                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" version="1.0" name="APB_rtl"/>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="APB_rtl" version="1.0"/>
                     <ipxact:portMaps>
                         <ipxact:portMap>
                             <ipxact:logicalPort>
@@ -343,12 +558,115 @@
             </ipxact:master>
         </ipxact:busInterface>
         <ipxact:busInterface>
-            <ipxact:name>APB_PCLK</ipxact:name>
-            <ipxact:displayName>APB_PCLK</ipxact:displayName>
-            <ipxact:busType vendor="anlogic.com" library="bus" version="1.0" name="clock"/>
+            <ipxact:name>AHB</ipxact:name>
+            <ipxact:displayName>AHB</ipxact:displayName>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="AHB" version="1.0"/>
             <ipxact:abstractionTypes>
                 <ipxact:abstractionType>
-                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" version="1.0" name="clock_rtl"/>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="AHB_rtl" version="1.0"/>
+                    <ipxact:portMaps>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HADDR</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>haddr</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HTRANS</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>htrans</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HWRITE</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hwrite</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HSIZE</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hsize</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HBURST</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hburst</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HPROT</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hprot</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HWDATA</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hwdata</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HRDATA</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hrdata</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HREADY</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hready</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HRESP</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hresp</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>HMASTLOCK</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>hmastlock</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                    </ipxact:portMaps>
+                </ipxact:abstractionType>
+            </ipxact:abstractionTypes>
+            <ipxact:master>
+                <ipxact:addressSpaceRef addressSpaceRef="AHB_Space"/>
+            </ipxact:master>
+        </ipxact:busInterface>
+        <ipxact:busInterface>
+            <ipxact:name>APB_PCLK</ipxact:name>
+            <ipxact:displayName>APB_PCLK</ipxact:displayName>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="clock" version="1.0"/>
+            <ipxact:abstractionTypes>
+                <ipxact:abstractionType>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="clock_rtl" version="1.0"/>
                     <ipxact:portMaps>
                         <ipxact:portMap>
                             <ipxact:logicalPort>
@@ -364,12 +682,33 @@
             <ipxact:slave/>
         </ipxact:busInterface>
         <ipxact:busInterface>
-            <ipxact:name>core_clk</ipxact:name>
-            <ipxact:displayName>core_clk</ipxact:displayName>
-            <ipxact:busType vendor="anlogic.com" library="bus" version="1.0" name="clock"/>
+            <ipxact:name>AHB_HCLK</ipxact:name>
+            <ipxact:displayName>AHB_HCLK</ipxact:displayName>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="clock" version="1.0"/>
             <ipxact:abstractionTypes>
                 <ipxact:abstractionType>
-                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" version="1.0" name="clock_rtl"/>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="clock_rtl" version="1.0"/>
+                    <ipxact:portMaps>
+                        <ipxact:portMap>
+                            <ipxact:logicalPort>
+                                <ipxact:name>CLK</ipxact:name>
+                            </ipxact:logicalPort>
+                            <ipxact:physicalPort>
+                                <ipxact:name>ahb_clk</ipxact:name>
+                            </ipxact:physicalPort>
+                        </ipxact:portMap>
+                    </ipxact:portMaps>
+                </ipxact:abstractionType>
+            </ipxact:abstractionTypes>
+            <ipxact:master/>
+        </ipxact:busInterface>
+        <ipxact:busInterface>
+            <ipxact:name>core_clk</ipxact:name>
+            <ipxact:displayName>core_clk</ipxact:displayName>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="clock" version="1.0"/>
+            <ipxact:abstractionTypes>
+                <ipxact:abstractionType>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="clock_rtl" version="1.0"/>
                     <ipxact:portMaps>
                         <ipxact:portMap>
                             <ipxact:logicalPort>
@@ -387,10 +726,10 @@
         <ipxact:busInterface>
             <ipxact:name>timer_clk</ipxact:name>
             <ipxact:displayName>timer_clk</ipxact:displayName>
-            <ipxact:busType vendor="anlogic.com" library="bus" version="1.0" name="clock"/>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="clock" version="1.0"/>
             <ipxact:abstractionTypes>
                 <ipxact:abstractionType>
-                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" version="1.0" name="clock_rtl"/>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="clock_rtl" version="1.0"/>
                     <ipxact:portMaps>
                         <ipxact:portMap>
                             <ipxact:logicalPort>
@@ -408,10 +747,10 @@
         <ipxact:busInterface>
             <ipxact:name>core_reset</ipxact:name>
             <ipxact:displayName>core_reset</ipxact:displayName>
-            <ipxact:busType vendor="anlogic.com" library="bus" version="1.0" name="reset"/>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="reset" version="1.0"/>
             <ipxact:abstractionTypes>
                 <ipxact:abstractionType>
-                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" version="1.0" name="reset_rtl"/>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="reset_rtl" version="1.0"/>
                     <ipxact:portMaps>
                         <ipxact:portMap>
                             <ipxact:logicalPort>
@@ -429,10 +768,10 @@
         <ipxact:busInterface>
             <ipxact:name>por_reset</ipxact:name>
             <ipxact:displayName>por_reset</ipxact:displayName>
-            <ipxact:busType vendor="anlogic.com" library="bus" version="1.0" name="reset"/>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="reset" version="1.0"/>
             <ipxact:abstractionTypes>
                 <ipxact:abstractionType>
-                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" version="1.0" name="reset_rtl"/>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="reset_rtl" version="1.0"/>
                     <ipxact:portMaps>
                         <ipxact:portMap>
                             <ipxact:logicalPort>
@@ -450,10 +789,10 @@
         <ipxact:busInterface>
             <ipxact:name>APB_PRST</ipxact:name>
             <ipxact:displayName>APB_PRST</ipxact:displayName>
-            <ipxact:busType vendor="anlogic.com" library="bus" version="1.0" name="reset"/>
+            <ipxact:busType vendor="anlogic.com" library="bus" name="reset" version="1.0"/>
             <ipxact:abstractionTypes>
                 <ipxact:abstractionType>
-                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" version="1.0" name="reset_rtl"/>
+                    <ipxact:abstractionRef vendor="anlogic.com" library="bus" name="reset_rtl" version="1.0"/>
                     <ipxact:portMaps>
                         <ipxact:portMap>
                             <ipxact:logicalPort>
@@ -476,11 +815,18 @@
             <ipxact:range>2147483648</ipxact:range>
             <ipxact:width>32</ipxact:width>
         </ipxact:addressSpace>
+        <ipxact:addressSpace>
+            <ipxact:name>AHB_Space</ipxact:name>
+            <ipxact:displayName>AHB_Space</ipxact:displayName>
+            <ipxact:range></ipxact:range>
+            <ipxact:width></ipxact:width>
+        </ipxact:addressSpace>
     </ipxact:addressSpaces>
     <ipxact:cpus>
         <ipxact:cpu>
             <ipxact:name>RISCV</ipxact:name>
             <ipxact:addressSpaceRef addressSpaceRef="APB_Space"/>
+            <ipxact:addressSpaceRef addressSpaceRef="AHB_Space"/>
         </ipxact:cpu>
     </ipxact:cpus>
     <ipxact:fileSets>
@@ -500,7 +846,7 @@
             <ipxact:file>
                 <ipxact:name>RISCV_F6F1D1P0_0.tcl</ipxact:name>
                 <ipxact:fileType>SDC</ipxact:fileType>
-            </ipxact:file>
+            </ipxact:file> 
         </ipxact:fileSet>
     </ipxact:fileSets>
     <ipxact:vendorExtensions>

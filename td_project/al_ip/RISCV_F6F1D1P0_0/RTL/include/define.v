@@ -1,3 +1,5 @@
 `define JTAG_Available_521bd43d073e
 `define UART1_Available_521bd43d073e
+`define QSPI_Available_521bd43d073e
+`define AHB_Available_521bd43d073e
 `define APB_Available_521bd43d073e

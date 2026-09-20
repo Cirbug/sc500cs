@@ -1,0 +1,36 @@
+[warn - InstPort] input port lack of connectioin
+    SocInstPort input:hdmi_phy_wrapper_0::I_pixel_clk
+
+[warn - InstPort] input port lack of connectioin
+    SocInstPort input:hdmi_phy_wrapper_0::I_serial_clk
+
+[warn - InstPort] input port lack of connectioin
+    SocInstPort input:hdmi_phy_wrapper_0::I_rst
+
+[warn - InstPort] input port lack of connectioin
+    SocInstPort input:hdmi_phy_wrapper_0::I_tmds_channel_0[9:0]
+
+[warn - InstPort] input port lack of connectioin
+    SocInstPort input:hdmi_phy_wrapper_0::I_tmds_channel_1[9:0]
+
+[warn - InstPort] input port lack of connectioin
+    SocInstPort input:hdmi_phy_wrapper_0::I_tmds_channel_2[9:0]
+
+[warn - InstPort] input port lack of connectioin
+    SocInstPort input:hdmi_phy_wrapper_0::I_tmds_channel_clk[9:0]
+
+[error - InstPort] port lack of driver
+    SocInstPort input:hdmi_phy_wrapper_0::I_pixel_clk
+
+[error - InstPort] port lack of driver
+    SocInstPort input:hdmi_phy_wrapper_0::I_serial_clk
+
+[error - InstPort] port lack of driver
+    SocInstPort input:hdmi_phy_wrapper_0::I_tmds_channel_clk[9:0]
+
+[error - InstPort] port lack of driver
+    SocInstPort input:hdmi_phy_wrapper_0::I_rst
+
+[warn - Design] design lack of output designPort
+    SocDesign: design_0
+

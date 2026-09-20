@@ -1,11 +1,11 @@
 Created by          : Tang Dynasty v6.2.168116
                     : Copyright (c) 2012-2025 Anlogic Inc.
-Generated           : Sat Sep 19 16:06:15 2026
+Generated           : Sun Sep 20 17:18:53 2026
 
 Top Model           : design_top_wrapper
 Device              : PH1P35MDG324
 Speed               : 3
-STA coverage        : 94.04%
+STA coverage        : 94.05%
 Constraint File     : D:/2026fpga/lab_hd_1_mipi_hdmi/td_project/camera_to_dsi_display.sdc;
 Confidence          : Synthesized
 Check Corner        : Both (Slow and Fast)
@@ -6552,7 +6552,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[0].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[0],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[0],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[0].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -6605,7 +6605,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[1].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[1],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[1],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[1].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -6658,7 +6658,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[2].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[2],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[2],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[2].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -6711,7 +6711,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[3].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[3],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[3],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[3].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -6764,7 +6764,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[4].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[4],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[4],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[4].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -6817,7 +6817,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[5].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[5],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[5],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[5].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -6870,7 +6870,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[6].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[6],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[6],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[6].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -6923,7 +6923,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[7].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[7],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[7],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[7].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -6976,7 +6976,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[8].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[8],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[8],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[8].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -7029,7 +7029,7 @@ net (fo=151)                            0.000          0.000          net: O_cam
 launch edge                             0.000    r     0.000               
 --------------------------------------------------------------------  ---------------
 SEQ (clk2q)                             0.053    f     0.053          pin: S_ae_sync1_reg[9].q
-net (fo=1)                              0.448          0.501          net: S_ae_sync1[9],  ../../../user_source/hdl_source/design_top_wrapper.v(178)
+net (fo=1)                              0.448          0.501          net: S_ae_sync1[9],  ../../../user_source/hdl_source/design_top_wrapper.v(203)
                                                                       pin: S_ae_sync2_reg[9].d
 SEQ (reg)                               0.015    f     0.516               
 --------------------------------------------------------------------  ---------------
@@ -35367,57 +35367,21 @@ Statistics:
 
 Max Delay Paths
 ----------------------------------------------------------------------------------------------------
-Begin Point         : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[5].clk(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
-End Point           : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[5].d(triggered by clock MIPI_RX_BYTE_CLK)
+Begin Point         : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[7].clk(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
+End Point           : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[7].d(triggered by clock MIPI_RX_BYTE_CLK)
 Check Type          : setup
 
 Delay Type          Location             Incr           Path   Level  Netlist Info
 --------------------------------------------------------------------  ---------------
-SEQ (clk2q)                                                           pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[5].q
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[5]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[5]_syn_1.i
-BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[5]_syn_1.o
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[5],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[5]_syn_2.i
-BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[5]_syn_2.o
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[5]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[5].d
-SEQ (reg)                                                                  
-
-
-Begin Point         : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg_reg[8].clk(triggered by clock MIPI_RX_BYTE_CLK)
-End Point           : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[8].d(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
-Check Type          : setup
-
-Delay Type          Location             Incr           Path   Level  Netlist Info
---------------------------------------------------------------------  ---------------
-SEQ (clk2q)                                                           pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg_reg[8].q
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[8]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[8]_syn_1.i
-BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[8]_syn_1.o
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[8],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[8]_syn_2.i
-BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[8]_syn_2.o
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[8]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[8].d
-SEQ (reg)                                                                  
-
-
-Begin Point         : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[6].clk(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
-End Point           : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[6].d(triggered by clock MIPI_RX_BYTE_CLK)
-Check Type          : setup
-
-Delay Type          Location             Incr           Path   Level  Netlist Info
---------------------------------------------------------------------  ---------------
-SEQ (clk2q)                                                           pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[6].q
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_1.i
-BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_1.o
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_2.i
-BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_2.o
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[6].d
+SEQ (clk2q)                                                           pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[7].q
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_1.i
+BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_1.o
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_2.i
+BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_2.o
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[7].d
 SEQ (reg)                                                                  
 
 
@@ -35436,24 +35400,6 @@ net (fo=1)                                                            net: u_vid
 BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0]_syn_2.o
 net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
                                                                       pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[0].d
-SEQ (reg)                                                                  
-
-
-Begin Point         : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[7].clk(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
-End Point           : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[7].d(triggered by clock MIPI_RX_BYTE_CLK)
-Check Type          : setup
-
-Delay Type          Location             Incr           Path   Level  Netlist Info
---------------------------------------------------------------------  ---------------
-SEQ (clk2q)                                                           pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[7].q
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_1.i
-BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_1.o
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_2.i
-BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_2.o
-net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[7].d
 SEQ (reg)                                                                  
 
 
@@ -35547,6 +35493,60 @@ net (fo=1)                                                            net: u_vid
 SEQ (reg)                                                                  
 
 
+Begin Point         : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[1].clk(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
+End Point           : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[1].d(triggered by clock MIPI_RX_BYTE_CLK)
+Check Type          : setup
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+SEQ (clk2q)                                                           pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[1].q
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[1]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[1]_syn_1.i
+BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[1]_syn_1.o
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[1],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[1]_syn_2.i
+BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[1]_syn_2.o
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[1]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[1].d
+SEQ (reg)                                                                  
+
+
+Begin Point         : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg_reg[4].clk(triggered by clock MIPI_RX_BYTE_CLK)
+End Point           : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[4].d(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
+Check Type          : setup
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+SEQ (clk2q)                                                           pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg_reg[4].q
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4]_syn_1.i
+BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4]_syn_1.o
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4]_syn_2.i
+BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4]_syn_2.o
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[4].d
+SEQ (reg)                                                                  
+
+
+Begin Point         : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[2].clk(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
+End Point           : u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[2].d(triggered by clock MIPI_RX_BYTE_CLK)
+Check Type          : setup
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+SEQ (clk2q)                                                           pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[2].q
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_1.i
+BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_1.o
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_2.i
+BUFKEEP                                                               pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_2.o
+net (fo=1)                                                            net: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[2].d
+SEQ (reg)                                                                  
+
+
 
 
 
@@ -35572,60 +35572,6 @@ Statistics:
 
 Max Delay Paths
 ----------------------------------------------------------------------------------------------------
-Begin Point         : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[6].clk(triggered by clock HDMI_PIXEL_CLK)
-End Point           : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[6].d(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
-Check Type          : setup
-
-Delay Type          Location             Incr           Path   Level  Netlist Info
---------------------------------------------------------------------  ---------------
-SEQ (clk2q)                                                           pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[6].q
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_1.i
-BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_1.o
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_2.i
-BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_2.o
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[6]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[6].d
-SEQ (reg)                                                                  
-
-
-Begin Point         : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg_reg[0].clk(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
-End Point           : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[0].d(triggered by clock HDMI_PIXEL_CLK)
-Check Type          : setup
-
-Delay Type          Location             Incr           Path   Level  Netlist Info
---------------------------------------------------------------------  ---------------
-SEQ (clk2q)                                                           pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg_reg[0].q
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0]_syn_1.i
-BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0]_syn_1.o
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0]_syn_2.i
-BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0]_syn_2.o
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[0]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[0].d
-SEQ (reg)                                                                  
-
-
-Begin Point         : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[7].clk(triggered by clock HDMI_PIXEL_CLK)
-End Point           : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[7].d(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
-Check Type          : setup
-
-Delay Type          Location             Incr           Path   Level  Netlist Info
---------------------------------------------------------------------  ---------------
-SEQ (clk2q)                                                           pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[7].q
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_1.i
-BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_1.o
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_2.i
-BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_2.o
-net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[7]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
-                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[7].d
-SEQ (reg)                                                                  
-
-
 Begin Point         : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[8].clk(triggered by clock HDMI_PIXEL_CLK)
 End Point           : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[8].d(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
 Check Type          : setup
@@ -35749,6 +35695,60 @@ net (fo=1)                                                            net: u_vid
 BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4]_syn_2.o
 net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[4]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
                                                                       pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[4].d
+SEQ (reg)                                                                  
+
+
+Begin Point         : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[2].clk(triggered by clock HDMI_PIXEL_CLK)
+End Point           : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[2].d(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
+Check Type          : setup
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+SEQ (clk2q)                                                           pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[2].q
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_1.i
+BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_1.o
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_2.i
+BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_2.o
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[2]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[2].d
+SEQ (reg)                                                                  
+
+
+Begin Point         : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg_reg[5].clk(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
+End Point           : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[5].d(triggered by clock HDMI_PIXEL_CLK)
+Check Type          : setup
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+SEQ (clk2q)                                                           pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg_reg[5].q
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[5]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[5]_syn_1.i
+BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[5]_syn_1.o
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[5],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[5]_syn_2.i
+BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[5]_syn_2.o
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/primary_addr_gray_reg[5]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/wr_to_rd_cross_inst/sync_r1_reg[5].d
+SEQ (reg)                                                                  
+
+
+Begin Point         : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[3].clk(triggered by clock HDMI_PIXEL_CLK)
+End Point           : u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[3].d(triggered by clock u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk)
+Check Type          : setup
+
+Delay Type          Location             Incr           Path   Level  Netlist Info
+--------------------------------------------------------------------  ---------------
+SEQ (clk2q)                                                           pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg_reg[3].q
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[3]_syn_3,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[3]_syn_1.i
+BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[3]_syn_1.o
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[3],  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[3]_syn_2.i
+BUFKEEP                                                               pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[3]_syn_2.o
+net (fo=1)                                                            net: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/primary_addr_gray_reg[3]_syn_4,  ../../../user_source/ip_source/w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v(253)
+                                                                      pin: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/rd_to_wr_cross_inst/sync_r1_reg[3].d
 SEQ (reg)                                                                  
 
 

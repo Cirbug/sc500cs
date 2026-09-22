@@ -2,9 +2,9 @@ standard
 ***Report Model: top_debug_hub Device: PH1P35MDG324***
 
 Design Statistics
-#IO                        99   out of    160   61.88%
+#IO                        83   out of    160   51.88%
   #input                   33
-  #output                  66
+  #output                  50
   #inout                    0
 #lut                      103
   #lut1                    10
@@ -13,19 +13,19 @@ Design Statistics
   #lut4                     8
   #lut5                    10
   #lut6                    19
-#reg                      452
-  #slice reg              452   out of  42432    1.07%
+#reg                      372
+  #slice reg              372   out of  42432    0.88%
   #pad reg                  0
 
 Utilization Statistics
-#slice                    148   out of  21216    0.70%
+#slice                    133   out of  21216    0.63%
   #used ram                 0
     #dram lut               0
     #shifter lut            0
-  #used logic             148
+  #used logic             133
     #with luts             73
     #with adder             0
-    #reg only              75
+    #reg only              60
 #f7mux                      0   out of  10608    0.00%
 #f8mux                      0   out of   5304    0.00%
 #eram                       0   out of    108    0.00%
@@ -49,12 +49,12 @@ Report Hierarchy Area:
 +-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 |Instance                  |Module                        |logic lut |ripple  |seq     |eram    |dsp     |dram lut |shifter lut |f7mux   |f8mux   |pll     |ddr     |
 +-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|top                       |top_debug_hub                 |73        |0       |452     |0       |0       |0        |0           |0       |0       |0       |0       |
-|  U_0_handshake_sync_ctrl |anlogic04_handshake_sync_ctrl |3         |0       |130     |0       |0       |0        |0           |0       |0       |0       |0       |
+|top                       |top_debug_hub                 |73        |0       |372     |0       |0       |0        |0           |0       |0       |0       |0       |
+|  U_0_handshake_sync_ctrl |anlogic04_handshake_sync_ctrl |3         |0       |98      |0       |0       |0        |0           |0       |0       |0       |0       |
 |    U_handshake_sync      |anlogic03_handshake_sync      |1         |0       |9       |0       |0       |0        |0           |0       |0       |0       |0       |
 |  U_0_handshake_sync_stat |anlogic05_handshake_sync_stat |3         |0       |58      |0       |0       |0        |0           |0       |0       |0       |0       |
 |    U_handshake_sync      |anlogic03_handshake_sync      |3         |0       |9       |0       |0       |0        |0           |0       |0       |0       |0       |
-|  U_0_register            |anlogic02_register            |54        |0       |199     |0       |0       |0        |0           |0       |0       |0       |0       |
+|  U_0_register            |anlogic02_register            |54        |0       |167     |0       |0       |0        |0           |0       |0       |0       |0       |
 |  U_jtdo_sel_mux          |anlogic06_jtdo_sel_mux        |1         |0       |0       |0       |0       |0        |0           |0       |0       |0       |0       |
 |  U_tap                   |anlogic01_tap                 |11        |0       |3       |0       |0       |0        |0           |0       |0       |0       |0       |
 +-------------------------------------------------------------------------------------------------------------------------------------------------------------------+

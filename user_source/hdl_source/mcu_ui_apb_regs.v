@@ -12,6 +12,9 @@ module mcu_ui_apb_regs #(
     input  wire        I_clk,
     input  wire        I_rst,
     input  wire [3:0]  I_button,
+    input  wire        I_usb_int_n,
+    output reg         O_usb_res_n,
+    output reg         O_usb_spi_enable,
     input  wire [19:0] I_paddr,
     input  wire        I_psel,
     input  wire        I_penable,
@@ -26,7 +29,13 @@ module mcu_ui_apb_regs #(
     output reg         O_info_enable,
     output reg  [1:0]  O_menu_index,
     output reg  [15:0] O_exposure,
-    output reg  [15:0] O_gain
+    output reg  [15:0] O_gain,
+    input  wire        I_lens_busy,
+    input  wire        I_lens_init_done,
+    input  wire        I_lens_error,
+    input  wire [31:0] I_focus_metric,
+    output reg         O_lens_cmd,
+    output reg  [13:0] O_lens_position
 );
 
     localparam [31:0] ID_VALUE = 32'h55494D55; // "UIMU"
@@ -50,8 +59,23 @@ module mcu_ui_apb_regs #(
     endgenerate
 
     reg [3:0] key_event;
+    // MAX3421E INT is asynchronous to APB; poll the synchronized pin level.
+    (* async_reg = "true" *) reg usb_int_meta;
+    (* async_reg = "true" *) reg usb_int_sync;
     always @(posedge I_clk or posedge I_rst) begin
         if(I_rst) begin
+            usb_int_meta <= 1'b1;
+            usb_int_sync <= 1'b1;
+        end else begin
+            usb_int_meta <= I_usb_int_n;
+            usb_int_sync <= usb_int_meta;
+        end
+    end
+
+    always @(posedge I_clk or posedge I_rst) begin
+        if(I_rst) begin
+            O_usb_res_n <= 1'b0;
+            O_usb_spi_enable <= 1'b0;
             key_event    <= 4'd0;
             O_menu_enable <= 1'b0;
             O_edit_enable <= 1'b0;
@@ -59,7 +83,10 @@ module mcu_ui_apb_regs #(
             O_menu_index  <= 2'd0;
             O_exposure    <= AE_INIT;
             O_gain        <= AG_INIT;
+            O_lens_cmd    <= 1'b0;
+            O_lens_position <= 14'd8192;
         end else begin
+            O_lens_cmd <= 1'b0;
             // Preserve a press arriving in the same cycle that software clears
             // an older event.  New events have priority over write-one-to-clear.
             if(apb_write && (I_paddr[7:0] == 8'h04))
@@ -79,6 +106,16 @@ module mcu_ui_apb_regs #(
                                            ((I_pwdata[15:0] > AE_MAX) ? AE_MAX : I_pwdata[15:0]);
                     8'h14: O_gain <= (I_pwdata[15:0] < AG_MIN) ? AG_MIN :
                                        ((I_pwdata[15:0] > AG_MAX) ? AG_MAX : I_pwdata[15:0]);
+                    // 0x20: bit0 releases reset; bit1 enables external SPI.
+                    8'h20: if(I_pstrobe[0]) begin
+                        O_usb_res_n <= I_pwdata[0];
+                        O_usb_spi_enable <= I_pwdata[1];
+                    end
+                    8'h28: if(I_pstrobe[0])
+                        O_lens_position <= (I_pwdata[13:0] > 14'd16383) ? 14'd16383 : I_pwdata[13:0];
+                    // bit0: issue one position transaction to the lens actuator.
+                    8'h2c: if(I_pstrobe[0] && I_pwdata[0])
+                        O_lens_cmd <= 1'b1;
                     default: begin end
                 endcase
             end
@@ -96,6 +133,12 @@ module mcu_ui_apb_regs #(
                 8'h10: O_prdata = {16'd0, O_exposure};
                 8'h14: O_prdata = {16'd0, O_gain};
                 8'h18: O_prdata = 32'h0001081e; // Full sensor input, HDMI 1080p30
+                8'h1c: O_prdata = 32'h4d415831; // "MAX1": USB extension present
+                8'h20: O_prdata = {30'd0, O_usb_spi_enable, O_usb_res_n};
+                8'h24: O_prdata = {29'd0, O_usb_spi_enable, O_usb_res_n, usb_int_sync};
+                8'h28: O_prdata = {18'd0, O_lens_position};
+                8'h30: O_prdata = {29'd0, I_lens_error, I_lens_init_done, I_lens_busy};
+                8'h34: O_prdata = I_focus_metric;
                 default: O_prdata = 32'd0;
             endcase
         end

@@ -1,5 +1,5 @@
 // Small resource-friendly menu overlay. It keeps the original video pixel
-// stream intact outside the menu rectangle and uses a 3x5 bitmap font.
+// stream intact outside the menu rectangle and uses a 5x7 bitmap font.
 module ui_osd #(
     parameter integer H_ACTIVE = 1920,
     parameter integer V_ACTIVE = 1080
@@ -29,12 +29,13 @@ module ui_osd #(
     reg overlay;
     reg [7:0] ch;
     reg [2:0] row;
-    reg [1:0] col;
+    reg [2:0] col;
     reg [2:0] line_no;
     reg [3:0] char_no;
-    reg [2:0] glyph_row;
-    reg [1:0] glyph_col;
-    reg [2:0] glyph;
+    reg [11:0] text_x;
+    reg [11:0] text_y;
+    reg text_active;
+    reg [4:0] glyph;
     reg glyph_on;
     reg [9:0] exposure_bar_width;
     reg [9:0] gain_bar_width;
@@ -55,28 +56,149 @@ module ui_osd #(
         end
     endfunction
 
-    function [2:0] glyph_bits;
+    // 5x7 font; each dot occupies 4x4 output pixels (20x28 per glyph).
+    function [4:0] glyph_bits;
         input [7:0] c;
         input [2:0] r;
         begin
-            glyph_bits = 3'b000;
+            glyph_bits = 5'b00000;
             case(c)
-                "A": case(r) 0:glyph_bits=3'b010;1:glyph_bits=3'b101;2:glyph_bits=3'b111;3:glyph_bits=3'b101;4:glyph_bits=3'b101; endcase
-                "E": case(r) 0:glyph_bits=3'b111;1:glyph_bits=3'b100;2:glyph_bits=3'b110;3:glyph_bits=3'b100;4:glyph_bits=3'b111; endcase
-                "F": case(r) 0:glyph_bits=3'b111;1:glyph_bits=3'b100;2:glyph_bits=3'b110;3:glyph_bits=3'b100;4:glyph_bits=3'b100; endcase
-                "G": case(r) 0:glyph_bits=3'b111;1:glyph_bits=3'b100;2:glyph_bits=3'b101;3:glyph_bits=3'b101;4:glyph_bits=3'b111; endcase
-                "I": case(r) 0:glyph_bits=3'b111;1:glyph_bits=3'b010;2:glyph_bits=3'b010;3:glyph_bits=3'b010;4:glyph_bits=3'b111; endcase
-                "L": case(r) 0:glyph_bits=3'b100;1:glyph_bits=3'b100;2:glyph_bits=3'b100;3:glyph_bits=3'b100;4:glyph_bits=3'b111; endcase
-                "M": case(r) 0:glyph_bits=3'b101;1:glyph_bits=3'b111;2:glyph_bits=3'b111;3:glyph_bits=3'b101;4:glyph_bits=3'b101; endcase
-                "N": case(r) 0:glyph_bits=3'b101;1:glyph_bits=3'b111;2:glyph_bits=3'b111;3:glyph_bits=3'b111;4:glyph_bits=3'b101; endcase
-                "O": case(r) 0:glyph_bits=3'b111;1:glyph_bits=3'b101;2:glyph_bits=3'b101;3:glyph_bits=3'b101;4:glyph_bits=3'b111; endcase
-                "P": case(r) 0:glyph_bits=3'b110;1:glyph_bits=3'b101;2:glyph_bits=3'b110;3:glyph_bits=3'b100;4:glyph_bits=3'b100; endcase
-                "R": case(r) 0:glyph_bits=3'b110;1:glyph_bits=3'b101;2:glyph_bits=3'b110;3:glyph_bits=3'b101;4:glyph_bits=3'b101; endcase
-                "S": case(r) 0:glyph_bits=3'b111;1:glyph_bits=3'b100;2:glyph_bits=3'b111;3:glyph_bits=3'b001;4:glyph_bits=3'b111; endcase
-                "T": case(r) 0:glyph_bits=3'b111;1:glyph_bits=3'b010;2:glyph_bits=3'b010;3:glyph_bits=3'b010;4:glyph_bits=3'b010; endcase
-                "U": case(r) 0:glyph_bits=3'b101;1:glyph_bits=3'b101;2:glyph_bits=3'b101;3:glyph_bits=3'b101;4:glyph_bits=3'b111; endcase
-                "X": case(r) 0:glyph_bits=3'b101;1:glyph_bits=3'b101;2:glyph_bits=3'b010;3:glyph_bits=3'b101;4:glyph_bits=3'b101; endcase
-                default: glyph_bits = 3'b000;
+                "A": case(r)
+                    3'd0: glyph_bits = 5'b01110;
+                    3'd1: glyph_bits = 5'b10001;
+                    3'd2: glyph_bits = 5'b10001;
+                    3'd3: glyph_bits = 5'b11111;
+                    3'd4: glyph_bits = 5'b10001;
+                    3'd5: glyph_bits = 5'b10001;
+                    3'd6: glyph_bits = 5'b10001;
+                endcase
+                "E": case(r)
+                    3'd0: glyph_bits = 5'b11111;
+                    3'd1: glyph_bits = 5'b10000;
+                    3'd2: glyph_bits = 5'b10000;
+                    3'd3: glyph_bits = 5'b11110;
+                    3'd4: glyph_bits = 5'b10000;
+                    3'd5: glyph_bits = 5'b10000;
+                    3'd6: glyph_bits = 5'b11111;
+                endcase
+                "F": case(r)
+                    3'd0: glyph_bits = 5'b11111;
+                    3'd1: glyph_bits = 5'b10000;
+                    3'd2: glyph_bits = 5'b10000;
+                    3'd3: glyph_bits = 5'b11110;
+                    3'd4: glyph_bits = 5'b10000;
+                    3'd5: glyph_bits = 5'b10000;
+                    3'd6: glyph_bits = 5'b10000;
+                endcase
+                "G": case(r)
+                    3'd0: glyph_bits = 5'b01110;
+                    3'd1: glyph_bits = 5'b10001;
+                    3'd2: glyph_bits = 5'b10000;
+                    3'd3: glyph_bits = 5'b10111;
+                    3'd4: glyph_bits = 5'b10001;
+                    3'd5: glyph_bits = 5'b10001;
+                    3'd6: glyph_bits = 5'b01110;
+                endcase
+                "I": case(r)
+                    3'd0: glyph_bits = 5'b11111;
+                    3'd1: glyph_bits = 5'b00100;
+                    3'd2: glyph_bits = 5'b00100;
+                    3'd3: glyph_bits = 5'b00100;
+                    3'd4: glyph_bits = 5'b00100;
+                    3'd5: glyph_bits = 5'b00100;
+                    3'd6: glyph_bits = 5'b11111;
+                endcase
+                "L": case(r)
+                    3'd0: glyph_bits = 5'b10000;
+                    3'd1: glyph_bits = 5'b10000;
+                    3'd2: glyph_bits = 5'b10000;
+                    3'd3: glyph_bits = 5'b10000;
+                    3'd4: glyph_bits = 5'b10000;
+                    3'd5: glyph_bits = 5'b10000;
+                    3'd6: glyph_bits = 5'b11111;
+                endcase
+                "M": case(r)
+                    3'd0: glyph_bits = 5'b10001;
+                    3'd1: glyph_bits = 5'b11011;
+                    3'd2: glyph_bits = 5'b10101;
+                    3'd3: glyph_bits = 5'b10101;
+                    3'd4: glyph_bits = 5'b10001;
+                    3'd5: glyph_bits = 5'b10001;
+                    3'd6: glyph_bits = 5'b10001;
+                endcase
+                "N": case(r)
+                    3'd0: glyph_bits = 5'b10001;
+                    3'd1: glyph_bits = 5'b10001;
+                    3'd2: glyph_bits = 5'b11001;
+                    3'd3: glyph_bits = 5'b10101;
+                    3'd4: glyph_bits = 5'b10011;
+                    3'd5: glyph_bits = 5'b10001;
+                    3'd6: glyph_bits = 5'b10001;
+                endcase
+                "O": case(r)
+                    3'd0: glyph_bits = 5'b01110;
+                    3'd1: glyph_bits = 5'b10001;
+                    3'd2: glyph_bits = 5'b10001;
+                    3'd3: glyph_bits = 5'b10001;
+                    3'd4: glyph_bits = 5'b10001;
+                    3'd5: glyph_bits = 5'b10001;
+                    3'd6: glyph_bits = 5'b01110;
+                endcase
+                "P": case(r)
+                    3'd0: glyph_bits = 5'b11110;
+                    3'd1: glyph_bits = 5'b10001;
+                    3'd2: glyph_bits = 5'b10001;
+                    3'd3: glyph_bits = 5'b11110;
+                    3'd4: glyph_bits = 5'b10000;
+                    3'd5: glyph_bits = 5'b10000;
+                    3'd6: glyph_bits = 5'b10000;
+                endcase
+                "R": case(r)
+                    3'd0: glyph_bits = 5'b11110;
+                    3'd1: glyph_bits = 5'b10001;
+                    3'd2: glyph_bits = 5'b10001;
+                    3'd3: glyph_bits = 5'b11110;
+                    3'd4: glyph_bits = 5'b10100;
+                    3'd5: glyph_bits = 5'b10010;
+                    3'd6: glyph_bits = 5'b10001;
+                endcase
+                "S": case(r)
+                    3'd0: glyph_bits = 5'b01111;
+                    3'd1: glyph_bits = 5'b10000;
+                    3'd2: glyph_bits = 5'b10000;
+                    3'd3: glyph_bits = 5'b01110;
+                    3'd4: glyph_bits = 5'b00001;
+                    3'd5: glyph_bits = 5'b00001;
+                    3'd6: glyph_bits = 5'b11110;
+                endcase
+                "T": case(r)
+                    3'd0: glyph_bits = 5'b11111;
+                    3'd1: glyph_bits = 5'b00100;
+                    3'd2: glyph_bits = 5'b00100;
+                    3'd3: glyph_bits = 5'b00100;
+                    3'd4: glyph_bits = 5'b00100;
+                    3'd5: glyph_bits = 5'b00100;
+                    3'd6: glyph_bits = 5'b00100;
+                endcase
+                "U": case(r)
+                    3'd0: glyph_bits = 5'b10001;
+                    3'd1: glyph_bits = 5'b10001;
+                    3'd2: glyph_bits = 5'b10001;
+                    3'd3: glyph_bits = 5'b10001;
+                    3'd4: glyph_bits = 5'b10001;
+                    3'd5: glyph_bits = 5'b10001;
+                    3'd6: glyph_bits = 5'b01110;
+                endcase
+                "X": case(r)
+                    3'd0: glyph_bits = 5'b10001;
+                    3'd1: glyph_bits = 5'b10001;
+                    3'd2: glyph_bits = 5'b01010;
+                    3'd3: glyph_bits = 5'b00100;
+                    3'd4: glyph_bits = 5'b01010;
+                    3'd5: glyph_bits = 5'b10001;
+                    3'd6: glyph_bits = 5'b10001;
+                endcase
+                default: glyph_bits = 5'b00000;
             endcase
         end
     endfunction
@@ -86,7 +208,14 @@ module ui_osd #(
         overlay = 1'b0;
         ch = 8'h20;
         glyph_on = 1'b0;
-        glyph = 3'b000;
+        glyph = 5'b00000;
+        line_no = 3'd0;
+        char_no = 4'd0;
+        row = 3'd0;
+        col = 3'd0;
+        text_x = 12'd0;
+        text_y = 12'd0;
+        text_active = 1'b0;
         // Panel: x=24..492, y=24..300.
         if(I_menu_enable && (x >= 12'd24) && (x < 12'd492) && (y >= 12'd24) && (y < 12'd300)) begin
             overlay = 1'b1;
@@ -102,21 +231,29 @@ module ui_osd #(
             else if((y >= 12'd180) && (y < 12'd216) && (I_menu_index == 2'd3))
                 pixel = 24'h205080;
 
-            if((x >= 12'd44) && (x < 12'd460) && (y >= 12'd38) && (y < 12'd68)) begin
-                line_no = 3'd0; char_no = (x - 12'd44) / 8; row = (y - 12'd42) / 6; col = ((x - 12'd44) % 8) / 2;
-                ch = text_char(line_no, char_no); glyph = glyph_bits(ch, row); glyph_on = (row < 5) && (col < 3) && ((glyph & (3'b100 >> col)) != 0);
-            end else if((x >= 12'd44) && (x < 12'd460) && (y >= 12'd76) && (y < 12'd106)) begin
-                line_no = 3'd1; char_no = (x - 12'd44) / 8; row = (y - 12'd78) / 6; col = ((x - 12'd44) % 8) / 2;
-                ch = text_char(line_no, char_no); glyph = glyph_bits(ch, row); glyph_on = (char_no < 8) && (row < 5) && (col < 3) && ((glyph & (3'b100 >> col)) != 0);
-            end else if((x >= 12'd44) && (x < 12'd460) && (y >= 12'd112) && (y < 12'd142)) begin
-                line_no = 3'd2; char_no = (x - 12'd44) / 8; row = (y - 12'd114) / 6; col = ((x - 12'd44) % 8) / 2;
-                ch = text_char(line_no, char_no); glyph = glyph_bits(ch, row); glyph_on = (char_no < 4) && (row < 5) && (col < 3) && ((glyph & (3'b100 >> col)) != 0);
-            end else if((x >= 12'd44) && (x < 12'd460) && (y >= 12'd148) && (y < 12'd178)) begin
-                line_no = 3'd3; char_no = (x - 12'd44) / 8; row = (y - 12'd150) / 6; col = ((x - 12'd44) % 8) / 2;
-                ch = text_char(line_no, char_no); glyph = glyph_bits(ch, row); glyph_on = (char_no < 4) && (row < 5) && (col < 3) && ((glyph & (3'b100 >> col)) != 0);
-            end else if((x >= 12'd44) && (x < 12'd460) && (y >= 12'd184) && (y < 12'd214)) begin
-                line_no = 3'd4; char_no = (x - 12'd44) / 8; row = (y - 12'd186) / 6; col = ((x - 12'd44) % 8) / 2;
-                ch = text_char(line_no, char_no); glyph = glyph_bits(ch, row); glyph_on = (char_no < 4) && (row < 5) && (col < 3) && ((glyph & (3'b100 >> col)) != 0);
+            // Eight 32-pixel character cells: 20-pixel glyph + 12-pixel gap.
+            // Bound x before taking bit slices to prevent character index wrap.
+            // All scaling uses bit slices; no divider is needed in this path.
+            if((x >= 12'd44) && (x < 12'd300)) begin
+                text_x = x - 12'd44;
+                char_no = {1'b0, text_x[7:5]};
+                col = text_x[4:2];
+                if((y >= 12'd40) && (y < 12'd68)) begin
+                    text_active = 1'b1; line_no = 3'd0; text_y = y - 12'd40;
+                end else if((y >= 12'd76) && (y < 12'd104)) begin
+                    text_active = 1'b1; line_no = 3'd1; text_y = y - 12'd76;
+                end else if((y >= 12'd112) && (y < 12'd140)) begin
+                    text_active = 1'b1; line_no = 3'd2; text_y = y - 12'd112;
+                end else if((y >= 12'd148) && (y < 12'd176)) begin
+                    text_active = 1'b1; line_no = 3'd3; text_y = y - 12'd148;
+                end else if((y >= 12'd184) && (y < 12'd212)) begin
+                    text_active = 1'b1; line_no = 3'd4; text_y = y - 12'd184;
+                end
+                row = text_y[4:2];
+                ch = text_char(line_no, char_no);
+                glyph = glyph_bits(ch, row);
+                glyph_on = text_active && (col < 3'd5) &&
+                           ((glyph & (5'b10000 >> col)) != 0);
             end
             if(glyph_on) pixel = 24'hffffff;
             // Exposure and gain value bars; the selected row is brighter.

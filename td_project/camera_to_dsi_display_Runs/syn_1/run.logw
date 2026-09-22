@@ -4,7 +4,7 @@
    Executable = F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/run.exe
    Built at =   16:32:07 Jun 12 2025
    Run by =     pc
-   Run Date =   Sun Sep 20 13:20:20 2026
+   Run Date =   Tue Sep 22 19:03:09 2026
 
    Run on =     CIRBUG
 ============================================================
@@ -16,11 +16,11 @@ All rights reserved.
 This product includes cryptographic software written by Eric Young (eay@cryptsoft.com)
 HDL-5007 WARNING: /* is inside a comment in ../../../user_source/hdl_source/isp/demosaic_4x_2_0/demosaic.v(89)
 HDL-5007 WARNING: /* is inside a comment in ../../../user_source/hdl_source/isp/demosaic_4x_2_0/demosaic.v(100)
-HDL-5317 WARNING: input port 'dft_jtag_tck' is not connected on this instance in ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(87)
+HDL-5317 WARNING: input port 'dft_jtag_tck' is not connected on this instance in ../../al_ip/RISCV_F6F1D1P0_0/RTL/MCU_521bd43d073e.v(126)
 HDL-5007 WARNING: actual bit length 24 differs from formal bit length 32 for port 'REG_DATA' in ../../../user_source/hdl_source/uics500_cfg/uicfgcs500.v(150)
 HDL-5007 WARNING: actual bit length 32 differs from formal bit length 7 for port 'I' in ../../../user_source/hdl_source/uics500_cfg/uicfgcs500.v(154)
 HDL-5007 WARNING: actual bit length 24 differs from formal bit length 32 for port 'REG_DATA' in ../../../user_source/hdl_source/uics500_cfg/uicfgcs500.v(160)
-HDL-5007 WARNING: actual bit length 4 differs from formal bit length 2 for port 'I_lane_invert' in ../../../user_source/hdl_source/design_top_wrapper.v(744)
+HDL-5007 WARNING: actual bit length 4 differs from formal bit length 2 for port 'I_lane_invert' in ../../../user_source/hdl_source/design_top_wrapper.v(865)
 HDL-5007 WARNING: actual bit length 32 differs from formal bit length 1 for port 'O_raw_tready' in ../../../user_source/hdl_source/isp/demosaic_4x_2_0/raw_matrix_3x3_buffer.v(149)
 HDL-5323 WARNING: input port 'dib[31]' remains unconnected for this instance in ../../../user_source/hdl_source/isp/demosaic_4x_2_0/zhenghe.v(167)
 HDL-5323 WARNING: input port 'dib[32]' remains unconnected for this instance in ../../../user_source/hdl_source/isp/demosaic_4x_2_0/line_buffer_demosaic.v(98)
@@ -106,7 +106,7 @@ HDL-5007 WARNING: actual bit length 32 differs from formal bit length 1 for port
 HDL-5007 WARNING: actual bit length 32 differs from formal bit length 1 for port 'web' in ../../../user_source/ip_source/w155_d512_fifo/soft_fifo_al_f58e8b3e1f3d.v(211)
 HDL-5007 WARNING: actual bit length 32 differs from formal bit length 9 for port 'addrb' in ../../../user_source/ip_source/w155_d512_fifo/soft_fifo_al_f58e8b3e1f3d.v(213)
 HDL-5317 WARNING: input port 'dib[154]' is not connected on this instance in ../../../user_source/ip_source/w155_d512_fifo/soft_fifo_al_f58e8b3e1f3d.v(201)
-HDL-5007 WARNING: actual bit length 16 differs from formal bit length 32 for port 'O_mc_app_wdf_mask' in ../../../user_source/hdl_source/design_top_wrapper.v(947)
+HDL-5007 WARNING: actual bit length 16 differs from formal bit length 32 for port 'O_mc_app_wdf_mask' in ../../../user_source/hdl_source/design_top_wrapper.v(1068)
 HDL-5314 WARNING: net 'rom_w52' does not have a driver in ../../../user_source/hdl_source/ph1p35_ddr/ddr2/src/rtl/phy/ph1p_ddrphy_init.v(36)
 HDL-5314 WARNING: net 'usr_vld[8]' does not have a driver in ../../../user_source/hdl_source/ph1p35_ddr/ddr2/src/rtl/phy/ph1p_ddrphy_fast_init_wrapper.v(132)
 HDL-5314 WARNING: net 'init_gate[80]' does not have a driver in ../../../user_source/hdl_source/ph1p35_ddr/ddr2/src/rtl/phy/ph1p_ddrphy_fast_init_wrapper.v(134)
@@ -164,13 +164,13 @@ HDL-5007 WARNING: actual bit length ** differs from formal bit length *** for po
 HDL-5007 WARNING: actual bit length ** differs from formal bit length *** for port '**' in ../../../user_source/hdl_source/ph1p35_ddr/ddr2/src/rtl/mc/alc_mc_top_all.enc.sv(177)
 HDL-5369 WARNING: latch inferred for net '**' in ../../../user_source/hdl_source/ph1p35_ddr/ddr2/src/rtl/mc/alc_mc_top_all.enc.sv(2464)
 HDL-5323 WARNING: input port 'apb_psel' remains unconnected for this instance in ../../../user_source/hdl_source/ph1p35_ddr/ph1p35_324_ddr_wrapper.v(78)
-HDL-5369 WARNING: latch inferred for net 'line_no[2]' in ../../../user_source/hdl_source/ui_osd.v(84)
 HDL-5007 WARNING: actual bit length ** differs from formal bit length *** for port '**' in ../../../user_source/hdl_source/hdmi_1_4b_transmitter_core_wrapper.enc.v(3307)
-HDL-5317 WARNING: input port 'I_camera_black_level[9]' is not connected on this instance in ../../../user_source/hdl_source/design_top_wrapper.v(790)
-HDL-5323 WARNING: input port 'I_tdest[9]' remains unconnected for this instance in ../../../user_source/hdl_source/design_top_wrapper.v(854)
+HDL-5317 WARNING: input port 'I_camera_black_level[9]' is not connected on this instance in ../../../user_source/hdl_source/design_top_wrapper.v(911)
+HDL-5323 WARNING: input port 'I_tdest[9]' remains unconnected for this instance in ../../../user_source/hdl_source/design_top_wrapper.v(975)
 HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
 HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
-HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
+HDL-5106 WARNING: Initial value omitted on non-DFF net "scl_r" in ../../../user_source/hdl_source/uics500_cfg/uii2c.v(127) 
+HDL-5106 WARNING: Initial value omitted on non-DFF net "sda_o" in ../../../user_source/hdl_source/uics500_cfg/uii2c.v(135) 
 HDL-5106 WARNING: Initial value omitted on non-DFF net "scl_r" in ../../../user_source/hdl_source/uics500_cfg/uii2c.v(127) 
 HDL-5106 WARNING: Initial value omitted on non-DFF net "sda_o" in ../../../user_source/hdl_source/uics500_cfg/uii2c.v(135) 
 SYN-5065 WARNING: Register "genCA$op" in ../../../user_source/hdl_source/ph1p35_ddr/ddr2/src/rtl/mc/alc_mc_top_all.enc.sv(0) is described with both an asynchronous reset and an asynchronous set. It may have an uncertainty of the timing. Please conside rewriting code.
@@ -2004,12 +2004,6 @@ SYN-5025 WARNING: Using 0 for all undriven pins and nets
 SYN-5011 WARNING: Undriven pin: model "design_top_wrapper" / inst "u_isp_top/u_demosaic/raw_matrix_3x3_buffer_d/two_line_buffer[2]$line_buffer_demosaic_r1/blk_mem_gen_demosaic_r0/ram_c36c2ca3b3a7_Inst/username_inst" in ../../../user_source/hdl_source/isp/demosaic_4x_2_0/blk_mem_gen_demosaic/RTL/ram_c36c2ca3b3a7.v(91) / pin "bea[0]"
 SYN-5011 WARNING: Undriven pin: model "design_top_wrapper" / inst "u_isp_top/u_demosaic/raw_matrix_3x3_buffer_d/two_line_buffer[2]$line_buffer_demosaic_r1/blk_mem_gen_demosaic_r0/ram_c36c2ca3b3a7_Inst/username_inst" in ../../../user_source/hdl_source/isp/demosaic_4x_2_0/blk_mem_gen_demosaic/RTL/ram_c36c2ca3b3a7.v(91) / pin "beb[0]"
 SYN-5025 WARNING: Using 0 for all undriven pins and nets
-SYN-6021 CRITICAL-WARNING: 4 out of 21 logical ports has no user assigned specific location constraint.
-                           This may affect performance or in some cases cause damage to the device!
-                           Bitgen will abort. If insist on bitgen with risk, please 'set_param bitgen unconstr_io on' to avoid bitgen error.
-                           No ADC ports: I_mcu_jtag_tck, I_mcu_jtag_tdi, I_mcu_jtag_tms, O_mcu_jtag_tdo.
-                           No ADC ports will be assigned to random location as below:
-                           I_mcu_jtag_tck:H2, I_mcu_jtag_tdi:N4, I_mcu_jtag_tms:V6, O_mcu_jtag_tdo:J15.
 SYN-5041 WARNING: Ram Inst: u_mc_to_user_interface/U_w155_d512_fifo/soft_fifo_al_f58e8b3e1f3d_Inst/ram_inst/ramread0_syn_22 has wrong RAM_STYLE/ROM_STYLE setting, AUTO is really used in ram inference
 SYN-5041 WARNING: Ram Inst: u_video_in/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/ram_inst/ramread0_syn_21 has wrong RAM_STYLE/ROM_STYLE setting, AUTO is really used in ram inference
 SYN-5041 WARNING: Ram Inst: u_video_out/U_w128_d512_fifo/soft_fifo_al_4057d6b76aa6_Inst/ram_inst/ramread0_syn_21 has wrong RAM_STYLE/ROM_STYLE setting, AUTO is really used in ram inference

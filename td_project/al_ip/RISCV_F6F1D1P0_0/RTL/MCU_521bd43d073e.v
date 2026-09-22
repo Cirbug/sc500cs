@@ -18,8 +18,47 @@ module MCU_521bd43d073e
 	input         jtag_tdi,
 	output        jtag_tdo,
 
+	input         gpio0_in,
+	output        gpio0_out,
+	output        gpio0_dir,
+
+	input         gpio1_in,
+	output        gpio1_out,
+	output        gpio1_dir,
+
+	input         gpio2_in,
+	output        gpio2_out,
+	output        gpio2_dir,
+
+	input         gpio3_in,
+	output        gpio3_out,
+	output        gpio3_dir,
+
+	input         gpio4_in,
+	output        gpio4_out,
+	output        gpio4_dir,
+
+	input         gpio5_in,
+	output        gpio5_out,
+	output        gpio5_dir,
+
+	input         gpio6_in,
+	output        gpio6_out,
+	output        gpio6_dir,
+
+	input         gpio7_in,
+	output        gpio7_out,
+	output        gpio7_dir,
+
 	output        uart1_tx,
 	input         uart1_rx,
+
+	input         i2c_sda_in,
+	output        i2c_sda_out,
+	output        i2c_sda_sel,
+	input         i2c_scl_in,
+	output        i2c_scl_out,
+	output        i2c_scl_sel,
 
 	output        qspi1_clk,
 	output        qspi1_ss,
@@ -105,29 +144,49 @@ module MCU_521bd43d073e
 		.jtag_tdi(jtag_tdi),
 		.jtag_tdo(jtag_tdo),
 
-		.gpio0_in(1'h0),
+		.gpio0_in(gpio0_in),
+		.gpio0_out(gpio0_out),
+		.gpio0_dir(gpio0_dir),
 
-		.gpio1_in(1'h0),
+		.gpio1_in(gpio1_in),
+		.gpio1_out(gpio1_out),
+		.gpio1_dir(gpio1_dir),
 
-		.gpio2_in(1'h0),
+		.gpio2_in(gpio2_in),
+		.gpio2_out(gpio2_out),
+		.gpio2_dir(gpio2_dir),
 
-		.gpio3_in(1'h0),
+		.gpio3_in(gpio3_in),
+		.gpio3_out(gpio3_out),
+		.gpio3_dir(gpio3_dir),
 
-		.gpio4_in(1'h0),
+		.gpio4_in(gpio4_in),
+		.gpio4_out(gpio4_out),
+		.gpio4_dir(gpio4_dir),
 
-		.gpio5_in(1'h0),
+		.gpio5_in(gpio5_in),
+		.gpio5_out(gpio5_out),
+		.gpio5_dir(gpio5_dir),
 
-		.gpio6_in(1'h0),
+		.gpio6_in(gpio6_in),
+		.gpio6_out(gpio6_out),
+		.gpio6_dir(gpio6_dir),
 
-		.gpio7_in(1'h0),
+		.gpio7_in(gpio7_in),
+		.gpio7_out(gpio7_out),
+		.gpio7_dir(gpio7_dir),
 
 		.uart0_rx(1'h0),
 
 		.uart1_tx(uart1_tx),
 		.uart1_rx(uart1_rx),
 
-		.i2c_sda_in(1'h0),
-		.i2c_scl_in(1'h0),
+		.i2c_sda_in(i2c_sda_in),
+		.i2c_sda_out(i2c_sda_out),
+		.i2c_sda_sel(i2c_sda_sel),
+		.i2c_scl_in(i2c_scl_in),
+		.i2c_scl_out(i2c_scl_out),
+		.i2c_scl_sel(i2c_scl_sel),
 
 		.qspi1_clk(qspi1_clk),
 		.qspi1_ss(qspi1_ss),

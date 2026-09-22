@@ -8,11 +8,20 @@ module design_top_wrapper (
 
     input wire        I_mcu_uart_rx,
     output wire       O_mcu_uart_tx,
+    output wire       O_usb_sclk,
+    input  wire       I_usb_miso,
+    output wire       O_usb_mosi,
+    output wire       O_usb_ss_n,
+    input  wire       I_usb_int_n,
+    output wire       O_usb_res_n,
       
     output wire       O_cam_scl,
     inout  wire       IO_cam_sda,
     output wire       O_cam_24m,
     output wire       O_cam_rst,
+    // Lens actuator I2C: SCL=K1, SDA=K2.
+    output wire       O_lens_scl,
+    inout  wire       IO_lens_sda,
       
     input wire [3:0]  I_button,
 
@@ -169,9 +178,22 @@ module design_top_wrapper (
     wire [31:0] S_mcu_prdata;
     wire        S_mcu_pready;
     wire        S_mcu_pslverr;
-    // MCU AHB/QSPI ports enabled in the regenerated IP.  AHB has no slave in
-    // this design, so its return channel is tied to an always-ready response.
+    // MCU AHB/QSPI/GPIO ports enabled in the regenerated IP.  AHB has no
+    // slave in this design, so its return channel is tied to an always-ready
+    // response. GPIO0..GPIO5 are used as a diagnostic bit-banged SPI link to
+    // MAX3421E; GPIO6/7 and the MCU I2C pins are intentionally unused.
     wire        S_mcu_core_sysrst;
+    wire        S_mcu_gpio0_in, S_mcu_gpio1_in, S_mcu_gpio3_in;
+    wire        S_mcu_gpio4_in, S_mcu_gpio6_in, S_mcu_gpio7_in;
+    // Preserve the two external SPI inputs so ChipWatch can probe them.
+    (* keep *) wire S_mcu_gpio2_in;
+    (* keep *) wire S_mcu_gpio5_in;
+    wire        S_mcu_gpio0_out, S_mcu_gpio1_out, S_mcu_gpio2_out, S_mcu_gpio3_out;
+    wire        S_mcu_gpio4_out, S_mcu_gpio5_out, S_mcu_gpio6_out, S_mcu_gpio7_out;
+    wire        S_mcu_gpio0_dir, S_mcu_gpio1_dir, S_mcu_gpio2_dir, S_mcu_gpio3_dir;
+    wire        S_mcu_gpio4_dir, S_mcu_gpio5_dir, S_mcu_gpio6_dir, S_mcu_gpio7_dir;
+    wire        S_mcu_i2c_sda_out, S_mcu_i2c_sda_sel;
+    wire        S_mcu_i2c_scl_out, S_mcu_i2c_scl_sel;
     wire        S_mcu_qspi1_clk;
     wire        S_mcu_qspi1_ss;
     wire        S_mcu_qspi1_d0_out;
@@ -179,6 +201,36 @@ module design_top_wrapper (
     wire        S_mcu_qspi1_d2_out;
     wire        S_mcu_qspi1_d3_out;
     wire [3:0]  S_mcu_qspi1_dir;
+    wire        S_apb_usb_res_n;
+    wire        S_apb_usb_spi_enable;
+    wire        S_lens_cmd;
+    wire [13:0] S_lens_position;
+    wire        S_lens_busy;
+    wire        S_lens_init_done;
+    wire        S_lens_error;
+    wire [31:0] S_focus_metric_pix;
+    wire [31:0] S_focus_metric_apb;
+    wire        S_focus_frame_toggle;
+    reg [31:0]  S_focus_metric_sync1;
+    reg [31:0]  S_focus_metric_sync2;
+    reg         S_cam_cfg_done_apb1;
+    reg         S_cam_cfg_done_apb2;
+    // GPIO bit-banged SPI mapping:
+    //   GPIO0=SCLK, GPIO1=MOSI, GPIO2=MISO, GPIO3=CS,
+    //   GPIO4=/RES, GPIO5=INT.  Keep CS deasserted and /RES asserted while
+    //   the FPGA is in reset; firmware configures the GPIO levels before probing.
+    assign S_mcu_gpio0_in = 1'b0;
+    assign S_mcu_gpio1_in = 1'b0;
+    assign S_mcu_gpio2_in = I_usb_miso;
+    assign S_mcu_gpio3_in = 1'b0;
+    assign S_mcu_gpio4_in = 1'b0;
+    assign S_mcu_gpio5_in = I_usb_int_n;
+    assign S_mcu_gpio6_in = 1'b0;
+    assign S_mcu_gpio7_in = 1'b0;
+    assign O_usb_sclk = S_rst_n ? S_mcu_gpio0_out : 1'b0;
+    assign O_usb_mosi = S_rst_n ? S_mcu_gpio1_out : 1'b0;
+    assign O_usb_ss_n = S_rst_n ? S_mcu_gpio3_out : 1'b1;
+    assign O_usb_res_n = S_rst_n ? S_mcu_gpio4_out : 1'b0;
     (* keep *) wire        S_mcu_ahb_clk;
     (* keep *) wire [1:0]  S_mcu_htrans;
     (* keep *) wire        S_mcu_hwrite;
@@ -214,6 +266,24 @@ module design_top_wrapper (
     wire        S_osd_hsync;
     wire        S_osd_de;
     wire [23:0] S_osd_data;
+
+    assign S_focus_metric_apb = S_focus_metric_sync2;
+
+    // Synchronize the frame metric and camera-config completion into the MCU
+    // APB clock domain.  The metric remains stable for a complete frame.
+    always @(posedge S_mcu_apb_clk or negedge S_rst_n) begin
+        if(!S_rst_n) begin
+            S_focus_metric_sync1 <= 32'd0;
+            S_focus_metric_sync2 <= 32'd0;
+            S_cam_cfg_done_apb1  <= 1'b0;
+            S_cam_cfg_done_apb2  <= 1'b0;
+        end else begin
+            S_focus_metric_sync1 <= S_focus_metric_pix;
+            S_focus_metric_sync2 <= S_focus_metric_sync1;
+            S_cam_cfg_done_apb1  <= S_cam_cfg_done;
+            S_cam_cfg_done_apb2  <= S_cam_cfg_done_apb1;
+        end
+    end
 
     wire[23:0]  S_video_rd_data;
     reg         S_dbg_raw_seen;
@@ -617,15 +687,46 @@ module design_top_wrapper (
         .jtag_tms    ( 1'b0               ),
         .jtag_tdi    ( 1'b0               ),
         .jtag_tdo    (                    ),
+        .gpio0_in    ( S_mcu_gpio0_in    ),
+        .gpio0_out   ( S_mcu_gpio0_out   ),
+        .gpio0_dir   ( S_mcu_gpio0_dir   ),
+        .gpio1_in    ( S_mcu_gpio1_in    ),
+        .gpio1_out   ( S_mcu_gpio1_out   ),
+        .gpio1_dir   ( S_mcu_gpio1_dir   ),
+        .gpio2_in    ( S_mcu_gpio2_in    ),
+        .gpio2_out   ( S_mcu_gpio2_out   ),
+        .gpio2_dir   ( S_mcu_gpio2_dir   ),
+        .gpio3_in    ( S_mcu_gpio3_in    ),
+        .gpio3_out   ( S_mcu_gpio3_out   ),
+        .gpio3_dir   ( S_mcu_gpio3_dir   ),
+        .gpio4_in    ( S_mcu_gpio4_in    ),
+        .gpio4_out   ( S_mcu_gpio4_out   ),
+        .gpio4_dir   ( S_mcu_gpio4_dir   ),
+        .gpio5_in    ( S_mcu_gpio5_in    ),
+        .gpio5_out   ( S_mcu_gpio5_out   ),
+        .gpio5_dir   ( S_mcu_gpio5_dir   ),
+        .gpio6_in    ( S_mcu_gpio6_in    ),
+        .gpio6_out   ( S_mcu_gpio6_out   ),
+        .gpio6_dir   ( S_mcu_gpio6_dir   ),
+        .gpio7_in    ( S_mcu_gpio7_in    ),
+        .gpio7_out   ( S_mcu_gpio7_out   ),
+        .gpio7_dir   ( S_mcu_gpio7_dir   ),
         .uart1_tx    ( O_mcu_uart_tx      ),
         .uart1_rx    ( I_mcu_uart_rx      ),
-        // No external QSPI flash is used by this image.  Keep input pins at
-        // a defined level; the generated QSPI outputs remain available for
-        // future flash/XIP connection.
+        .i2c_sda_in  ( 1'b0               ),
+        .i2c_sda_out ( S_mcu_i2c_sda_out  ),
+        .i2c_sda_sel ( S_mcu_i2c_sda_sel  ),
+        .i2c_scl_in  ( 1'b0               ),
+        .i2c_scl_out ( S_mcu_i2c_scl_out  ),
+        .i2c_scl_sel ( S_mcu_i2c_scl_sel  ),
+        // QSPI1 single-SPI mode: D0=MOSI, D1=MISO. QSPI0 boot flash is separate.
         .qspi1_clk   ( S_mcu_qspi1_clk    ),
         .qspi1_ss    ( S_mcu_qspi1_ss     ),
-        .qspi1_d0_in ( 1'b0               ),
-        .qspi1_d1_in ( 1'b0               ),
+        // Diagnostic mapping: feed MISO to both possible QSPI receive lanes.
+        // Software must enable PINCTL.FDUPSPI before reading MAX3421E.
+        // This does not implement bidirectional transfers on the MOSI pin.
+        .qspi1_d0_in ( I_usb_miso         ),
+        .qspi1_d1_in ( I_usb_miso         ),
         .qspi1_d2_in ( 1'b0               ),
         .qspi1_d3_in ( 1'b0               ),
         .qspi1_d0_out( S_mcu_qspi1_d0_out ),
@@ -667,10 +768,29 @@ module design_top_wrapper (
         .clic_irq    ( 23'd0              )
     );
 
+    lens_i2c_ctrl #(
+        .CLK_DIV       ( 16'd499 ), // 50 MHz APB clock -> approximately 100 kHz I2C
+        .INIT_POSITION ( 14'd8192 )
+    ) u_lens_i2c_ctrl (
+        .I_clk         ( S_mcu_apb_clk ),
+        .I_rst_n       ( S_rst_n ),
+        .I_cfg_done    ( S_cam_cfg_done_apb2 ),
+        .I_cmd_valid   ( S_lens_cmd ),
+        .I_position    ( S_lens_position ),
+        .O_scl         ( O_lens_scl ),
+        .IO_sda        ( IO_lens_sda ),
+        .O_busy        ( S_lens_busy ),
+        .O_init_done   ( S_lens_init_done ),
+        .O_error       ( S_lens_error )
+    );
+
     mcu_ui_apb_regs u_mcu_ui_apb_regs (
         .I_clk         ( S_mcu_apb_clk ),
         .I_rst         ( ~S_rst_n ),
         .I_button      ( I_button ),
+        .I_usb_int_n   ( I_usb_int_n ),
+        .O_usb_res_n   ( S_apb_usb_res_n ),
+        .O_usb_spi_enable ( S_apb_usb_spi_enable ),
         .I_paddr       ( S_mcu_paddr ),
         .I_psel        ( S_mcu_psel ),
         .I_penable     ( S_mcu_penable ),
@@ -685,7 +805,13 @@ module design_top_wrapper (
         .O_info_enable ( S_ui_info_apb ),
         .O_menu_index  ( S_ui_index_apb ),
         .O_exposure    ( S_ui_ae_apb ),
-        .O_gain        ( S_ui_ag_apb )
+        .O_gain        ( S_ui_ag_apb ),
+        .I_lens_busy   ( S_lens_busy ),
+        .I_lens_init_done( S_lens_init_done ),
+        .I_lens_error  ( S_lens_error ),
+        .I_focus_metric( S_focus_metric_apb ),
+        .O_lens_cmd    ( S_lens_cmd ),
+        .O_lens_position( S_lens_position )
     );
 
 
@@ -1026,6 +1152,17 @@ isp_top u_isp_top (
         .O_hdmi_hsync    ( S_hdmi_out_hsync   ),
         .O_hdmi_de       ( S_hdmi_out_de      ),
         .O_hdmi_data     ( S_hdmi_out_data    )
+    );
+
+    // Use the camera image before OSD overlay for contrast autofocus.
+    focus_metric u_focus_metric (
+        .I_clk          ( S_hdmi_pixel_clk ),
+        .I_rst_n        ( S_hdmi_rst_n ),
+        .I_vsync        ( S_hdmi_out_vsync ),
+        .I_de           ( S_hdmi_out_de ),
+        .I_data         ( S_hdmi_out_data ),
+        .O_metric       ( S_focus_metric_pix ),
+        .O_frame_toggle ( S_focus_frame_toggle )
     );
 
     ui_osd #(

@@ -1,5 +1,14 @@
 `define JTAG_Available_521bd43d073e
+`define GPIO0_Available_521bd43d073e
+`define GPIO1_Available_521bd43d073e
+`define GPIO2_Available_521bd43d073e
+`define GPIO3_Available_521bd43d073e
+`define GPIO4_Available_521bd43d073e
+`define GPIO5_Available_521bd43d073e
+`define GPIO6_Available_521bd43d073e
+`define GPIO7_Available_521bd43d073e
 `define UART1_Available_521bd43d073e
+`define I2C_Available_521bd43d073e
 `define QSPI_Available_521bd43d073e
 `define AHB_Available_521bd43d073e
 `define APB_Available_521bd43d073e

@@ -2,18 +2,18 @@ module auto_created_cwc1 (
     cwc_rst, cwc_control, cwc_status, cwc_trig_clk, cwc_bus_din, ram_data_din
 );
 
-    localparam CWC_BUS_NUM = 4;
-    localparam CWC_BUS_DIN_NUM = 11;
-	localparam CWC_CTRL_LEN = 60;
-	localparam CWC_BUS_CTRL_LEN = 40;
-    localparam RAM_LEN = 11;
+    localparam CWC_BUS_NUM = 6;
+    localparam CWC_BUS_DIN_NUM = 6;
+	localparam CWC_CTRL_LEN = 44;
+	localparam CWC_BUS_CTRL_LEN = 24;
+    localparam RAM_LEN = 6;
     localparam INPUT_PIPE_NUM = 0;
     localparam OUTPUT_PIPE_NUM = 0;
     localparam RAM_DATA_DEPTH = 1024;
 	localparam CWC_CAPTURE_CTRL_EXIST = 0;
-    localparam integer CWC_BUS_WIDTH[0:3] = {1,8,1,1};
-    localparam integer CWC_BUS_DIN_POS[0:3] = {0,1,9,10};    
-    localparam integer CWC_BUS_CTRL_POS[0:3] = {0,4,32,36};    
+    localparam integer CWC_BUS_WIDTH[0:5] = {1,1,1,1,1,1};
+    localparam integer CWC_BUS_DIN_POS[0:5] = {0,1,2,3,4,5};    
+    localparam integer CWC_BUS_CTRL_POS[0:5] = {0,4,8,12,16,20};    
 
     input                                            cwc_rst;       
     input  [CWC_CTRL_LEN-1:0]                        cwc_control;   

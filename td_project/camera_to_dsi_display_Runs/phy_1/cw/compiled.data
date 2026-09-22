@@ -3,22 +3,16 @@
 <cwc_data version="1.0">
     <instance name="auto_created_cwc1">
         <watcher_nodes>
-            <bus name="u_mcu_ui_apb_regs/I_paddr[7:0]" original_name="u_mcu_ui_apb_regs/I_paddr[7:0]" bus_radix="0" synchronizable="true" color="#00ff00">
-                <net_in_bus name="[7]" original_name="u_mcu_ui_apb_regs/I_paddr[7]" synchronizable="true" color="#00ff00"/>
-                <net_in_bus name="[6]" original_name="u_mcu_ui_apb_regs/I_paddr[6]" synchronizable="true" color="#00ff00"/>
-                <net_in_bus name="[5]" original_name="u_mcu_ui_apb_regs/I_paddr[5]" synchronizable="true" color="#00ff00"/>
-                <net_in_bus name="[4]" original_name="u_mcu_ui_apb_regs/I_paddr[4]" synchronizable="true" color="#00ff00"/>
-                <net_in_bus name="[3]" original_name="u_mcu_ui_apb_regs/I_paddr[3]" synchronizable="true" color="#00ff00"/>
-                <net_in_bus name="[2]" original_name="u_mcu_ui_apb_regs/I_paddr[2]" synchronizable="true" color="#00ff00"/>
-                <net_in_bus name="[1]" original_name="u_mcu_ui_apb_regs/I_paddr[1]" synchronizable="true" color="#00ff00"/>
-                <net_in_bus name="[0]" original_name="u_mcu_ui_apb_regs/I_paddr[0]" synchronizable="true" color="#00ff00"/>
-            </bus>
-            <net name="u_mcu_ui_apb_regs/I_penable" original_name="u_mcu_ui_apb_regs/I_penable" synchronizable="true" color="#00ff00"/>
-            <net name="u_mcu_ui_apb_regs/I_psel" original_name="u_mcu_ui_apb_regs/I_psel" synchronizable="true" color="#00ff00"/>
-            <net name="u_mcu_ui_apb_regs/I_pwrite" original_name="u_mcu_ui_apb_regs/I_pwrite" synchronizable="true" color="#00ff00"/>
+            <net name="S_mcu_gpio0_out" original_name="S_mcu_gpio0_out" synchronizable="true" color="#00ff00"/>
+            <net name="S_mcu_gpio1_out" original_name="S_mcu_gpio1_out" synchronizable="true" color="#00ff00"/>
+            <net name="S_mcu_gpio2_in" original_name="S_mcu_gpio2_in" synchronizable="true" color="#00ff00"/>
+            <net name="S_mcu_gpio3_out" original_name="S_mcu_gpio3_out" synchronizable="true" color="#00ff00"/>
+            <net name="S_mcu_gpio4_out" original_name="S_mcu_gpio4_out" synchronizable="true" color="#00ff00"/>
+            <net name="S_mcu_gpio5_in" original_name="S_mcu_gpio5_in" synchronizable="true" color="#00ff00"/>
         </watcher_nodes>
         <trigger_config>
-            <net name="u_mcu_ui_apb_regs/I_psel" original_name="u_mcu_ui_apb_regs/I_psel"/>
+            <net name="S_mcu_gpio3_out" original_name="S_mcu_gpio3_out"/>
+            <net name="S_mcu_gpio4_out" original_name="S_mcu_gpio4_out"/>
         </trigger_config>
     </instance>
 </cwc_data>

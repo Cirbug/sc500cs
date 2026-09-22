@@ -2,30 +2,30 @@ standard
 ***Report Model: auto_created_cwc1 Device: PH1P35MDG324***
 
 Design Statistics
-#IO                       107   out of    160   66.88%
-  #input                   83
+#IO                        81   out of    160   50.62%
+  #input                   57
   #output                  24
   #inout                    0
-#lut                      202
-  #lut1                    11
-  #lut2                    68
-  #lut3                    14
-  #lut4                    23
-  #lut5                    36
-  #lut6                    50
-#reg                      272
-  #slice reg              272   out of  42432    0.64%
+#lut                      183
+  #lut1                    14
+  #lut2                    71
+  #lut3                    13
+  #lut4                    22
+  #lut5                    29
+  #lut6                    34
+#reg                      267
+  #slice reg              267   out of  42432    0.63%
   #pad reg                  0
 
 Utilization Statistics
-#slice*                   178   out of  21216    0.84%
-  #used ram                 8
+#slice                    160   out of  21216    0.75%
+  #used ram                 0
     #dram lut               0
-    #shifter lut            8
-  #used logic             170
-    #with luts*           139
+    #shifter lut            0
+  #used logic             160
+    #with luts            129
     #with adder             0
-    #reg only*             31
+    #reg only              31
 #f7mux                      0   out of  10608    0.00%
 #f8mux                      0   out of   5304    0.00%
 #eram                       1   out of    108    0.93%
@@ -49,16 +49,18 @@ Report Hierarchy Area:
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 |Instance                                                   |Module                 |logic lut |ripple  |seq     |eram    |dsp     |dram lut |shifter lut |f7mux   |f8mux   |pll     |ddr     |
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|top                                                        |auto_created_cwc1      |139       |0       |272     |1       |0       |0        |8           |0       |0       |0       |0       |
-|  wrapper_cwc_top                                          |top_cwc_hub            |139       |0       |272     |1       |0       |0        |8           |0       |0       |0       |0       |
-|    U_cwc                                                  |anlogic01_cwc          |135       |0       |229     |0       |0       |0        |0           |0       |0       |0       |0       |
+|top                                                        |auto_created_cwc1      |129       |0       |267     |1       |0       |0        |0           |0       |0       |0       |0       |
+|  wrapper_cwc_top                                          |top_cwc_hub            |129       |0       |267     |1       |0       |0        |0           |0       |0       |0       |0       |
+|    U_cwc                                                  |anlogic01_cwc          |125       |0       |204     |0       |0       |0        |0           |0       |0       |0       |0       |
 |      TRIG_ONLY_MODE$U_emb_ctrl                            |anlogic04_cwc_emb_ctrl |29        |0       |36      |0       |0       |0        |0           |0       |0       |0       |0       |
-|      U_cwc_bus_top                                        |anlogic02_cwc_bus_top  |50        |0       |83      |0       |0       |0        |0           |0       |0       |0       |0       |
+|      U_cwc_bus_top                                        |anlogic02_cwc_bus_top  |36        |0       |72      |0       |0       |0        |0           |0       |0       |0       |0       |
 |        CWC_BUS_DETECTOR[0]$NON_BUS_DETECTOR$U_cwc_bus_det |anlogic03_cwc_bus_det  |6         |0       |12      |0       |0       |0        |0           |0       |0       |0       |0       |
-|        CWC_BUS_DETECTOR[1]$BUS_DETECTOR$U_cwc_bus_det     |anlogic03_cwc_bus_det  |32        |0       |47      |0       |0       |0        |0           |0       |0       |0       |0       |
+|        CWC_BUS_DETECTOR[1]$NON_BUS_DETECTOR$U_cwc_bus_det |anlogic03_cwc_bus_det  |6         |0       |12      |0       |0       |0        |0           |0       |0       |0       |0       |
 |        CWC_BUS_DETECTOR[2]$NON_BUS_DETECTOR$U_cwc_bus_det |anlogic03_cwc_bus_det  |6         |0       |12      |0       |0       |0        |0           |0       |0       |0       |0       |
 |        CWC_BUS_DETECTOR[3]$NON_BUS_DETECTOR$U_cwc_bus_det |anlogic03_cwc_bus_det  |6         |0       |12      |0       |0       |0        |0           |0       |0       |0       |0       |
+|        CWC_BUS_DETECTOR[4]$NON_BUS_DETECTOR$U_cwc_bus_det |anlogic03_cwc_bus_det  |6         |0       |12      |0       |0       |0        |0           |0       |0       |0       |0       |
+|        CWC_BUS_DETECTOR[5]$NON_BUS_DETECTOR$U_cwc_bus_det |anlogic03_cwc_bus_det  |6         |0       |12      |0       |0       |0        |0           |0       |0       |0       |0       |
 |    U_cwc_ram                                              |anlogic05_cwc_ram      |1         |0       |0       |1       |0       |0        |0           |0       |0       |0       |0       |
 |    status_pipe                                            |anlogic06_pipe         |1         |0       |17      |0       |0       |0        |0           |0       |0       |0       |0       |
-|    watch_pipe                                             |anlogic06_pipe         |0         |0       |22      |0       |0       |0        |8           |0       |0       |0       |0       |
+|    watch_pipe                                             |anlogic06_pipe         |0         |0       |42      |0       |0       |0        |0           |0       |0       |0       |0       |
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+

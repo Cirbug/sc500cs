@@ -2,7 +2,7 @@
 | QoR metrics               |         value               |
 -----------------------------------------------------------
 | Timing                    |                             |
-|     Setup WNS             |         7422                |
+|     Setup WNS             |         7467                |
 |     Setup TNS             |            0                |
 |     Num of violated S-EP  |            0                |
 |     Hold WNS              |          502                |
@@ -10,7 +10,7 @@
 |     Num of violated H-EP  |            0                |
 -----------------------------------------------------------
 | Utilization               |                             |
-|     #registers            |          452                |
+|     #registers            |          372                |
 |     #luts                 |          103                |
 |     #lut1                 |           10                |
 |     #lut1(~A)             |            0                |
@@ -31,7 +31,7 @@
 |     #async_reg            |            0                |
 -----------------------------------------------------------
 | Top 10% datanet fanout#   |        17.20                |
-| dff(single fanout)->dff   |          213                |
+| dff(single fanout)->dff   |          165                |
 | dff(single fanout)->dram  |            0                |
 -----------------------------------------------------------
 | Over-quota path num*      |                             |
@@ -49,7 +49,7 @@ Logic Level Distribution
 ------------------------------------------------------------
   Clock        |  Period            |  0    |  1    |  2
 ------------------------------------------------------------
-  DeriveClock  |  20.000ns (50MHz)  |  859  |  241  |  143
+  DeriveClock  |  20.000ns (50MHz)  |  683  |  209  |  111
 ------------------------------------------------------------
 Hierarchical Rent Exponent Report
 +--------------------------------------------------------+

@@ -2,6 +2,18 @@
 set_pin_assignment	{ I_sys_clk }			{ LOCATION = C4; IOSTANDARD  = LVCMOS33; PULLTYPE = PULLUP; }
 set_pin_assignment	{ I_rst_n }				{ LOCATION = R10; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
 
+# MAX3421E module on GPIOB (3.3 V logic).
+set_pin_assignment { O_usb_sclk }  { LOCATION = R7;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
+set_pin_assignment { I_usb_miso }  { LOCATION = T5;  IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment { O_usb_mosi }  { LOCATION = U6;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
+set_pin_assignment { O_usb_ss_n }  { LOCATION = U4;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+set_pin_assignment { I_usb_int_n } { LOCATION = P9;  IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment { O_usb_res_n } { LOCATION = L16; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
+
+# Lens actuator I2C (separate from SC500 camera configuration I2C on K3/J3).
+set_pin_assignment { O_lens_scl } { LOCATION = K1; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+set_pin_assignment { IO_lens_sda } { LOCATION = K2; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+
 # Board USB-UART bridge.
 set_pin_assignment	{ I_mcu_uart_rx }		{ LOCATION = J1; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
 set_pin_assignment	{ O_mcu_uart_tx }		{ LOCATION = H1; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }

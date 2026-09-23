@@ -57,7 +57,9 @@ input  wire I_iic_req,//I_iic_req == 1 使能I2C传输
 input  wire I_iic_mode,//I_iic_mode = 1 随机读   I_iic_mode = 0 读当前寄存器或者页读
 output reg  O_iic_busy = 1'b0,//I2C控制器忙
 output reg  O_iic_bus_error, //I2C总线，无法读到正确ACK出错
-output reg  IO_iic_sda_dg
+output reg  IO_iic_sda_dg,
+output reg [2:0] O_wr_ack_mask, // ACK for write bytes 1..3
+output reg [7:0] O_first_nack_byte // 1-based; 0 means none
 );
 
 localparam IDLE    = 4'd0;//I2C 总线空闲状态
@@ -256,6 +258,26 @@ always @(posedge scl_clk or negedge I_rstn )begin
         default:
             IIC_S <= IDLE;
     	endcase
+    end
+end
+
+// Diagnostic latches are independent of the legacy error pulse and busy logic.
+// Hold every transaction's result through STOP/IDLE; clear at the next START.
+// Existing camera users may leave these optional outputs unconnected.
+always @(negedge scl_clk or negedge I_rstn) begin
+    if (!I_rstn) begin
+        O_wr_ack_mask <= 3'b000;
+        O_first_nack_byte <= 8'd0;
+    end else if (IIC_S == START) begin
+        O_wr_ack_mask <= 3'b000;
+        O_first_nack_byte <= 8'd0;
+    end else if (IIC_S == W_ACK) begin
+        if (sda_i == 1'b0) begin
+            if (wcnt >= 1 && wcnt <= 3)
+                O_wr_ack_mask[wcnt-1'b1] <= 1'b1;
+        end else if (O_first_nack_byte == 0) begin
+            O_first_nack_byte <= wcnt;
+        end
     end
 end
 

@@ -20,7 +20,7 @@ module design_top_wrapper (
     output wire       O_cam_24m,
     output wire       O_cam_rst,
     // Lens actuator I2C: SCL=K1, SDA=K2.
-    output wire       O_lens_scl,
+    inout  wire       O_lens_scl,
     inout  wire       IO_lens_sda,
       
     input wire [3:0]  I_button,
@@ -208,6 +208,10 @@ module design_top_wrapper (
     wire        S_lens_busy;
     wire        S_lens_init_done;
     wire        S_lens_error;
+    wire [31:0] S_lens_diag;
+    wire [31:0] S_lens_tx_count;
+    wire S_lens_retry, S_lens_read_adc;
+    wire [31:0] S_lens_adc_raw, S_lens_adc_count, S_lens_bus_state;
     wire [31:0] S_focus_metric_pix;
     wire [31:0] S_focus_metric_apb;
     wire        S_focus_frame_toggle;
@@ -215,10 +219,8 @@ module design_top_wrapper (
     reg [31:0]  S_focus_metric_sync2;
     reg         S_cam_cfg_done_apb1;
     reg         S_cam_cfg_done_apb2;
-    // GPIO bit-banged SPI mapping:
-    //   GPIO0=SCLK, GPIO1=MOSI, GPIO2=MISO, GPIO3=CS,
-    //   GPIO4=/RES, GPIO5=INT.  Keep CS deasserted and /RES asserted while
-    //   the FPGA is in reset; firmware configures the GPIO levels before probing.
+    // MAX3421E uses hardware QSPI1 in SINGLE mode. GPIO pins are no longer
+    // external SPI drivers. APB USB_CTRL releases /RES and enables SPI routing.
     assign S_mcu_gpio0_in = 1'b0;
     assign S_mcu_gpio1_in = 1'b0;
     assign S_mcu_gpio2_in = I_usb_miso;
@@ -227,10 +229,35 @@ module design_top_wrapper (
     assign S_mcu_gpio5_in = I_usb_int_n;
     assign S_mcu_gpio6_in = 1'b0;
     assign S_mcu_gpio7_in = 1'b0;
-    assign O_usb_sclk = S_rst_n ? S_mcu_gpio0_out : 1'b0;
-    assign O_usb_mosi = S_rst_n ? S_mcu_gpio1_out : 1'b0;
-    assign O_usb_ss_n = S_rst_n ? S_mcu_gpio3_out : 1'b1;
-    assign O_usb_res_n = S_rst_n ? S_mcu_gpio4_out : 1'b0;
+    // 1: continuous R7 clock test; 0: restore normal QSPI1 routing.
+    // 100 MHz / (2 * 500) = 100 kHz, independent of MCU/APB enable.
+    // CS stays inactive during this test: these clocks are not SPI commands.
+    localparam USB_SCLK_CONTINUOUS_TEST = 1'b1;
+    generate
+        if (USB_SCLK_CONTINUOUS_TEST) begin : g_usb_sclk_test
+            reg [8:0] count;
+            reg sclk;
+            always @(posedge S_100m_clk or negedge S_rst_n) begin
+                if (!S_rst_n) begin
+                    count <= 9'd0;
+                    sclk <= 1'b0;
+                end else if (count == 9'd499) begin
+                    count <= 9'd0;
+                    sclk <= ~sclk;
+                end else begin
+                    count <= count + 9'd1;
+                end
+            end
+            assign O_usb_sclk = sclk;
+            assign O_usb_mosi = 1'b0;
+            assign O_usb_ss_n = 1'b1;
+        end else begin : g_usb_qspi_normal
+            assign O_usb_sclk = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_clk : 1'b0;
+            assign O_usb_mosi = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_d0_out : 1'b0;
+            assign O_usb_ss_n = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_ss : 1'b1;
+        end
+    endgenerate
+    assign O_usb_res_n = S_rst_n && S_apb_usb_res_n;
     (* keep *) wire        S_mcu_ahb_clk;
     (* keep *) wire [1:0]  S_mcu_htrans;
     (* keep *) wire        S_mcu_hwrite;
@@ -776,12 +803,19 @@ module design_top_wrapper (
         .I_rst_n       ( S_rst_n ),
         .I_cfg_done    ( S_cam_cfg_done_apb2 ),
         .I_cmd_valid   ( S_lens_cmd ),
+        .I_retry       ( S_lens_retry ),
+        .I_read_adc    ( S_lens_read_adc ),
         .I_position    ( S_lens_position ),
         .O_scl         ( O_lens_scl ),
         .IO_sda        ( IO_lens_sda ),
         .O_busy        ( S_lens_busy ),
         .O_init_done   ( S_lens_init_done ),
-        .O_error       ( S_lens_error )
+        .O_error       ( S_lens_error ),
+        .O_diag        ( S_lens_diag ),
+        .O_tx_count    ( S_lens_tx_count ),
+        .O_adc_raw     ( S_lens_adc_raw ),
+        .O_adc_count   ( S_lens_adc_count ),
+        .O_bus_state   ( S_lens_bus_state )
     );
 
     mcu_ui_apb_regs u_mcu_ui_apb_regs (
@@ -809,8 +843,15 @@ module design_top_wrapper (
         .I_lens_busy   ( S_lens_busy ),
         .I_lens_init_done( S_lens_init_done ),
         .I_lens_error  ( S_lens_error ),
+        .I_lens_diag   ( S_lens_diag ),
+        .I_lens_tx_count( S_lens_tx_count ),
+        .I_lens_adc_raw( S_lens_adc_raw ),
+        .I_lens_adc_count( S_lens_adc_count ),
+        .I_lens_bus_state( S_lens_bus_state ),
         .I_focus_metric( S_focus_metric_apb ),
         .O_lens_cmd    ( S_lens_cmd ),
+        .O_lens_retry  ( S_lens_retry ),
+        .O_lens_read_adc( S_lens_read_adc ),
         .O_lens_position( S_lens_position )
     );
 

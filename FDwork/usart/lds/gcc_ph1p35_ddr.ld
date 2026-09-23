@@ -1,0 +1,235 @@
+/*
+* Copyright (c) 2023, Anlogic Inc. and Contributors. All rights reserved.
+*
+* SPDX-License-Identifier: BSD-3-Clause
+*/
+
+OUTPUT_ARCH( "riscv" )
+
+ENTRY( _start )
+
+MEMORY
+{
+ddr (rxa!w) : ORIGIN = 0xa0000000, LENGTH = 4M
+dlm (rxaw) : ORIGIN = 0x08008000, LENGTH = 16K
+}
+
+REGION_ALIAS("DDR", ddr)
+REGION_ALIAS("DLM", dlm)
+
+SECTIONS
+{
+/* To provide symbol __STACK_SIZE, __HEAP_SIZE and __SMP_CPU_CNT */
+PROVIDE(__STACK_SIZE = 1K);
+PROVIDE(__HEAP_SIZE = 1K);
+PROVIDE(__SMP_CPU_CNT = 1);
+__TOT_STACK_SIZE = __STACK_SIZE * __SMP_CPU_CNT;
+
+.init           : ALIGN(4)
+{
+KEEP (*(SORT_NONE(.init)))
+. = ALIGN(4);
+} >DLM AT>DLM
+
+.config_settings          : ALIGN(4)
+{
+KEEP (*(SORT_NONE(.config_settings_code)))
+. = ALIGN(4);
+} >DLM AT>DLM
+
+PROVIDE( _config_settings_load_start = LOADADDR(.config_settings));
+PROVIDE( _config_settings_vma_start = ADDR(.config_settings));
+PROVIDE( _config_settings_vma_end = ADDR(.config_settings) + SIZEOF(.config_settings));
+
+/* Code section located at DDR */
+.text           :
+{
+/* vector table locate at DDR */
+*(.vtable)
+*(.text.unlikely .text.unlikely.*)
+*(.text.startup .text.startup.*)
+*(.text .text.*)
+*(.gnu.linkonce.t.*)
+/* readonly data placed in DDR */
+. = ALIGN(8);
+*(.srodata.cst16)
+*(.srodata.cst8)
+*(.srodata.cst4)
+*(.srodata.cst2)
+*(.srodata .srodata.*)
+*(.rdata)
+*(.rodata .rodata.*)
+*(.gnu.linkonce.r.*)
+/* below sections are used for rt-thread */
+. = ALIGN(4);
+__rt_init_start = .;
+KEEP(*(SORT(.rti_fn*)))
+__rt_init_end = .;
+. = ALIGN(4);
+__fsymtab_start = .;
+KEEP(*(FSymTab))
+__fsymtab_end = .;
+. = ALIGN(4);
+__vsymtab_start = .;
+KEEP(*(VSymTab))
+__vsymtab_end = .;
+} >DDR AT>DDR
+
+.fini           :
+{
+KEEP (*(SORT_NONE(.fini)))
+} >DDR AT>DDR
+
+.preinit_array  :
+{
+PROVIDE_HIDDEN (__preinit_array_start = .);
+KEEP (*(.preinit_array))
+PROVIDE_HIDDEN (__preinit_array_end = .);
+} >DDR AT>DDR
+
+.init_array     :
+{
+PROVIDE_HIDDEN (__init_array_start = .);
+KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
+KEEP (*(.init_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .ctors))
+PROVIDE_HIDDEN (__init_array_end = .);
+} >DDR AT>DDR
+
+.fini_array     :
+{
+PROVIDE_HIDDEN (__fini_array_start = .);
+KEEP (*(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)))
+KEEP (*(.fini_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .dtors))
+PROVIDE_HIDDEN (__fini_array_end = .);
+} >DDR AT>DDR
+
+.ctors          :
+{
+/* gcc uses crtbegin.o to find the start of
+* the constructors, so we make sure it is
+* first.  Because this is a wildcard, it
+* doesn't matter if the user does not
+* actually link against crtbegin.o; the
+* linker won't look for a file to match a
+* wildcard.  The wildcard also means that it
+* doesn't matter which directory crtbegin.o
+* is in.
+*/
+KEEP (*crtbegin.o(.ctors))
+KEEP (*crtbegin?.o(.ctors))
+/* We don't want to include the .ctor section from
+* the crtend.o file until after the sorted ctors.
+* The .ctor section from the crtend file contains the
+* end of ctors marker and it must be last
+*/
+KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .ctors))
+KEEP (*(SORT(.ctors.*)))
+KEEP (*(.ctors))
+
+PROVIDE(__ctors_start__ = .);
+/* new GCC version uses .init_array */
+KEEP(*(SORT(.init_array.*)))
+KEEP(*(.init_array))
+PROVIDE(__ctors_end__ = .);
+} >DDR AT>DDR
+
+.dtors          :
+{
+KEEP (*crtbegin.o(.dtors))
+KEEP (*crtbegin?.o(.dtors))
+KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .dtors))
+KEEP (*(SORT(.dtors.*)))
+KEEP (*(.dtors))
+} >DDR AT>DDR
+
+PROVIDE( _ilm_lma = LOADADDR(.text) );
+PROVIDE( _ilm = ADDR(.text) );
+PROVIDE( _eilm = . );
+PROVIDE( _text_lma = LOADADDR(.text) );
+PROVIDE( _text = ADDR(.text) );
+PROVIDE( _text_start = ADDR(.text) );
+PROVIDE (_etext = .);
+PROVIDE( _text_size = _etext - _text);
+PROVIDE (__etext = .);
+PROVIDE (etext = .);
+
+.data            : ALIGN(8)
+{
+KEEP(*(.data.ctest*))
+*(.data .data.*)
+*(.gnu.linkonce.d.*)
+. = ALIGN(8);
+PROVIDE( __global_pointer$ = . + 0x800 );
+*(.sdata .sdata.* .sdata*)
+*(.gnu.linkonce.s.*)
+. = ALIGN(8);
+} >DDR AT>DDR
+
+.tdata           : ALIGN(8)
+{
+PROVIDE( __tls_base = . );
+*(.tdata .tdata.* .gnu.linkonce.td.*)
+} >DDR AT>DDR
+
+PROVIDE( _data_lma = LOADADDR(.data) );
+PROVIDE( _data = ADDR(.data) );
+PROVIDE( _edata = . );
+PROVIDE( _data_size = _edata - _data);
+PROVIDE( edata = . );
+
+PROVIDE( _fbss = . );
+PROVIDE( __bss_start = . );
+
+.tbss (NOLOAD)   : ALIGN(8)
+{
+*(.tbss .tbss.* .gnu.linkonce.tb.*)
+*(.tcommon)
+PROVIDE( __tls_end = . );
+} >DDR AT>DDR
+
+.tbss_space (NOLOAD) : ALIGN(8)
+{
+. = . + SIZEOF(.tbss);
+} >DDR AT>DDR
+
+.bss (NOLOAD)   : ALIGN(8)
+{
+*(.sbss*)
+*(.gnu.linkonce.sb.*)
+*(.bss .bss.*)
+*(.gnu.linkonce.b.*)
+*(COMMON)
+. = ALIGN(4);
+} >DDR AT>DDR
+
+PROVIDE( _end = . );
+PROVIDE( end = . );
+
+/* Nuclei C Runtime Library requirements:
+* 1. heap need to be align at 16 bytes
+* 2. __heap_start and __heap_end symbol need to be defined
+* 3. reserved at least __HEAP_SIZE space for heap
+*/
+.heap (NOLOAD)   : ALIGN(16)
+{
+. = ALIGN(16);
+PROVIDE( _heap_start = . );
+PROVIDE( __heap_start = . );
+. += __HEAP_SIZE;
+. = ALIGN(16);
+PROVIDE( __heap_limit = . );
+} >DDR AT>DDR
+
+.stack ORIGIN(DDR) + LENGTH(DDR) - __TOT_STACK_SIZE (NOLOAD) :
+{
+. = ALIGN(16);
+PROVIDE( _heap_end = . );
+PROVIDE( __heap_end = . );
+PROVIDE( __StackLimit = . );
+PROVIDE( __StackBottom = . );
+. += __TOT_STACK_SIZE;
+. = ALIGN(16);
+PROVIDE( __StackTop = . );
+PROVIDE( _sp = . );
+} >DDR AT>DDR
+}

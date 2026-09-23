@@ -33,8 +33,12 @@ module mcu_ui_apb_regs #(
     input  wire        I_lens_busy,
     input  wire        I_lens_init_done,
     input  wire        I_lens_error,
+    input  wire [31:0] I_lens_diag,
+    input  wire [31:0] I_lens_tx_count,
+    input wire [31:0] I_lens_adc_raw, I_lens_adc_count, I_lens_bus_state,
     input  wire [31:0] I_focus_metric,
     output reg         O_lens_cmd,
+    output reg         O_lens_retry, O_lens_read_adc,
     output reg  [13:0] O_lens_position
 );
 
@@ -84,9 +88,11 @@ module mcu_ui_apb_regs #(
             O_exposure    <= AE_INIT;
             O_gain        <= AG_INIT;
             O_lens_cmd    <= 1'b0;
+            O_lens_retry <= 0; O_lens_read_adc <= 0;
             O_lens_position <= 14'd8192;
         end else begin
             O_lens_cmd <= 1'b0;
+            O_lens_retry <= 0; O_lens_read_adc <= 0;
             // Preserve a press arriving in the same cycle that software clears
             // an older event.  New events have priority over write-one-to-clear.
             if(apb_write && (I_paddr[7:0] == 8'h04))
@@ -113,9 +119,12 @@ module mcu_ui_apb_regs #(
                     end
                     8'h28: if(I_pstrobe[0])
                         O_lens_position <= (I_pwdata[13:0] > 14'd16383) ? 14'd16383 : I_pwdata[13:0];
-                    // bit0: issue one position transaction to the lens actuator.
-                    8'h2c: if(I_pstrobe[0] && I_pwdata[0])
-                        O_lens_cmd <= 1'b1;
+                    // Command priority in controller: retry, position, ADC read.
+                    8'h2c: if(I_pstrobe[0]) begin
+                        O_lens_cmd <= I_pwdata[0];
+                        O_lens_retry <= I_pwdata[1];
+                        O_lens_read_adc <= I_pwdata[2];
+                    end
                     default: begin end
                 endcase
             end
@@ -139,6 +148,12 @@ module mcu_ui_apb_regs #(
                 8'h28: O_prdata = {18'd0, O_lens_position};
                 8'h30: O_prdata = {29'd0, I_lens_error, I_lens_init_done, I_lens_busy};
                 8'h34: O_prdata = I_focus_metric;
+                8'h38: O_prdata = 32'h4c494333; // "LIC3": open drain, retry, ADC84/85
+                8'h3c: O_prdata = I_lens_diag;
+                8'h40: O_prdata = I_lens_tx_count;
+                8'h44: O_prdata = I_lens_adc_raw;
+                8'h48: O_prdata = I_lens_adc_count;
+                8'h4c: O_prdata = I_lens_bus_state;
                 default: O_prdata = 32'd0;
             endcase
         end

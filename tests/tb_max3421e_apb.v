@@ -10,7 +10,13 @@ module tb_max3421e_apb;
     reg [3:0] strobe = 4'hf;
     wire [31:0] rdata;
     wire ready, error, res_n, spi_enable;
-    wire menu, edit, info;
+    wire menu, edit, info, lens_cmd, lens_retry, lens_read;
+    integer retry_pulses=0, read_pulses=0, cmd_pulses=0;
+    always @(posedge clk) begin
+        if(lens_cmd) cmd_pulses=cmd_pulses+1;
+        if(lens_retry) retry_pulses=retry_pulses+1;
+        if(lens_read) read_pulses=read_pulses+1;
+    end
     wire [1:0] index;
     wire [15:0] exposure, gain;
 
@@ -21,7 +27,13 @@ module tb_max3421e_apb;
         .I_pwdata(wdata), .I_pstrobe(strobe), .O_prdata(rdata),
         .O_pready(ready), .O_pslverr(error), .O_menu_enable(menu),
         .O_edit_enable(edit), .O_info_enable(info), .O_menu_index(index),
-        .O_exposure(exposure), .O_gain(gain)
+        .O_exposure(exposure), .O_gain(gain),
+        .I_lens_busy(1'b0), .I_lens_init_done(1'b0), .I_lens_error(1'b1),
+        .I_focus_metric(32'd1234),
+        .I_lens_diag(32'h00130110), .I_lens_tx_count(32'd1),
+        .I_lens_adc_raw(32'h00015ba6), .I_lens_adc_count(32'd2),
+        .I_lens_bus_state(32'h0000000f),
+        .O_lens_cmd(lens_cmd), .O_lens_retry(lens_retry), .O_lens_read_adc(lens_read)
     );
 
     task write_reg(input [19:0] a, input [31:0] value, input [3:0] lanes);
@@ -46,6 +58,23 @@ module tb_max3421e_apb;
         if (res_n !== 0 || spi_enable !== 0) $fatal(1, "Unsafe reset state");
         rst = 0;
         read_check(0, 32'h55494d55);
+        read_check('h30, 4);
+        read_check('h34, 1234);
+        read_check('h38, 32'h4c494333);
+        read_check('h3c, 32'h00130110);
+        read_check('h40, 1);
+        read_check('h44, 32'h00015ba6);
+        read_check('h48, 2);
+        read_check('h4c, 15);
+        write_reg('h2c, 7, 4'he);
+        repeat(2) @(negedge clk);
+        if(cmd_pulses || retry_pulses || read_pulses) $fatal(1,"Command ignored strobe");
+        write_reg('h2c, 1, 4'h1);
+        write_reg('h2c, 2, 4'h1);
+        write_reg('h2c, 4, 4'h1);
+        repeat(2) @(negedge clk);
+        if(cmd_pulses!=1 || retry_pulses!=1 || read_pulses!=1)
+            $fatal(1,"Command pulse count");
         read_check('h1c, 32'h4d415831);
         read_check('h20, 0);
         read_check('h24, 1);

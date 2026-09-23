@@ -1,5 +1,6 @@
 #include "al_core.h"
 #include "al_qspi_dev.h"
+#include "al_misc_ll.h"
 #include "max3421e_diag.h"
 
 #define USB_CAP       0x1cu
@@ -102,10 +103,10 @@ done:
     return result;
 }
 
-static int probe(void)
+static int probe(int verbose)
 {
     AL_QSPI_InitStruct config = {
-        .SckDiv = 149, /* 300 MHz / (2 * (149 + 1)) = 1 MHz. */
+        .SckDiv = 149, /* SCLK=input_clock/(2*(149+1)); verify actual clock on R7. */
         .DevMode = AL_QSPI_MASTER,
         .ProtocolMode = AL_QSPI_PROTOCOL_MODE_SINGLE,
         .FrameLen = AL_QSPI_FRAMELEN_8BIT,
@@ -120,6 +121,12 @@ static int probe(void)
 
     g_usb_debug_stage = 1;
     board_write(USB_CTRL, 0); /* Hold reset and isolate SPI during setup. */
+    /* Match the official QSPI1 example: HAL/Dev init alone does not enable
+     * the peripheral clock. Do NOT reset QSPI0 (boot/XIP Flash). */
+    AlMisc_ll_SetClkEn(AL_MISC_QSPI1, 1);
+    AlMisc_ll_SetReset(AL_MISC_QSPI1, 0);
+    AlSys_UDelay(50);
+    AlMisc_ll_SetReset(AL_MISC_QSPI1, 1);
     if (AlQspi_Dev_Init(&spi, 1, &config) != AL_OK) return -1;
     AlQspi_ll_SetFlashEn(spi.BaseAddr, AL_FALSE);
     AlQspi_ll_SetCsMode(spi.BaseAddr, AL_QSPI_CS_MODE_OFF);
@@ -131,15 +138,15 @@ static int probe(void)
     AlSys_MDelay(10);
     ctrl = board_read(USB_CTRL);
     status = board_read(USB_STATUS);
-    al_printf("MAX3421E: reset asserted CTRL=0x%08x STATUS=0x%08x\r\n", ctrl, status);
+    if(verbose) al_printf("MAX3421E: reset asserted CTRL=0x%08x STATUS=0x%08x\r\n", ctrl, status);
     if (ctrl != 0 || (status & 6u) != 0) return -7;
     board_write(USB_CTRL, 3); /* Release /RES, enable QSPI pins. */
     AlSys_MDelay(20);
     ctrl = board_read(USB_CTRL);
     status = board_read(USB_STATUS);
-    al_printf("MAX3421E: reset released CTRL=0x%08x STATUS=0x%08x\r\n", ctrl, status);
+    if(verbose) al_printf("MAX3421E: reset released CTRL=0x%08x STATUS=0x%08x\r\n", ctrl, status);
     if (ctrl != 3 || (status & 6u) != 6u) return -7;
-    al_printf("MAX3421E: QSPI base=0x%08x CSID=0x%08x CSDEF=0x%08x DIV=0x%08x\r\n",
+    if(verbose) al_printf("MAX3421E: QSPI base=0x%08x CSID=0x%08x CSDEF=0x%08x DIV=0x%08x\r\n",
               (uint32_t)spi.BaseAddr,
               (uint32_t)AL_REG32_READ(spi.BaseAddr + QSPI_SPI_CSID_OFFSET),
               (uint32_t)AL_REG32_READ(spi.BaseAddr + QSPI_SPI_CSDEF_OFFSET),
@@ -150,7 +157,7 @@ static int probe(void)
     if (reg_write(REG_PINCTL, PINCTL_VALUE)) return -1;
     if (reg_read(REG_REVISION, &revision)) return -1;
     g_usb_revision = revision;
-    al_printf("MAX3421E: REVISION=0x%02x\r\n", (unsigned)revision);
+    if(verbose) al_printf("MAX3421E: REVISION=0x%02x\r\n", (unsigned)revision);
     if (revision != 0x01 && revision != 0x12 && revision != 0x13) return -3;
     for (i = 0; i < 32; ++i) {
         if (reg_read(REG_REVISION, &value)) return -1;
@@ -199,24 +206,31 @@ int max3421e_diag_init(uint32_t ui_base)
         al_printf("MAX3421E: FPGA USB extension missing; load the new bit first\r\n");
         return diag_result;
     }
-    al_printf("MAX3421E: diag-v2, probing QSPI1, mode 0, divider=149, CS0=1\r\n");
-    diag_result = probe();
+    al_printf("MAX3421E: QSPI1 diag-v4, SINGLE mode 0, divider=149, CS0=1; periodic retry\r\n");
+    diag_result = probe(1);
     if (diag_result) {
         board_write(USB_CTRL, 0);
         /* Read the APB shadow back immediately.  This distinguishes an
          * internal reset-control write from a stale/mismatched FPGA bit or
          * an incorrectly constrained physical RES pin. */
-        al_printf("MAX3421E: probe stopped; SPI disabled, /RES=0; CTRL=0x%08x STATUS=0x%08x\r\n",
+        al_printf("MAX3421E: attempt failed; SPI disabled, /RES=0; retry on heartbeat; CTRL=0x%08x STATUS=0x%08x\r\n",
                   (unsigned)board_read(USB_CTRL),
                   (unsigned)board_read(USB_STATUS));
     }
-    max3421e_diag_report();
     return diag_result;
 }
 
 void max3421e_diag_report(void)
 {
     uint8_t revision = 0, irq = 0;
+    if (!extension_present) return;
+    /* A fresh bounded probe after failure gives periodic hardware SCLK bursts
+     * for measurement; do not merely reprint a cached failure. */
+    if (diag_result) {
+        g_usb_revision = 0;
+        diag_result = probe(0);
+        if (diag_result) board_write(USB_CTRL, 0);
+    }
     if (!diag_result) {
         if (reg_read(REG_REVISION, &revision) || reg_read(REG_USBIRQ, &irq))
             diag_result = -1;
@@ -227,10 +241,10 @@ void max3421e_diag_report(void)
         if (diag_result) board_write(USB_CTRL, 0);
     }
     if (!diag_result)
-        al_printf("MAX3421E: READY REV=0x%02x OSCOK=1 INT_n=%u\r\n",
+        al_printf("MAX3421E QSPI1: READY REV=0x%02x OSCOK=1 INT_n=%u\r\n",
                   (unsigned)revision, (unsigned)(board_read(USB_STATUS) & 1u));
     else
-        al_printf("MAX3421E: FAIL code=%d stage=%u rev=0x%02x spi_status=0x%08x CTRL=0x%08x STATUS=0x%08x\r\n",
+        al_printf("MAX3421E QSPI1: FAIL code=%d stage=%u rev=0x%02x spi_status=0x%08x CTRL=0x%08x STATUS=0x%08x\r\n",
                   diag_result, (unsigned)g_usb_debug_stage,
                   (unsigned)g_usb_revision, (unsigned)g_usb_last_spi_status,
                   (unsigned)board_read(USB_CTRL),

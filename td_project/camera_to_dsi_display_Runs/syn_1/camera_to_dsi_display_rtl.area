@@ -8,24 +8,24 @@ IO Statistics
   #inout                   34
 
 Gate Statistics
-#Basic gates            25375
-  #and                   1046
+#Basic gates            25450
+  #and                   1050
   #nand                     0
-  #or                     796
+  #or                     797
   #nor                      0
   #xor                     95
   #xnor                     0
   #buf                      0
-  #not                    947
+  #not                    955
   #bufif1                   2
-  #MX21                  4671
+  #MX21                  4676
   #FADD                     0
-  #DFF                  17818
+  #DFF                  17875
   #LATCH                    0
-#MACRO_ADD                526
-#MACRO_EQ                 327
+#MACRO_ADD                530
+#MACRO_EQ                 330
 #MACRO_MULT                 8
-#MACRO_MUX               6674
+#MACRO_MUX               6780
 #MACRO_OTHERS              14
 
 LUT Statistics
@@ -40,7 +40,7 @@ Report Hierarchy Area:
 +-----------------------------------------------------------------------------------------------------------------------------------------+
 |Instance                                                         |Module                                         |gates  |seq    |macros |
 +-----------------------------------------------------------------------------------------------------------------------------------------+
-|top                                                              |design_top_wrapper                             |7557   |17818  |875    |
+|top                                                              |design_top_wrapper                             |7575   |17875  |882    |
 |  u_PLL                                                          |PLL                                            |0      |0      |1      |
 |    ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst                       |ph1p_phy_pll_wrapper_25a56e5ce2f9              |0      |0      |0      |
 |  u_ae_set                                                       |ae_set                                         |8      |43     |6      |
@@ -95,15 +95,15 @@ Report Hierarchy Area:
 |    u_rgb96_downscale_crop                                       |rgb96_downscale_crop                           |738    |555    |80     |
 |      u_scale_line_buffer                                        |blk_mem_gen_awb_delay_signal                   |0      |0      |1      |
 |        ram_f84573da5ab5_Inst                                    |ram_f84573da5ab5                               |0      |0      |1      |
-|  u_lens_i2c_ctrl                                                |lens_i2c_ctrl                                  |114    |82     |15     |
-|    u_lens_i2c                                                   |uii2c                                          |64     |34     |13     |
+|  u_lens_i2c_ctrl                                                |lens_i2c_ctrl                                  |130    |139    |22     |
+|    u_lens_i2c                                                   |uii2c                                          |78     |45     |16     |
 |  u_mc_to_user_interface                                         |mc_to_user_interface                           |12     |181    |7      |
 |    U_w155_d512_fifo                                             |w155_d512_fifo                                 |6      |181    |7      |
 |      soft_fifo_al_f58e8b3e1f3d_Inst                             |soft_fifo_al_f58e8b3e1f3d                      |6      |181    |7      |
 |        ram_inst                                                 |ram_infer_f58e8b3e1f3d                         |0      |152    |0      |
 |  u_mcu                                                          |RISCV_F6F1D1P0_0                               |0      |0      |0      |
 |    MCU_521bd43d073e_Inst                                        |MCU_521bd43d073e                               |0      |0      |0      |
-|  u_mcu_ui_apb_regs                                              |mcu_ui_apb_regs                                |161    |145    |20     |
+|  u_mcu_ui_apb_regs                                              |mcu_ui_apb_regs                                |163    |145    |20     |
 |    g_key[0]$u_key                                               |key_remove_shakes                              |7      |24     |2      |
 |    g_key[1]$u_key                                               |key_remove_shakes                              |7      |24     |2      |
 |    g_key[2]$u_key                                               |key_remove_shakes                              |7      |24     |2      |

@@ -69,7 +69,9 @@ static int reg_write(uint8_t address, uint8_t value)
 {
     uint8_t bytes[2] = {address | 0x02u, value};
     int result;
-    AlQspi_ll_SetCsMode(spi.BaseAddr, AL_QSPI_CS_MODE_HOLD);
+    /* A register write is one complete QSPI transfer. AUTO is the mode used
+     * by the official driver and guarantees CS0 asserts for the TxSize bytes. */
+    AlQspi_ll_SetCsMode(spi.BaseAddr, AL_QSPI_CS_MODE_AUTO);
     result = send_bytes(bytes, 2);
     AlQspi_ll_SetCsMode(spi.BaseAddr, AL_QSPI_CS_MODE_OFF);
     return result;
@@ -106,7 +108,7 @@ done:
 static int probe(int verbose)
 {
     AL_QSPI_InitStruct config = {
-        .SckDiv = 149, /* SCLK=input_clock/(2*(149+1)); verify actual clock on R7. */
+        .SckDiv = 149, /* SCLK=input_clock/(2*(149+1)); verify actual clock on K2. */
         .DevMode = AL_QSPI_MASTER,
         .ProtocolMode = AL_QSPI_PROTOCOL_MODE_SINGLE,
         .FrameLen = AL_QSPI_FRAMELEN_8BIT,

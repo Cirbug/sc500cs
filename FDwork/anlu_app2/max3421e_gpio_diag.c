@@ -165,7 +165,7 @@ int max3421e_gpio_diag_init(uint32_t unused_ui_base)
     AlSys_MDelay(200);
     gpio_snapshot("reset-high");
 
-    al_printf("MAX pins: SCLK=R7 MOSI=U6 MISO=T5 CS=U4 RES=L16 INT=P9\r\n");
+    al_printf("MAX pins: SCLK=K2 MOSI=C8 MISO=H2 CS=A5 RES=M1 INT=L4\r\n");
     al_printf("MAX3421E GPIO SPI: INT=%u\r\n",
               (unsigned)AlGpio_Hal_ReadPin(gpio, GPIO_INT));
 

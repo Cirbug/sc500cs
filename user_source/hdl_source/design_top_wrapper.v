@@ -19,7 +19,7 @@ module design_top_wrapper (
     inout  wire       IO_cam_sda,
     output wire       O_cam_24m,
     output wire       O_cam_rst,
-    // Lens actuator I2C: SCL=K1, SDA=K2.
+    // Lens actuator I2C: SCL=R6, SDA=R7.
     inout  wire       O_lens_scl,
     inout  wire       IO_lens_sda,
       
@@ -219,8 +219,7 @@ module design_top_wrapper (
     reg [31:0]  S_focus_metric_sync2;
     reg         S_cam_cfg_done_apb1;
     reg         S_cam_cfg_done_apb2;
-    // MAX3421E uses hardware QSPI1 in SINGLE mode. GPIO pins are no longer
-    // external SPI drivers. APB USB_CTRL releases /RES and enables SPI routing.
+    // MAX3421E is driven by MCU QSPI1 in single-SPI mode.
     assign S_mcu_gpio0_in = 1'b0;
     assign S_mcu_gpio1_in = 1'b0;
     assign S_mcu_gpio2_in = I_usb_miso;
@@ -229,35 +228,41 @@ module design_top_wrapper (
     assign S_mcu_gpio5_in = I_usb_int_n;
     assign S_mcu_gpio6_in = 1'b0;
     assign S_mcu_gpio7_in = 1'b0;
-    // 1: continuous R7 clock test; 0: restore normal QSPI1 routing.
-    // 100 MHz / (2 * 500) = 100 kHz, independent of MCU/APB enable.
-    // CS stays inactive during this test: these clocks are not SPI commands.
-    localparam USB_SCLK_CONTINUOUS_TEST = 1'b1;
+    // Set to 1 only for the standalone U4 key test bit. The normal design
+    // remains the QSPI1 routing in the else branch.
+    localparam USB_U4_KEY_TEST = 1'b0;
+    wire [3:0] u4_key_pulse;
+    reg  u4_test_level;
+    genvar u4_key_i;
     generate
-        if (USB_SCLK_CONTINUOUS_TEST) begin : g_usb_sclk_test
-            reg [8:0] count;
-            reg sclk;
-            always @(posedge S_100m_clk or negedge S_rst_n) begin
-                if (!S_rst_n) begin
-                    count <= 9'd0;
-                    sclk <= 1'b0;
-                end else if (count == 9'd499) begin
-                    count <= 9'd0;
-                    sclk <= ~sclk;
-                end else begin
-                    count <= count + 9'd1;
-                end
-            end
-            assign O_usb_sclk = sclk;
+        for (u4_key_i = 0; u4_key_i < 4; u4_key_i = u4_key_i + 1) begin : g_u4_key_debounce
+            key_remove_shakes u_u4_key_test (
+                .I_clk          ( S_100m_clk ),
+                .I_rst_n        ( S_rst_n ),
+                .I_key_in       ( I_button[u4_key_i] ),
+                .O_key_trig_out ( u4_key_pulse[u4_key_i] )
+            );
+        end
+    endgenerate
+    always @(posedge S_100m_clk or negedge S_rst_n) begin
+        if (!S_rst_n)
+            u4_test_level <= 1'b1;
+        else if (|u4_key_pulse)
+            u4_test_level <= ~u4_test_level;
+    end
+    generate
+        if (USB_U4_KEY_TEST) begin : g_u4_key_test
+            assign O_usb_sclk = 1'b0;
             assign O_usb_mosi = 1'b0;
-            assign O_usb_ss_n = 1'b1;
+            assign O_usb_ss_n = u4_test_level;
+            assign O_usb_res_n = S_rst_n;
         end else begin : g_usb_qspi_normal
             assign O_usb_sclk = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_clk : 1'b0;
             assign O_usb_mosi = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_d0_out : 1'b0;
             assign O_usb_ss_n = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_ss : 1'b1;
+            assign O_usb_res_n = S_rst_n && S_apb_usb_res_n;
         end
     endgenerate
-    assign O_usb_res_n = S_rst_n && S_apb_usb_res_n;
     (* keep *) wire        S_mcu_ahb_clk;
     (* keep *) wire [1:0]  S_mcu_htrans;
     (* keep *) wire        S_mcu_hwrite;

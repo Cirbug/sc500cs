@@ -1,7 +1,7 @@
 Copyright (c) 2012-2025 Anlogic Inc., All Rights Reserved.
 ----------------------------------------------------------------------------
 | Tool Version : Tang Dynasty v6.2.168116 Jul 10 2025 19:20:51              
-| Date         : Wed Sep 23 16:43:13 2026                                   
+| Date         : Mon Sep 28 19:32:31 2026                                   
 | Command      : report_clock_utilization -file place_clock_utilization.txt 
 | Design       : design_top_wrapper                                         
 | Device       : ph1_35p-PH1P35MDG324                                       
@@ -23,7 +23,7 @@ C. IP Stat.
 +------------------+------+-----------+
 | Type             | Used | Available |
 +------------------+------+-----------+
-| PH1P_PHY_GCLK    |   14 |        32 |
+| PH1P_PHY_GCLK    |   13 |        32 |
 | PH1P_PHY_IOCLK   |    4 |        16 |
 | PH1P_PHY_LCLK    |    0 |        16 |
 | PH1P_PHY_MLCLK   |    2 |        16 |
@@ -35,20 +35,19 @@ C. IP Stat.
 +------------+------------+---------------+------------------------------------------------------------------------------------------------------------------------------------+------------+------+-----------+-------------------+-------------+-------------+--------------+-----------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
 | Global Idx | Source Idx | Global Type   | Inst.Pin                                                                                                                           | Constraint | site | Location  | Load Clock Region | Clock Loads | Total Loads | Clock Period | Clock                                                                                                                       | Net                                                                                                              |
 +------------+------------+---------------+------------------------------------------------------------------------------------------------------------------------------------+------------+------+-----------+-------------------+-------------+-------------+--------------+-----------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
-| gclk_0     | src_0      | PH1P_PHY_GCLK | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/bufg_feedback.clkout                                                   | None       | B    | x23y39z1  |                 4 |        5120 |        5120 |        8.888 | MIPI_RX_BYTE_CLK                                                                                                            | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb                                  |
-| gclk_1     | src_1      | PH1P_PHY_GCLK | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/u_bufg_fbclk.clkout   | None       | T    | x23y39z16 |                 3 |        2174 |        2174 |       15.000 | u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk                                                                                     | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk                               |
-| gclk_2     | src_2      | PH1P_PHY_GCLK | S_hdmi_pixel_clk_created_gclkinst.clkout                                                                                           | None       | T    | x23y39z17 |                 4 |         972 |         972 |       13.333 | HDMI_PIXEL_CLK                                                                                                              | S_hdmi_pixel_clk_syn_652                                                                                         |
-| gclk_3     | src_3      | PH1P_PHY_GCLK | u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout                                                                       | None       | T    | x23y39z18 |                 1 |         237 |         237 | 3.333, 3.333 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3], u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk | u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1                                                                       |
-| gclk_4     | src_4      | PH1P_PHY_GCLK | u_lens_i2c_ctrl/I_clk_created_gclkinst.clkout                                                                                      | None       | T    | x23y39z19 |                 4 |         201 |         201 |       20.000 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]                                                         | u_lens_i2c_ctrl/I_clk_syn_1                                                                                      |
-| gclk_5     | src_5      | PH1P_PHY_GCLK | cwc_jtck_created_gclkinst.clkout                                                                                                   | None       | B    | x23y39z0  |                 1 |         151 |         151 |      100.000 | config_inst.cwc_tck_o                                                                                                       | cwc_jtck_syn_1                                                                                                   |
-| gclk_6     | src_6      | PH1P_PHY_GCLK | O_cam_24m_dup_1_created_gclkinst.clkout                                                                                            | None       | T    | x23y39z20 |                 2 |         100 |         101 |       42.000 | pll_clk_24m                                                                                                                 | O_cam_24m_syn_3                                                                                                  |
-| gclk_7     | src_7      | PH1P_PHY_GCLK | I_sys_clk_dup_6_created_gclkinst.clkout                                                                                            | None       | T    | x23y39z24 |                 1 |          83 |          83 |       20.000 | sys_clk_50m                                                                                                                 | I_sys_clk_syn_8                                                                                                  |
-| gclk_8     | src_8      | PH1P_PHY_GCLK | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_created_gclkinst.clkout                                                 | None       | T    | x23y39z21 |                 1 |          37 |          37 |        2.666 | HDMI_SERIAL_CLK                                                                                                             | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_syn_1                                                 |
+| gclk_0     | src_0      | PH1P_PHY_GCLK | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/bufg_feedback.clkout                                                   | None       | B    | x23y39z1  |                 4 |        5070 |        5070 |        8.888 | MIPI_RX_BYTE_CLK                                                                                                            | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb                                  |
+| gclk_1     | src_1      | PH1P_PHY_GCLK | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/u_bufg_fbclk.clkout   | None       | T    | x23y39z16 |                 4 |        2177 |        2177 |       15.000 | u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk                                                                                     | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk                               |
+| gclk_2     | src_2      | PH1P_PHY_GCLK | S_hdmi_pixel_clk_created_gclkinst.clkout                                                                                           | None       | T    | x23y39z17 |                 3 |         957 |         957 |       13.333 | HDMI_PIXEL_CLK                                                                                                              | S_hdmi_pixel_clk_syn_654                                                                                         |
+| gclk_3     | src_3      | PH1P_PHY_GCLK | u_lens_i2c_ctrl/u_bus/clk_created_gclkinst.clkout                                                                                  | None       | T    | x23y39z18 |                 2 |         296 |         296 |       20.000 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]                                                         | u_lens_i2c_ctrl/u_bus/clk_syn_1                                                                                  |
+| gclk_4     | src_4      | PH1P_PHY_GCLK | u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout                                                                       | None       | T    | x23y39z19 |                 2 |         155 |         155 | 3.333, 3.333 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3], u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk | u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1                                                                       |
+| gclk_5     | src_5      | PH1P_PHY_GCLK | cwc_jtck_created_gclkinst.clkout                                                                                                   | None       | B    | x23y39z0  |                 1 |         118 |         118 |      100.000 | config_inst.cwc_tck_o                                                                                                       | cwc_jtck_syn_1                                                                                                   |
+| gclk_6     | src_6      | PH1P_PHY_GCLK | O_cam_24m_dup_1_created_gclkinst.clkout                                                                                            | None       | T    | x23y39z20 |                 2 |         107 |         108 |       42.000 | pll_clk_24m                                                                                                                 | O_cam_24m_syn_3                                                                                                  |
+| gclk_7     | src_7      | PH1P_PHY_GCLK | I_sys_clk_dup_6_created_gclkinst.clkout                                                                                            | None       | T    | x23y39z24 |                 1 |          78 |          78 |       20.000 | sys_clk_50m                                                                                                                 | I_sys_clk_syn_8                                                                                                  |
+| gclk_8     | src_8      | PH1P_PHY_GCLK | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_created_gclkinst.clkout                                                 | None       | T    | x23y39z21 |                 1 |          35 |          35 |        2.666 | HDMI_SERIAL_CLK                                                                                                             | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_syn_1                                                 |
 | gclk_9     | src_9      | PH1P_PHY_GCLK | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk_created_gclkinst.clkout | None       | T    | x23y39z22 |                 2 |          29 |          29 |       39.374 | u_ph1p35_324_ddr_wrapper/u_ddr2/mcu_clk                                                                                     | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk_syn_1 |
-| gclk_10    | src_10     | PH1P_PHY_GCLK | u_lens_i2c_ctrl/u_lens_i2c/scl_clk_created_gclkinst.clkout                                                                         | None       | B    | x23y39z2  |                 1 |          24 |          24 |              |                                                                                                                             | u_lens_i2c_ctrl/u_lens_i2c/scl_clk_syn_75                                                                        |
-| gclk_11    | src_11     | PH1P_PHY_GCLK | u_uicfgcs500/uii2c_inst/scl_clk_created_gclkinst.clkout                                                                            | None       | B    | x23y39z3  |                 1 |          17 |          17 |              |                                                                                                                             | u_uicfgcs500/uii2c_inst/scl_clk_syn_9                                                                            |
-| gclk_12    | src_12     | PH1P_PHY_GCLK | u_PLL/bufg_feedback.clkout                                                                                                         | None       | T    | x23y39z23 |                 2 |           9 |           9 |       10.000 | pll_clk_100m                                                                                                                | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/u_lane0_hs_detect/I_clk                              |
-| gclk_13    | src_13     | PH1P_PHY_GCLK | S_mcu_ahb_clk_created_gclkinst.clkout                                                                                              | None       | B    | x23y39z4  |                 1 |           1 |           1 |              |                                                                                                                             | S_mcu_ahb_clk_syn_5                                                                                              |
+| gclk_10    | src_10     | PH1P_PHY_GCLK | u_uicfgcs500/uii2c_inst/scl_clk_created_gclkinst.clkout                                                                            | None       | B    | x23y39z2  |                 1 |          18 |          18 |              |                                                                                                                             | u_uicfgcs500/uii2c_inst/scl_clk_syn_9                                                                            |
+| gclk_11    | src_11     | PH1P_PHY_GCLK | u_PLL/bufg_feedback.clkout                                                                                                         | None       | T    | x23y39z23 |                 2 |           9 |           9 |       10.000 | pll_clk_100m                                                                                                                | g_u4_key_debounce[0]$u_u4_key_test/I_clk                                                                         |
+| gclk_12    | src_12     | PH1P_PHY_GCLK | S_mcu_ahb_clk_created_gclkinst.clkout                                                                                              | None       | B    | x23y39z3  |                 1 |           1 |           1 |              |                                                                                                                             | S_mcu_ahb_clk_syn_5                                                                                              |
 +------------+------------+---------------+------------------------------------------------------------------------------------------------------------------------------------+------------+------+-----------+-------------------+-------------+-------------+--------------+-----------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
 
 
@@ -59,17 +58,16 @@ C. IP Stat.
 | src_0      | gclk_0     | PH1P_PHY_MIPIIO_RX | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/u_PH1P_LOGIC_DPHY_MIPI_RX.o_fabric_div4_8_clk                       | None       | N/A  | x47y0z0  |           1 |               0 |               8.888 | MIPI_RX_BYTE_CLK                                                    | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/S_mipiio_hs_rx_clk                                       |
 | src_1      | gclk_1     | PH1P_PHY_PLL_V2    | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/u_pll_inst.clkc[0] | X0Y79Z0    | N/A  | x0y79z0  |           1 |               0 |              15.000 | u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk                             | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/clkc[0] |
 | src_2      | gclk_2     | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[4]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |              13.333 | HDMI_PIXEL_CLK                                                      | S_hdmi_pixel_clk                                                                                                     |
-| src_3      | gclk_3     | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |               3.333 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3] | u_mcu/MCU_521bd43d073e_Inst/core_clk                                                                                 |
-| src_4      | gclk_4     | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |              20.000 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] | u_lens_i2c_ctrl/I_clk                                                                                                |
+| src_3      | gclk_3     | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |              20.000 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] | u_lens_i2c_ctrl/u_bus/clk                                                                                            |
+| src_4      | gclk_4     | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |               3.333 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3] | u_mcu/MCU_521bd43d073e_Inst/core_clk                                                                                 |
 | src_5      | gclk_5     | PH1P_PHY_CONFIG_V2 | config_inst.cwc_tck_o                                                                                                           | None       | N/A  | x47y0z0  |           1 |               0 |             100.000 | config_inst.cwc_tck_o                                               | cwc_jtck                                                                                                             |
 | src_6      | gclk_6     | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[1]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |              42.000 | pll_clk_24m                                                         | O_cam_24m_dup_1                                                                                                      |
 | src_7      | gclk_7     | PH1P_PHY_HD_PAD    | I_sys_clk_syn_7.di                                                                                                              | None       | N/A  | x33y78z0 |           3 |               0 |              20.000 | sys_clk_50m                                                         | I_sys_clk_dup_6                                                                                                      |
 | src_8      | gclk_8     | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[5]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |               2.666 | HDMI_SERIAL_CLK                                                     | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk                                                           |
 | src_9      | gclk_9     | PH1P_PHY_PLL_V2    | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll0/u_pll_inst.clkc[3] | X0Y40Z0    | N/A  | x0y40z0  |           1 |               0 |              39.374 | u_ph1p35_324_ddr_wrapper/u_ddr2/mcu_clk                             | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk           |
-| src_10     | gclk_10    | PH1P_PHY_LSLICE    | u_lens_i2c_ctrl/u_lens_i2c/scl_clk_reg_syn_9.oqa                                                                                | None       | N/A  | x41y3z7  |           1 |               2 |                     |                                                                     | u_lens_i2c_ctrl/u_lens_i2c/scl_clk                                                                                   |
-| src_11     | gclk_11    | PH1P_PHY_LSLICE    | u_uicfgcs500/uii2c_inst/clkdiv_reg[0]_syn_5.oqb                                                                                 | None       | N/A  | x12y1z7  |           1 |               2 |                     |                                                                     | u_uicfgcs500/uii2c_inst/scl_clk                                                                                      |
-| src_12     | gclk_12    | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[0]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |              10.000 | pll_clk_100m                                                        | u_PLL/clk0_buf                                                                                                       |
-| src_13     | gclk_13    | PH1P_PHY_MCU       | u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.ahb_clk                                                                           | None       | N/A  | x47y20z0 |           1 |               0 |                     |                                                                     | S_mcu_ahb_clk                                                                                                        |
+| src_10     | gclk_10    | PH1P_PHY_LSLICE    | u_uicfgcs500/uii2c_inst/scl_clk_reg_syn_10.oqa                                                                                  | None       | N/A  | x22y1z4  |           1 |               2 |                     |                                                                     | u_uicfgcs500/uii2c_inst/scl_clk                                                                                      |
+| src_11     | gclk_11    | PH1P_PHY_PLL_V2    | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[0]                                                             | None       | N/A  | x43y79z0 |           1 |               0 |              10.000 | pll_clk_100m                                                        | u_PLL/clk0_buf                                                                                                       |
+| src_12     | gclk_12    | PH1P_PHY_MCU       | u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.ahb_clk                                                                           | None       | N/A  | x47y20z0 |           1 |               0 |                     |                                                                     | S_mcu_ahb_clk                                                                                                        |
 +------------+------------+--------------------+---------------------------------------------------------------------------------------------------------------------------------+------------+------+----------+-------------+-----------------+---------------------+---------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
 
 
@@ -105,13 +103,13 @@ C. IP Stat.
 +------------+---------------+----------------------------------------------------------------------------------+-------------------+------------------+-------------+---------------+----------+---------------------------------------------------------------------------------+-----------------------+---------------------+----------------------+-----------------------------+------------------------+
 | Global Idx | Type          | Driver.Pin                                                                       | Driver Region (D) | Clock            | Period (ns) | Waveform (ns) | Root (R) | Net                                                                             | FanoutGroup1          | FanoutGroup2        | FanoutGroup3         | FanoutGroup4                | FanoutGroup5           |
 +------------+---------------+----------------------------------------------------------------------------------+-------------------+------------------+-------------+---------------+----------+---------------------------------------------------------------------------------+-----------------------+---------------------+----------------------+-----------------------------+------------------------+
-| gclk_0     | PH1P_PHY_GCLK | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/bufg_feedback.clkout | B                 | MIPI_RX_BYTE_CLK |       8.888 | {0.000 4.444} | N/A      | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb | PH1P_PHY_LSLICE(4936) | PH1P_PHY_MSLICE(96) | PH1P_PHY_ERAM_V2(68) | PH1P_PHY_SHIFTERHARDCON(12) | PH1P_PHY_DSPSIOU_V2(8) |
+| gclk_0     | PH1P_PHY_GCLK | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/bufg_feedback.clkout | B                 | MIPI_RX_BYTE_CLK |       8.888 | {0.000 4.444} | N/A      | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb | PH1P_PHY_LSLICE(4886) | PH1P_PHY_MSLICE(96) | PH1P_PHY_ERAM_V2(68) | PH1P_PHY_SHIFTERHARDCON(12) | PH1P_PHY_DSPSIOU_V2(8) |
 +------------+---------------+----------------------------------------------------------------------------------+-------------------+------------------+-------------+---------------+----------+---------------------------------------------------------------------------------+-----------------------+---------------------+----------------------+-----------------------------+------------------------+
 +----+------+------+
 |    | X0   | X1   |
 +----+------+------+
-| Y1 | 1322 |  884 |
-| Y0 | 1526 | 1388 |
+| Y1 | 1881 |  343 |
+| Y0 | 1514 | 1332 |
 +----+------+------+
 
 
@@ -119,55 +117,55 @@ C. IP Stat.
 +------------+---------------+----------------------------------------------------------------------------------------------------------------------------------+-------------------+-----------------------------------------+-------------+---------------+----------+------------------------------------------------------------------------------------+-----------------------+----------------------+--------------------------+----------------------+-------------------------+--------------------+
 | Global Idx | Type          | Driver.Pin                                                                                                                       | Driver Region (D) | Clock                                   | Period (ns) | Waveform (ns) | Root (R) | Net                                                                                | FanoutGroup1          | FanoutGroup2         | FanoutGroup3             | FanoutGroup4         | FanoutGroup5            | FanoutGroup6       |
 +------------+---------------+----------------------------------------------------------------------------------------------------------------------------------+-------------------+-----------------------------------------+-------------+---------------+----------+------------------------------------------------------------------------------------+-----------------------+----------------------+--------------------------+----------------------+-------------------------+--------------------+
-| gclk_1     | PH1P_PHY_GCLK | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/u_bufg_fbclk.clkout | T                 | u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk |      15.000 | {0.000 7.500} | N/A      | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk | PH1P_PHY_LSLICE(2006) | PH1P_PHY_MSLICE(115) | PH1P_PHY_DRAMHARDCON(30) | PH1P_PHY_ERAM_V2(16) | PH1P_PHY_DDRPHY_BYTE(6) | PH1P_PHY_PLL_V2(1) |
+| gclk_1     | PH1P_PHY_GCLK | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/u_bufg_fbclk.clkout | T                 | u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk |      15.000 | {0.000 7.500} | N/A      | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk | PH1P_PHY_LSLICE(1992) | PH1P_PHY_MSLICE(132) | PH1P_PHY_DRAMHARDCON(30) | PH1P_PHY_ERAM_V2(16) | PH1P_PHY_DDRPHY_BYTE(6) | PH1P_PHY_PLL_V2(1) |
 +------------+---------------+----------------------------------------------------------------------------------------------------------------------------------+-------------------+-----------------------------------------+-------------+---------------+----------+------------------------------------------------------------------------------------+-----------------------+----------------------+--------------------------+----------------------+-------------------------+--------------------+
-+----+------+----+
-|    | X0   | X1 |
-+----+------+----+
-| Y1 | 1330 | 30 |
-| Y0 |  814 |  0 |
-+----+------+----+
++----+-----+-----+
+|    | X0  | X1  |
++----+-----+-----+
+| Y1 |  73 | 934 |
+| Y0 | 942 | 228 |
++----+-----+-----+
 
 
 9. Global Clock gclk_2 Stat.
 +------------+---------------+------------------------------------------+-------------------+----------------+-------------+---------------+----------+--------------------------+----------------------+---------------------+----------------------+----------------------------+
 | Global Idx | Type          | Driver.Pin                               | Driver Region (D) | Clock          | Period (ns) | Waveform (ns) | Root (R) | Net                      | FanoutGroup1         | FanoutGroup2        | FanoutGroup3         | FanoutGroup4               |
 +------------+---------------+------------------------------------------+-------------------+----------------+-------------+---------------+----------+--------------------------+----------------------+---------------------+----------------------+----------------------------+
-| gclk_2     | PH1P_PHY_GCLK | S_hdmi_pixel_clk_created_gclkinst.clkout | T                 | HDMI_PIXEL_CLK |      13.333 | {0.000 6.666} | N/A      | S_hdmi_pixel_clk_syn_652 | PH1P_PHY_LSLICE(940) | PH1P_PHY_MSLICE(16) | PH1P_PHY_ERAM_V2(14) | PH1P_PHY_SHIFTERHARDCON(2) |
+| gclk_2     | PH1P_PHY_GCLK | S_hdmi_pixel_clk_created_gclkinst.clkout | T                 | HDMI_PIXEL_CLK |      13.333 | {0.000 6.666} | N/A      | S_hdmi_pixel_clk_syn_654 | PH1P_PHY_LSLICE(925) | PH1P_PHY_MSLICE(16) | PH1P_PHY_ERAM_V2(14) | PH1P_PHY_SHIFTERHARDCON(2) |
 +------------+---------------+------------------------------------------+-------------------+----------------+-------------+---------------+----------+--------------------------+----------------------+---------------------+----------------------+----------------------------+
 +----+-----+-----+
 |    | X0  | X1  |
 +----+-----+-----+
-| Y1 |  44 | 626 |
-| Y0 | 230 |  72 |
+| Y1 |   0 | 632 |
+| Y0 | 108 | 217 |
 +----+-----+-----+
 
 
 10. Global Clock gclk_3 Stat.
-+------------+---------------+--------------------------------------------------------------+-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------+------------------------------+----------+--------------------------------------------+----------------------+-----------------+---------------------+
-| Global Idx | Type          | Driver.Pin                                                   | Driver Region (D) | Clock                                                                                                                       | Period (ns)  | Waveform (ns)                | Root (R) | Net                                        | FanoutGroup1         | FanoutGroup2    | FanoutGroup3        |
-+------------+---------------+--------------------------------------------------------------+-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------+------------------------------+----------+--------------------------------------------+----------------------+-----------------+---------------------+
-| gclk_3     | PH1P_PHY_GCLK | u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout | T                 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3], u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk | 3.333, 3.333 | {0.000 1.666}, {0.000 1.666} | N/A      | u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1 | PH1P_PHY_LSLICE(235) | PH1P_PHY_MCU(1) | PH1P_PHY_ERAM_V2(1) |
-+------------+---------------+--------------------------------------------------------------+-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------+------------------------------+----------+--------------------------------------------+----------------------+-----------------+---------------------+
++------------+---------------+---------------------------------------------------+-------------------+---------------------------------------------------------------------+-------------+----------------+----------+---------------------------------+----------------------+-----------------+
+| Global Idx | Type          | Driver.Pin                                        | Driver Region (D) | Clock                                                               | Period (ns) | Waveform (ns)  | Root (R) | Net                             | FanoutGroup1         | FanoutGroup2    |
++------------+---------------+---------------------------------------------------+-------------------+---------------------------------------------------------------------+-------------+----------------+----------+---------------------------------+----------------------+-----------------+
+| gclk_3     | PH1P_PHY_GCLK | u_lens_i2c_ctrl/u_bus/clk_created_gclkinst.clkout | T                 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] |      20.000 | {0.000 10.000} | N/A      | u_lens_i2c_ctrl/u_bus/clk_syn_1 | PH1P_PHY_LSLICE(295) | PH1P_PHY_MCU(1) |
++------------+---------------+---------------------------------------------------+-------------------+---------------------------------------------------------------------+-------------+----------------+----------+---------------------------------+----------------------+-----------------+
 +----+----+-----+
 |    | X0 | X1  |
 +----+----+-----+
-| Y1 |  0 |   0 |
-| Y0 |  0 | 237 |
+| Y1 |  0 |  17 |
+| Y0 |  0 | 279 |
 +----+----+-----+
 
 
 11. Global Clock gclk_4 Stat.
-+------------+---------------+-----------------------------------------------+-------------------+---------------------------------------------------------------------+-------------+----------------+----------+-----------------------------+----------------------+-----------------+
-| Global Idx | Type          | Driver.Pin                                    | Driver Region (D) | Clock                                                               | Period (ns) | Waveform (ns)  | Root (R) | Net                         | FanoutGroup1         | FanoutGroup2    |
-+------------+---------------+-----------------------------------------------+-------------------+---------------------------------------------------------------------+-------------+----------------+----------+-----------------------------+----------------------+-----------------+
-| gclk_4     | PH1P_PHY_GCLK | u_lens_i2c_ctrl/I_clk_created_gclkinst.clkout | T                 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2] |      20.000 | {0.000 10.000} | N/A      | u_lens_i2c_ctrl/I_clk_syn_1 | PH1P_PHY_LSLICE(200) | PH1P_PHY_MCU(1) |
-+------------+---------------+-----------------------------------------------+-------------------+---------------------------------------------------------------------+-------------+----------------+----------+-----------------------------+----------------------+-----------------+
++------------+---------------+--------------------------------------------------------------+-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------+------------------------------+----------+--------------------------------------------+----------------------+-----------------+---------------------+
+| Global Idx | Type          | Driver.Pin                                                   | Driver Region (D) | Clock                                                                                                                       | Period (ns)  | Waveform (ns)                | Root (R) | Net                                        | FanoutGroup1         | FanoutGroup2    | FanoutGroup3        |
++------------+---------------+--------------------------------------------------------------+-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------+------------------------------+----------+--------------------------------------------+----------------------+-----------------+---------------------+
+| gclk_4     | PH1P_PHY_GCLK | u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst.clkout | T                 | u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[3], u_mcu/MCU_521bd43d073e_Inst/PH1P_PHY_MCU_Inst.core_clk | 3.333, 3.333 | {0.000 1.666}, {0.000 1.666} | N/A      | u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1 | PH1P_PHY_LSLICE(153) | PH1P_PHY_MCU(1) | PH1P_PHY_ERAM_V2(1) |
++------------+---------------+--------------------------------------------------------------+-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------+------------------------------+----------+--------------------------------------------+----------------------+-----------------+---------------------+
 +----+----+-----+
 |    | X0 | X1  |
 +----+----+-----+
-| Y1 |  1 |  13 |
-| Y0 |  2 | 185 |
+| Y1 |  0 |   9 |
+| Y0 |  0 | 146 |
 +----+----+-----+
 
 
@@ -175,13 +173,13 @@ C. IP Stat.
 +------------+---------------+----------------------------------+-------------------+-----------------------+-------------+----------------+----------+----------------+----------------------+
 | Global Idx | Type          | Driver.Pin                       | Driver Region (D) | Clock                 | Period (ns) | Waveform (ns)  | Root (R) | Net            | FanoutGroup1         |
 +------------+---------------+----------------------------------+-------------------+-----------------------+-------------+----------------+----------+----------------+----------------------+
-| gclk_5     | PH1P_PHY_GCLK | cwc_jtck_created_gclkinst.clkout | B                 | config_inst.cwc_tck_o |     100.000 | {0.000 50.000} | N/A      | cwc_jtck_syn_1 | PH1P_PHY_LSLICE(151) |
+| gclk_5     | PH1P_PHY_GCLK | cwc_jtck_created_gclkinst.clkout | B                 | config_inst.cwc_tck_o |     100.000 | {0.000 50.000} | N/A      | cwc_jtck_syn_1 | PH1P_PHY_LSLICE(118) |
 +------------+---------------+----------------------------------+-------------------+-----------------------+-------------+----------------+----------+----------------+----------------------+
 +----+----+-----+
 |    | X0 | X1  |
 +----+----+-----+
 | Y1 |  0 |   0 |
-| Y0 |  0 | 151 |
+| Y0 |  0 | 118 |
 +----+----+-----+
 
 
@@ -189,27 +187,27 @@ C. IP Stat.
 +------------+---------------+-----------------------------------------+-------------------+-------------+-------------+----------------+----------+-----------------+----------------------+--------------------+
 | Global Idx | Type          | Driver.Pin                              | Driver Region (D) | Clock       | Period (ns) | Waveform (ns)  | Root (R) | Net             | FanoutGroup1         | FanoutGroup2       |
 +------------+---------------+-----------------------------------------+-------------------+-------------+-------------+----------------+----------+-----------------+----------------------+--------------------+
-| gclk_6     | PH1P_PHY_GCLK | O_cam_24m_dup_1_created_gclkinst.clkout | T                 | pll_clk_24m |      42.000 | {0.000 21.000} | N/A      | O_cam_24m_syn_3 | PH1P_PHY_LSLICE(100) | PH1P_PHY_HD_PAD(1) |
+| gclk_6     | PH1P_PHY_GCLK | O_cam_24m_dup_1_created_gclkinst.clkout | T                 | pll_clk_24m |      42.000 | {0.000 21.000} | N/A      | O_cam_24m_syn_3 | PH1P_PHY_LSLICE(107) | PH1P_PHY_HD_PAD(1) |
 +------------+---------------+-----------------------------------------+-------------------+-------------+-------------+----------------+----------+-----------------+----------------------+--------------------+
-+----+----+----+
-|    | X0 | X1 |
-+----+----+----+
-| Y1 |  0 |  0 |
-| Y0 |  6 | 95 |
-+----+----+----+
++----+----+-----+
+|    | X0 | X1  |
++----+----+-----+
+| Y1 |  0 |   0 |
+| Y0 |  6 | 102 |
++----+----+-----+
 
 
 14. Global Clock gclk_7 Stat.
 +------------+---------------+-----------------------------------------+-------------------+-------------+-------------+----------------+----------+-----------------+---------------------+
 | Global Idx | Type          | Driver.Pin                              | Driver Region (D) | Clock       | Period (ns) | Waveform (ns)  | Root (R) | Net             | FanoutGroup1        |
 +------------+---------------+-----------------------------------------+-------------------+-------------+-------------+----------------+----------+-----------------+---------------------+
-| gclk_7     | PH1P_PHY_GCLK | I_sys_clk_dup_6_created_gclkinst.clkout | T                 | sys_clk_50m |      20.000 | {0.000 10.000} | N/A      | I_sys_clk_syn_8 | PH1P_PHY_LSLICE(83) |
+| gclk_7     | PH1P_PHY_GCLK | I_sys_clk_dup_6_created_gclkinst.clkout | T                 | sys_clk_50m |      20.000 | {0.000 10.000} | N/A      | I_sys_clk_syn_8 | PH1P_PHY_LSLICE(78) |
 +------------+---------------+-----------------------------------------+-------------------+-------------+-------------+----------------+----------+-----------------+---------------------+
 +----+----+----+
 |    | X0 | X1 |
 +----+----+----+
 | Y1 |  0 |  0 |
-| Y0 | 83 |  0 |
+| Y0 | 78 |  0 |
 +----+----+----+
 
 
@@ -217,12 +215,12 @@ C. IP Stat.
 +------------+---------------+------------------------------------------------------------------------------------+-------------------+-----------------+-------------+---------------+----------+------------------------------------------------------------------+---------------------+-----------------------+
 | Global Idx | Type          | Driver.Pin                                                                         | Driver Region (D) | Clock           | Period (ns) | Waveform (ns) | Root (R) | Net                                                              | FanoutGroup1        | FanoutGroup2          |
 +------------+---------------+------------------------------------------------------------------------------------+-------------------+-----------------+-------------+---------------+----------+------------------------------------------------------------------+---------------------+-----------------------+
-| gclk_8     | PH1P_PHY_GCLK | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_created_gclkinst.clkout | T                 | HDMI_SERIAL_CLK |       2.666 | {0.000 1.333} | N/A      | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_syn_1 | PH1P_PHY_LSLICE(29) | PH1P_PHY_HR_PAD_V2(8) |
+| gclk_8     | PH1P_PHY_GCLK | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_created_gclkinst.clkout | T                 | HDMI_SERIAL_CLK |       2.666 | {0.000 1.333} | N/A      | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_syn_1 | PH1P_PHY_LSLICE(27) | PH1P_PHY_HR_PAD_V2(8) |
 +------------+---------------+------------------------------------------------------------------------------------+-------------------+-----------------+-------------+---------------+----------+------------------------------------------------------------------+---------------------+-----------------------+
 +----+----+----+
 |    | X0 | X1 |
 +----+----+----+
-| Y1 |  0 | 37 |
+| Y1 |  0 | 35 |
 | Y0 |  0 |  0 |
 +----+----+----+
 
@@ -236,45 +234,31 @@ C. IP Stat.
 +----+----+----+
 |    | X0 | X1 |
 +----+----+----+
-| Y1 | 26 |  0 |
-| Y0 |  3 |  0 |
+| Y1 |  5 |  0 |
+| Y0 | 24 |  0 |
 +----+----+----+
 
 
 17. Global Clock gclk_10 Stat.
-+------------+---------------+------------------------------------------------------------+-------------------+-------+-------------+---------------+----------+-------------------------------------------+---------------------+
-| Global Idx | Type          | Driver.Pin                                                 | Driver Region (D) | Clock | Period (ns) | Waveform (ns) | Root (R) | Net                                       | FanoutGroup1        |
-+------------+---------------+------------------------------------------------------------+-------------------+-------+-------------+---------------+----------+-------------------------------------------+---------------------+
-| gclk_10    | PH1P_PHY_GCLK | u_lens_i2c_ctrl/u_lens_i2c/scl_clk_created_gclkinst.clkout | B                 |       |             |               | N/A      | u_lens_i2c_ctrl/u_lens_i2c/scl_clk_syn_75 | PH1P_PHY_LSLICE(24) |
-+------------+---------------+------------------------------------------------------------+-------------------+-------+-------------+---------------+----------+-------------------------------------------+---------------------+
++------------+---------------+---------------------------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------------------------+---------------------+
+| Global Idx | Type          | Driver.Pin                                              | Driver Region (D) | Clock | Period (ns) | Waveform (ns) | Root (R) | Net                                   | FanoutGroup1        |
++------------+---------------+---------------------------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------------------------+---------------------+
+| gclk_10    | PH1P_PHY_GCLK | u_uicfgcs500/uii2c_inst/scl_clk_created_gclkinst.clkout | B                 |       |             |               | N/A      | u_uicfgcs500/uii2c_inst/scl_clk_syn_9 | PH1P_PHY_LSLICE(18) |
++------------+---------------+---------------------------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------------------------+---------------------+
 +----+----+----+
 |    | X0 | X1 |
 +----+----+----+
 | Y1 |  0 |  0 |
-| Y0 |  0 | 24 |
+| Y0 |  0 | 18 |
 +----+----+----+
 
 
 18. Global Clock gclk_11 Stat.
-+------------+---------------+---------------------------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------------------------+---------------------+
-| Global Idx | Type          | Driver.Pin                                              | Driver Region (D) | Clock | Period (ns) | Waveform (ns) | Root (R) | Net                                   | FanoutGroup1        |
-+------------+---------------+---------------------------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------------------------+---------------------+
-| gclk_11    | PH1P_PHY_GCLK | u_uicfgcs500/uii2c_inst/scl_clk_created_gclkinst.clkout | B                 |       |             |               | N/A      | u_uicfgcs500/uii2c_inst/scl_clk_syn_9 | PH1P_PHY_LSLICE(17) |
-+------------+---------------+---------------------------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------------------------+---------------------+
-+----+----+----+
-|    | X0 | X1 |
-+----+----+----+
-| Y1 |  0 |  0 |
-| Y0 |  0 | 17 |
-+----+----+----+
-
-
-19. Global Clock gclk_12 Stat.
-+------------+---------------+----------------------------+-------------------+--------------+-------------+---------------+----------+-------------------------------------------------------------------------------------+--------------------+--------------------+-----------------+
-| Global Idx | Type          | Driver.Pin                 | Driver Region (D) | Clock        | Period (ns) | Waveform (ns) | Root (R) | Net                                                                                 | FanoutGroup1       | FanoutGroup2       | FanoutGroup3    |
-+------------+---------------+----------------------------+-------------------+--------------+-------------+---------------+----------+-------------------------------------------------------------------------------------+--------------------+--------------------+-----------------+
-| gclk_12    | PH1P_PHY_GCLK | u_PLL/bufg_feedback.clkout | T                 | pll_clk_100m |      10.000 | {0.000 5.000} | N/A      | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/u_lane0_hs_detect/I_clk | PH1P_PHY_LSLICE(7) | PH1P_PHY_PLL_V2(1) | PH1P_PHY_MCU(1) |
-+------------+---------------+----------------------------+-------------------+--------------+-------------+---------------+----------+-------------------------------------------------------------------------------------+--------------------+--------------------+-----------------+
++------------+---------------+----------------------------+-------------------+--------------+-------------+---------------+----------+------------------------------------------+--------------------+--------------------+-----------------+
+| Global Idx | Type          | Driver.Pin                 | Driver Region (D) | Clock        | Period (ns) | Waveform (ns) | Root (R) | Net                                      | FanoutGroup1       | FanoutGroup2       | FanoutGroup3    |
++------------+---------------+----------------------------+-------------------+--------------+-------------+---------------+----------+------------------------------------------+--------------------+--------------------+-----------------+
+| gclk_11    | PH1P_PHY_GCLK | u_PLL/bufg_feedback.clkout | T                 | pll_clk_100m |      10.000 | {0.000 5.000} | N/A      | g_u4_key_debounce[0]$u_u4_key_test/I_clk | PH1P_PHY_LSLICE(7) | PH1P_PHY_PLL_V2(1) | PH1P_PHY_MCU(1) |
++------------+---------------+----------------------------+-------------------+--------------+-------------+---------------+----------+------------------------------------------+--------------------+--------------------+-----------------+
 +----+----+----+
 |    | X0 | X1 |
 +----+----+----+
@@ -283,11 +267,11 @@ C. IP Stat.
 +----+----+----+
 
 
-20. Global Clock gclk_13 Stat.
+19. Global Clock gclk_12 Stat.
 +------------+---------------+---------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------+-----------------+
 | Global Idx | Type          | Driver.Pin                            | Driver Region (D) | Clock | Period (ns) | Waveform (ns) | Root (R) | Net                 | FanoutGroup1    |
 +------------+---------------+---------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------+-----------------+
-| gclk_13    | PH1P_PHY_GCLK | S_mcu_ahb_clk_created_gclkinst.clkout | B                 |       |             |               | N/A      | S_mcu_ahb_clk_syn_5 | PH1P_PHY_MCU(1) |
+| gclk_12    | PH1P_PHY_GCLK | S_mcu_ahb_clk_created_gclkinst.clkout | B                 |       |             |               | N/A      | S_mcu_ahb_clk_syn_5 | PH1P_PHY_MCU(1) |
 +------------+---------------+---------------------------------------+-------------------+-------+-------------+---------------+----------+---------------------+-----------------+
 +----+----+----+
 |    | X0 | X1 |
@@ -297,93 +281,89 @@ C. IP Stat.
 +----+----+----+
 
 
-21. Region X0Y0
-+----------+-------+--------------------+------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------------+-------------------------+----------------------------+--------------------------+----------------------------+-------------------------+
-| Idx      | Track | Type               | Constraint | Clock Loads | Total Loads | Net                                                                                                                  | FanoutGroup1            | FanoutGroup2               | FanoutGroup3             | FanoutGroup4               | FanoutGroup5            |
-+----------+-------+--------------------+------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------------+-------------------------+----------------------------+--------------------------+----------------------------+-------------------------+
-| gclk_0   | N/A   | PH1P_PHY_GCLK      | None       |        1526 |        1526 | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb                                      | PH1P_PHY_LSLICE(1419)   | PH1P_PHY_MSLICE(72)        | PH1P_PHY_ERAM_V2(26)     | PH1P_PHY_SHIFTERHARDCON(9) |                         |
-| gclk_1   | N/A   | PH1P_PHY_GCLK      | None       |         814 |         814 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk                                   | PH1P_PHY_LSLICE(685)    | PH1P_PHY_MSLICE(95)        | PH1P_PHY_DRAMHARDCON(24) | PH1P_PHY_ERAM_V2(8)        | PH1P_PHY_DDRPHY_BYTE(2) |
-| gclk_2   | N/A   | PH1P_PHY_GCLK      | None       |         230 |         230 | S_hdmi_pixel_clk_syn_652                                                                                             | PH1P_PHY_LSLICE(222)    | PH1P_PHY_ERAM_V2(8)        |                          |                            |                         |
-| gclk_4   | N/A   | PH1P_PHY_GCLK      | None       |           2 |           2 | u_lens_i2c_ctrl/I_clk_syn_1                                                                                          | PH1P_PHY_LSLICE(2)      |                            |                          |                            |                         |
-| gclk_6   | N/A   | PH1P_PHY_GCLK      | None       |           5 |           6 | O_cam_24m_syn_3                                                                                                      | PH1P_PHY_LSLICE(5)      | PH1P_PHY_HD_PAD(1)         |                          |                            |                         |
-| gclk_7   | N/A   | PH1P_PHY_GCLK      | None       |          83 |          83 | I_sys_clk_syn_8                                                                                                      | PH1P_PHY_LSLICE(83)     |                            |                          |                            |                         |
-| gclk_9   | N/A   | PH1P_PHY_GCLK      | None       |           3 |           3 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk_syn_1     | PH1P_PHY_DDRPHY_BYTE(2) | PH1P_PHY_DDRPHY_BANKREF(1) |                          |                            |                         |
-|          |       |                    |            |             |             |                                                                                                                      |                         |                            |                          |                            |                         |
-| local_2  | N/A   | PH1P_PHY_HD_PAD    | None       |           1 |           1 | I_sys_clk_dup_6                                                                                                      | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_3  | N/A   | PH1P_PHY_LSLICE    | None       |           1 |           2 | u_uicfgcs500/uii2c_inst/scl_clk                                                                                      | PH1P_PHY_GCLK(1)        | PH1P_PHY_LSLICE(1)         |                          |                            |                         |
-| local_4  | N/A   | PH1P_PHY_LSLICE    | None       |           1 |           1 | u_lens_i2c_ctrl/u_lens_i2c/scl_clk                                                                                   | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_5  | N/A   | PH1P_PHY_MLCLK     | X0Y59Z1    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_mlclk_2   | PH1P_PHY_IOCLK(1)       |                            |                          |                            |                         |
-| local_6  | N/A   | PH1P_PHY_MLCLK     | X0Y59Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_mlclk_1   | PH1P_PHY_IOCLK(1)       |                            |                          |                            |                         |
-| local_7  | N/A   | PH1P_PHY_IOCLK     | X0Y19Z0    |           2 |           2 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/ctl_clk[1]         | PH1P_PHY_DDRPHY_BYTE(2) |                            |                          |                            |                         |
-| local_8  | N/A   | PH1P_PHY_IOCLK     | X0Y19Z1    |           2 |           2 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/ddr_clk[1]         | PH1P_PHY_DDRPHY_BYTE(2) |                            |                          |                            |                         |
-| local_9  | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | O_cam_24m_dup_1                                                                                                      | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_10 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | S_hdmi_pixel_clk                                                                                                     | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_11 | N/A   | PH1P_PHY_MCU       | None       |           1 |           1 | S_mcu_ahb_clk                                                                                                        | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_12 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | u_PLL/clk0_buf                                                                                                       | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_13 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk                                                           | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_15 | N/A   | PH1P_PHY_PLL_V2    | X0Y79Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/clkc[0] | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_18 | N/A   | PH1P_PHY_CONFIG_V2 | None       |           1 |           1 | cwc_jtck                                                                                                             | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_19 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | u_lens_i2c_ctrl/I_clk                                                                                                | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_20 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | u_mcu/MCU_521bd43d073e_Inst/core_clk                                                                                 | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_21 | N/A   | PH1P_PHY_MIPIIO_RX | None       |           1 |           1 | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/S_mipiio_hs_rx_clk                                       | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-| local_22 | N/A   | PH1P_PHY_PLL_V2    | X0Y40Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk           | PH1P_PHY_GCLK(1)        |                            |                          |                            |                         |
-+----------+-------+--------------------+------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------------+-------------------------+----------------------------+--------------------------+----------------------------+-------------------------+
+20. Region X0Y0
++----------+-------+--------------------+------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------------+-------------------------+-------------------------+----------------------------+----------------------------+-------------------------+
+| Idx      | Track | Type               | Constraint | Clock Loads | Total Loads | Net                                                                                                                  | FanoutGroup1            | FanoutGroup2            | FanoutGroup3               | FanoutGroup4               | FanoutGroup5            |
++----------+-------+--------------------+------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------------+-------------------------+-------------------------+----------------------------+----------------------------+-------------------------+
+| gclk_0   | N/A   | PH1P_PHY_GCLK      | None       |        1514 |        1514 | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb                                      | PH1P_PHY_LSLICE(1416)   | PH1P_PHY_MSLICE(56)     | PH1P_PHY_ERAM_V2(35)       | PH1P_PHY_SHIFTERHARDCON(7) |                         |
+| gclk_1   | N/A   | PH1P_PHY_GCLK      | None       |         942 |         942 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk                                   | PH1P_PHY_LSLICE(771)    | PH1P_PHY_MSLICE(128)    | PH1P_PHY_DRAMHARDCON(28)   | PH1P_PHY_ERAM_V2(13)       | PH1P_PHY_DDRPHY_BYTE(2) |
+| gclk_2   | N/A   | PH1P_PHY_GCLK      | None       |         108 |         108 | S_hdmi_pixel_clk_syn_654                                                                                             | PH1P_PHY_LSLICE(104)    | PH1P_PHY_ERAM_V2(4)     |                            |                            |                         |
+| gclk_6   | N/A   | PH1P_PHY_GCLK      | None       |           5 |           6 | O_cam_24m_syn_3                                                                                                      | PH1P_PHY_LSLICE(5)      | PH1P_PHY_HD_PAD(1)      |                            |                            |                         |
+| gclk_7   | N/A   | PH1P_PHY_GCLK      | None       |          78 |          78 | I_sys_clk_syn_8                                                                                                      | PH1P_PHY_LSLICE(78)     |                         |                            |                            |                         |
+| gclk_9   | N/A   | PH1P_PHY_GCLK      | None       |          24 |          24 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk_syn_1     | PH1P_PHY_LSLICE(21)     | PH1P_PHY_DDRPHY_BYTE(2) | PH1P_PHY_DDRPHY_BANKREF(1) |                            |                         |
+|          |       |                    |            |             |             |                                                                                                                      |                         |                         |                            |                            |                         |
+| local_2  | N/A   | PH1P_PHY_HD_PAD    | None       |           1 |           1 | I_sys_clk_dup_6                                                                                                      | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_3  | N/A   | PH1P_PHY_LSLICE    | None       |           1 |           2 | u_uicfgcs500/uii2c_inst/scl_clk                                                                                      | PH1P_PHY_GCLK(1)        | PH1P_PHY_LSLICE(1)      |                            |                            |                         |
+| local_4  | N/A   | PH1P_PHY_MLCLK     | X0Y59Z1    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_mlclk_2   | PH1P_PHY_IOCLK(1)       |                         |                            |                            |                         |
+| local_5  | N/A   | PH1P_PHY_MLCLK     | X0Y59Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_mlclk_1   | PH1P_PHY_IOCLK(1)       |                         |                            |                            |                         |
+| local_6  | N/A   | PH1P_PHY_IOCLK     | X0Y19Z0    |           2 |           2 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/ctl_clk[1]         | PH1P_PHY_DDRPHY_BYTE(2) |                         |                            |                            |                         |
+| local_7  | N/A   | PH1P_PHY_IOCLK     | X0Y19Z1    |           2 |           2 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/ddr_clk[1]         | PH1P_PHY_DDRPHY_BYTE(2) |                         |                            |                            |                         |
+| local_8  | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | O_cam_24m_dup_1                                                                                                      | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_9  | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | S_hdmi_pixel_clk                                                                                                     | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_10 | N/A   | PH1P_PHY_MCU       | None       |           1 |           1 | S_mcu_ahb_clk                                                                                                        | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_11 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | u_PLL/clk0_buf                                                                                                       | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_12 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk                                                           | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_14 | N/A   | PH1P_PHY_PLL_V2    | X0Y79Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/clkc[0] | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_17 | N/A   | PH1P_PHY_CONFIG_V2 | None       |           1 |           1 | cwc_jtck                                                                                                             | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_18 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | u_lens_i2c_ctrl/u_bus/clk                                                                                            | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_19 | N/A   | PH1P_PHY_PLL_V2    | None       |           1 |           1 | u_mcu/MCU_521bd43d073e_Inst/core_clk                                                                                 | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_20 | N/A   | PH1P_PHY_MIPIIO_RX | None       |           1 |           1 | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/S_mipiio_hs_rx_clk                                       | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
+| local_21 | N/A   | PH1P_PHY_PLL_V2    | X0Y40Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk           | PH1P_PHY_GCLK(1)        |                         |                            |                            |                         |
++----------+-------+--------------------+------------+-------------+-------------+----------------------------------------------------------------------------------------------------------------------+-------------------------+-------------------------+----------------------------+----------------------------+-------------------------+
 
 
-22. Region X1Y0
-+---------+-------+-----------------+------------+-------------+-------------+-------------------------------------------------------------------------------------+-----------------------+---------------------+----------------------------+
-| Idx     | Track | Type            | Constraint | Clock Loads | Total Loads | Net                                                                                 | FanoutGroup1          | FanoutGroup2        | FanoutGroup3               |
-+---------+-------+-----------------+------------+-------------+-------------+-------------------------------------------------------------------------------------+-----------------------+---------------------+----------------------------+
-| gclk_0  | N/A   | PH1P_PHY_GCLK   | None       |        1388 |        1388 | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb     | PH1P_PHY_LSLICE(1361) | PH1P_PHY_MSLICE(24) | PH1P_PHY_SHIFTERHARDCON(3) |
-| gclk_2  | N/A   | PH1P_PHY_GCLK   | None       |          72 |          72 | S_hdmi_pixel_clk_syn_652                                                            | PH1P_PHY_LSLICE(72)   |                     |                            |
-| gclk_3  | N/A   | PH1P_PHY_GCLK   | None       |         237 |         237 | u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1                                          | PH1P_PHY_LSLICE(235)  | PH1P_PHY_MCU(1)     | PH1P_PHY_ERAM_V2(1)        |
-| gclk_4  | N/A   | PH1P_PHY_GCLK   | None       |         185 |         185 | u_lens_i2c_ctrl/I_clk_syn_1                                                         | PH1P_PHY_LSLICE(184)  | PH1P_PHY_MCU(1)     |                            |
-| gclk_5  | N/A   | PH1P_PHY_GCLK   | None       |         151 |         151 | cwc_jtck_syn_1                                                                      | PH1P_PHY_LSLICE(151)  |                     |                            |
-| gclk_6  | N/A   | PH1P_PHY_GCLK   | None       |          95 |          95 | O_cam_24m_syn_3                                                                     | PH1P_PHY_LSLICE(95)   |                     |                            |
-| gclk_10 | N/A   | PH1P_PHY_GCLK   | None       |          24 |          24 | u_lens_i2c_ctrl/u_lens_i2c/scl_clk_syn_75                                           | PH1P_PHY_LSLICE(24)   |                     |                            |
-| gclk_11 | N/A   | PH1P_PHY_GCLK   | None       |          17 |          17 | u_uicfgcs500/uii2c_inst/scl_clk_syn_9                                               | PH1P_PHY_LSLICE(17)   |                     |                            |
-| gclk_12 | N/A   | PH1P_PHY_GCLK   | None       |           8 |           8 | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/u_lane0_hs_detect/I_clk | PH1P_PHY_LSLICE(7)    | PH1P_PHY_MCU(1)     |                            |
-| gclk_13 | N/A   | PH1P_PHY_GCLK   | None       |           1 |           1 | S_mcu_ahb_clk_syn_5                                                                 | PH1P_PHY_MCU(1)       |                     |                            |
-|         |       |                 |            |             |             |                                                                                     |                       |                     |                            |
-| local_3 | N/A   | PH1P_PHY_LSLICE | None       |           0 |           1 | u_uicfgcs500/uii2c_inst/scl_clk                                                     | PH1P_PHY_LSLICE(1)    |                     |                            |
-| local_4 | N/A   | PH1P_PHY_LSLICE | None       |           0 |           2 | u_lens_i2c_ctrl/u_lens_i2c/scl_clk                                                  | PH1P_PHY_LSLICE(2)    |                     |                            |
-+---------+-------+-----------------+------------+-------------+-------------+-------------------------------------------------------------------------------------+-----------------------+---------------------+----------------------------+
+21. Region X1Y0
++---------+-------+-----------------+------------+-------------+-------------+------------------------------------------------------------------------------------+-----------------------+----------------------+------------------------+----------------------------+
+| Idx     | Track | Type            | Constraint | Clock Loads | Total Loads | Net                                                                                | FanoutGroup1          | FanoutGroup2         | FanoutGroup3           | FanoutGroup4               |
++---------+-------+-----------------+------------+-------------+-------------+------------------------------------------------------------------------------------+-----------------------+----------------------+------------------------+----------------------------+
+| gclk_0  | N/A   | PH1P_PHY_GCLK   | None       |        1332 |        1332 | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb    | PH1P_PHY_LSLICE(1301) | PH1P_PHY_ERAM_V2(25) | PH1P_PHY_DSPSIOU_V2(6) |                            |
+| gclk_1  | N/A   | PH1P_PHY_GCLK   | None       |         228 |         228 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk | PH1P_PHY_LSLICE(219)  | PH1P_PHY_MSLICE(4)   | PH1P_PHY_ERAM_V2(3)    | PH1P_PHY_DRAMHARDCON(2)    |
+| gclk_2  | N/A   | PH1P_PHY_GCLK   | None       |         217 |         217 | S_hdmi_pixel_clk_syn_654                                                           | PH1P_PHY_LSLICE(204)  | PH1P_PHY_MSLICE(8)   | PH1P_PHY_ERAM_V2(4)    | PH1P_PHY_SHIFTERHARDCON(1) |
+| gclk_3  | N/A   | PH1P_PHY_GCLK   | None       |         279 |         279 | u_lens_i2c_ctrl/u_bus/clk_syn_1                                                    | PH1P_PHY_LSLICE(278)  | PH1P_PHY_MCU(1)      |                        |                            |
+| gclk_4  | N/A   | PH1P_PHY_GCLK   | None       |         146 |         146 | u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1                                         | PH1P_PHY_LSLICE(145)  | PH1P_PHY_MCU(1)      |                        |                            |
+| gclk_5  | N/A   | PH1P_PHY_GCLK   | None       |         118 |         118 | cwc_jtck_syn_1                                                                     | PH1P_PHY_LSLICE(118)  |                      |                        |                            |
+| gclk_6  | N/A   | PH1P_PHY_GCLK   | None       |         102 |         102 | O_cam_24m_syn_3                                                                    | PH1P_PHY_LSLICE(102)  |                      |                        |                            |
+| gclk_10 | N/A   | PH1P_PHY_GCLK   | None       |          18 |          18 | u_uicfgcs500/uii2c_inst/scl_clk_syn_9                                              | PH1P_PHY_LSLICE(18)   |                      |                        |                            |
+| gclk_11 | N/A   | PH1P_PHY_GCLK   | None       |           8 |           8 | g_u4_key_debounce[0]$u_u4_key_test/I_clk                                           | PH1P_PHY_LSLICE(7)    | PH1P_PHY_MCU(1)      |                        |                            |
+| gclk_12 | N/A   | PH1P_PHY_GCLK   | None       |           1 |           1 | S_mcu_ahb_clk_syn_5                                                                | PH1P_PHY_MCU(1)       |                      |                        |                            |
+|         |       |                 |            |             |             |                                                                                    |                       |                      |                        |                            |
+| local_3 | N/A   | PH1P_PHY_LSLICE | None       |           0 |           1 | u_uicfgcs500/uii2c_inst/scl_clk                                                    | PH1P_PHY_LSLICE(1)    |                      |                        |                            |
++---------+-------+-----------------+------------+-------------+-------------+------------------------------------------------------------------------------------+-----------------------+----------------------+------------------------+----------------------------+
 
 
-23. Region X0Y1
-+----------+-------+-----------------+------------+-------------+-------------+---------------------------------------------------------------------------------------------------------------------+-------------------------+-------------------------+----------------------------+-------------------------+-------------------------+--------------------+
-| Idx      | Track | Type            | Constraint | Clock Loads | Total Loads | Net                                                                                                                 | FanoutGroup1            | FanoutGroup2            | FanoutGroup3               | FanoutGroup4            | FanoutGroup5            | FanoutGroup6       |
-+----------+-------+-----------------+------------+-------------+-------------+---------------------------------------------------------------------------------------------------------------------+-------------------------+-------------------------+----------------------------+-------------------------+-------------------------+--------------------+
-| gclk_0   | N/A   | PH1P_PHY_GCLK   | None       |        1322 |        1322 | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb                                     | PH1P_PHY_LSLICE(1290)   | PH1P_PHY_ERAM_V2(32)    |                            |                         |                         |                    |
-| gclk_1   | N/A   | PH1P_PHY_GCLK   | None       |        1330 |        1330 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk                                  | PH1P_PHY_LSLICE(1291)   | PH1P_PHY_MSLICE(20)     | PH1P_PHY_ERAM_V2(8)        | PH1P_PHY_DRAMHARDCON(6) | PH1P_PHY_DDRPHY_BYTE(4) | PH1P_PHY_PLL_V2(1) |
-| gclk_2   | N/A   | PH1P_PHY_GCLK   | None       |          44 |          44 | S_hdmi_pixel_clk_syn_652                                                                                            | PH1P_PHY_LSLICE(38)     | PH1P_PHY_ERAM_V2(6)     |                            |                         |                         |                    |
-| gclk_4   | N/A   | PH1P_PHY_GCLK   | None       |           1 |           1 | u_lens_i2c_ctrl/I_clk_syn_1                                                                                         | PH1P_PHY_LSLICE(1)      |                         |                            |                         |                         |                    |
-| gclk_9   | N/A   | PH1P_PHY_GCLK   | None       |          26 |          26 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk_syn_1    | PH1P_PHY_LSLICE(21)     | PH1P_PHY_DDRPHY_BYTE(4) | PH1P_PHY_DDRPHY_BANKREF(1) |                         |                         |                    |
-|          |       |                 |            |             |             |                                                                                                                     |                         |                         |                            |                         |                         |                    |
-| local_0  | N/A   | PH1P_PHY_IOCLK  | X0Y59Z0    |           4 |           4 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/ctl_clk[0]        | PH1P_PHY_DDRPHY_BYTE(4) |                         |                            |                         |                         |                    |
-| local_1  | N/A   | PH1P_PHY_IOCLK  | X0Y59Z1    |           4 |           4 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/ddr_clk[0]        | PH1P_PHY_DDRPHY_BYTE(4) |                         |                            |                         |                         |                    |
-| local_2  | N/A   | PH1P_PHY_HD_PAD | None       |           1 |           1 | I_sys_clk_dup_6                                                                                                     | PH1P_PHY_PLL_V2(1)      |                         |                            |                         |                         |                    |
-| local_5  | N/A   | PH1P_PHY_MLCLK  | X0Y59Z1    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_mlclk_2  | PH1P_PHY_IOCLK(1)       |                         |                            |                         |                         |                    |
-| local_6  | N/A   | PH1P_PHY_MLCLK  | X0Y59Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_mlclk_1  | PH1P_PHY_IOCLK(1)       |                         |                            |                         |                         |                    |
-| local_14 | N/A   | PH1P_PHY_PLL_V2 | X0Y40Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/refclk | PH1P_PHY_PLL_V2(1)      |                         |                            |                         |                         |                    |
-| local_16 | N/A   | PH1P_PHY_PLL_V2 | X0Y40Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_clk_2    | PH1P_PHY_MLCLK(1)       |                         |                            |                         |                         |                    |
-| local_17 | N/A   | PH1P_PHY_PLL_V2 | X0Y40Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_clk_1    | PH1P_PHY_MLCLK(1)       |                         |                            |                         |                         |                    |
-+----------+-------+-----------------+------------+-------------+-------------+---------------------------------------------------------------------------------------------------------------------+-------------------------+-------------------------+----------------------------+-------------------------+-------------------------+--------------------+
+22. Region X0Y1
++----------+-------+-----------------+------------+-------------+-------------+---------------------------------------------------------------------------------------------------------------------+-------------------------+----------------------------+---------------------+----------------------------+
+| Idx      | Track | Type            | Constraint | Clock Loads | Total Loads | Net                                                                                                                 | FanoutGroup1            | FanoutGroup2               | FanoutGroup3        | FanoutGroup4               |
++----------+-------+-----------------+------------+-------------+-------------+---------------------------------------------------------------------------------------------------------------------+-------------------------+----------------------------+---------------------+----------------------------+
+| gclk_0   | N/A   | PH1P_PHY_GCLK   | None       |        1881 |        1881 | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb                                     | PH1P_PHY_LSLICE(1830)   | PH1P_PHY_MSLICE(40)        | PH1P_PHY_ERAM_V2(6) | PH1P_PHY_SHIFTERHARDCON(5) |
+| gclk_1   | N/A   | PH1P_PHY_GCLK   | None       |          73 |          73 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk                                  | PH1P_PHY_LSLICE(68)     | PH1P_PHY_DDRPHY_BYTE(4)    | PH1P_PHY_PLL_V2(1)  |                            |
+| gclk_9   | N/A   | PH1P_PHY_GCLK   | None       |           5 |           5 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk_syn_1    | PH1P_PHY_DDRPHY_BYTE(4) | PH1P_PHY_DDRPHY_BANKREF(1) |                     |                            |
+|          |       |                 |            |             |             |                                                                                                                     |                         |                            |                     |                            |
+| local_0  | N/A   | PH1P_PHY_IOCLK  | X0Y59Z0    |           4 |           4 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/ctl_clk[0]        | PH1P_PHY_DDRPHY_BYTE(4) |                            |                     |                            |
+| local_1  | N/A   | PH1P_PHY_IOCLK  | X0Y59Z1    |           4 |           4 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/ddr_clk[0]        | PH1P_PHY_DDRPHY_BYTE(4) |                            |                     |                            |
+| local_2  | N/A   | PH1P_PHY_HD_PAD | None       |           1 |           1 | I_sys_clk_dup_6                                                                                                     | PH1P_PHY_PLL_V2(1)      |                            |                     |                            |
+| local_4  | N/A   | PH1P_PHY_MLCLK  | X0Y59Z1    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_mlclk_2  | PH1P_PHY_IOCLK(1)       |                            |                     |                            |
+| local_5  | N/A   | PH1P_PHY_MLCLK  | X0Y59Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_mlclk_1  | PH1P_PHY_IOCLK(1)       |                            |                     |                            |
+| local_13 | N/A   | PH1P_PHY_PLL_V2 | X0Y40Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/refclk | PH1P_PHY_PLL_V2(1)      |                            |                     |                            |
+| local_15 | N/A   | PH1P_PHY_PLL_V2 | X0Y40Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_clk_2    | PH1P_PHY_MLCLK(1)       |                            |                     |                            |
+| local_16 | N/A   | PH1P_PHY_PLL_V2 | X0Y40Z0    |           1 |           1 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/pll0_clk_1    | PH1P_PHY_MLCLK(1)       |                            |                     |                            |
++----------+-------+-----------------+------------+-------------+-------------+---------------------------------------------------------------------------------------------------------------------+-------------------------+----------------------------+---------------------+----------------------------+
 
 
-24. Region X1Y1
-+---------+-------+-----------------+------------+-------------+-------------+-------------------------------------------------------------------------------------+----------------------+-----------------------+----------------------------+
-| Idx     | Track | Type            | Constraint | Clock Loads | Total Loads | Net                                                                                 | FanoutGroup1         | FanoutGroup2          | FanoutGroup3               |
-+---------+-------+-----------------+------------+-------------+-------------+-------------------------------------------------------------------------------------+----------------------+-----------------------+----------------------------+
-| gclk_0  | N/A   | PH1P_PHY_GCLK   | None       |         884 |         884 | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb     | PH1P_PHY_LSLICE(866) | PH1P_PHY_ERAM_V2(10)  | PH1P_PHY_DSPSIOU_V2(8)     |
-| gclk_1  | N/A   | PH1P_PHY_GCLK   | None       |          30 |          30 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk  | PH1P_PHY_LSLICE(30)  |                       |                            |
-| gclk_2  | N/A   | PH1P_PHY_GCLK   | None       |         626 |         626 | S_hdmi_pixel_clk_syn_652                                                            | PH1P_PHY_LSLICE(608) | PH1P_PHY_MSLICE(16)   | PH1P_PHY_SHIFTERHARDCON(2) |
-| gclk_4  | N/A   | PH1P_PHY_GCLK   | None       |          13 |          13 | u_lens_i2c_ctrl/I_clk_syn_1                                                         | PH1P_PHY_LSLICE(13)  |                       |                            |
-| gclk_8  | N/A   | PH1P_PHY_GCLK   | None       |          37 |          37 | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_syn_1                    | PH1P_PHY_LSLICE(29)  | PH1P_PHY_HR_PAD_V2(8) |                            |
-| gclk_12 | N/A   | PH1P_PHY_GCLK   | None       |           1 |           1 | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/u_lane0_hs_detect/I_clk | PH1P_PHY_PLL_V2(1)   |                       |                            |
-|         |       |                 |            |             |             |                                                                                     |                      |                       |                            |
-| local_2 | N/A   | PH1P_PHY_HD_PAD | None       |           1 |           1 | I_sys_clk_dup_6                                                                     | PH1P_PHY_PLL_V2(1)   |                       |                            |
-+---------+-------+-----------------+------------+-------------+-------------+-------------------------------------------------------------------------------------+----------------------+-----------------------+----------------------------+
+23. Region X1Y1
++---------+-------+-----------------+------------+-------------+-------------+------------------------------------------------------------------------------------+----------------------+-----------------------+------------------------+----------------------------+
+| Idx     | Track | Type            | Constraint | Clock Loads | Total Loads | Net                                                                                | FanoutGroup1         | FanoutGroup2          | FanoutGroup3           | FanoutGroup4               |
++---------+-------+-----------------+------------+-------------+-------------+------------------------------------------------------------------------------------+----------------------+-----------------------+------------------------+----------------------------+
+| gclk_0  | N/A   | PH1P_PHY_GCLK   | None       |         343 |         343 | u_isp_top/u_rgb96_downscale_crop/u_scale_line_buffer/ram_f84573da5ab5_Inst/clkb    | PH1P_PHY_LSLICE(339) | PH1P_PHY_ERAM_V2(2)   | PH1P_PHY_DSPSIOU_V2(2) |                            |
+| gclk_1  | N/A   | PH1P_PHY_GCLK   | None       |         934 |         934 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_alc_mc_top/clk | PH1P_PHY_LSLICE(934) |                       |                        |                            |
+| gclk_2  | N/A   | PH1P_PHY_GCLK   | None       |         632 |         632 | S_hdmi_pixel_clk_syn_654                                                           | PH1P_PHY_LSLICE(617) | PH1P_PHY_MSLICE(8)    | PH1P_PHY_ERAM_V2(6)    | PH1P_PHY_SHIFTERHARDCON(1) |
+| gclk_3  | N/A   | PH1P_PHY_GCLK   | None       |          17 |          17 | u_lens_i2c_ctrl/u_bus/clk_syn_1                                                    | PH1P_PHY_LSLICE(17)  |                       |                        |                            |
+| gclk_4  | N/A   | PH1P_PHY_GCLK   | None       |           9 |           9 | u_mcu/MCU_521bd43d073e_Inst/core_clk_syn_1                                         | PH1P_PHY_LSLICE(8)   | PH1P_PHY_ERAM_V2(1)   |                        |                            |
+| gclk_8  | N/A   | PH1P_PHY_GCLK   | None       |          35 |          35 | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_syn_1                   | PH1P_PHY_LSLICE(27)  | PH1P_PHY_HR_PAD_V2(8) |                        |                            |
+| gclk_11 | N/A   | PH1P_PHY_GCLK   | None       |           1 |           1 | g_u4_key_debounce[0]$u_u4_key_test/I_clk                                           | PH1P_PHY_PLL_V2(1)   |                       |                        |                            |
+|         |       |                 |            |             |             |                                                                                    |                      |                       |                        |                            |
+| local_2 | N/A   | PH1P_PHY_HD_PAD | None       |           1 |           1 | I_sys_clk_dup_6                                                                    | PH1P_PHY_PLL_V2(1)   |                       |                        |                            |
++---------+-------+-----------------+------------+-------------+-------------+------------------------------------------------------------------------------------+----------------------+-----------------------+------------------------+----------------------------+
 
 
 
@@ -395,20 +375,19 @@ C. IP Stat.
 +---------+----------------+-----------+--------+--------+-----------------------------------------------------------------------------------------------------------------------------+
 | Index   | Type           | Location  | Sector | Fanout | Buffer                                                                                                                      |
 +---------+----------------+-----------+--------+--------+-----------------------------------------------------------------------------------------------------------------------------+
-| gclk_1  | PH1P_PHY_GCLK  | x23y39z1  |      0 |   5120 | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/bufg_feedback                                                   |
-| gclk_2  | PH1P_PHY_GCLK  | x23y39z16 |      0 |   2174 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/u_bufg_fbclk   |
-| gclk_3  | PH1P_PHY_GCLK  | x23y39z17 |      0 |    972 | S_hdmi_pixel_clk_created_gclkinst                                                                                           |
-| gclk_4  | PH1P_PHY_GCLK  | x23y39z18 |      0 |    237 | u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst                                                                       |
-| gclk_5  | PH1P_PHY_GCLK  | x23y39z19 |      0 |    201 | u_lens_i2c_ctrl/I_clk_created_gclkinst                                                                                      |
-| gclk_6  | PH1P_PHY_GCLK  | x23y39z0  |      0 |    151 | cwc_jtck_created_gclkinst                                                                                                   |
-| gclk_7  | PH1P_PHY_GCLK  | x23y39z20 |      0 |    101 | O_cam_24m_dup_1_created_gclkinst                                                                                            |
-| gclk_8  | PH1P_PHY_GCLK  | x23y39z24 |      0 |     83 | I_sys_clk_dup_6_created_gclkinst                                                                                            |
-| gclk_9  | PH1P_PHY_GCLK  | x23y39z21 |      0 |     37 | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_created_gclkinst                                                 |
+| gclk_1  | PH1P_PHY_GCLK  | x23y39z1  |      0 |   5070 | u_mipi_dphy_rx_ph1p_mipiio_wrapper/u_ph1p_mipiio_rx_wrapper/bufg_feedback                                                   |
+| gclk_2  | PH1P_PHY_GCLK  | x23y39z16 |      0 |   2177 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_pll1/u_bufg_fbclk   |
+| gclk_3  | PH1P_PHY_GCLK  | x23y39z17 |      0 |    957 | S_hdmi_pixel_clk_created_gclkinst                                                                                           |
+| gclk_4  | PH1P_PHY_GCLK  | x23y39z18 |      0 |    296 | u_lens_i2c_ctrl/u_bus/clk_created_gclkinst                                                                                  |
+| gclk_5  | PH1P_PHY_GCLK  | x23y39z19 |      0 |    155 | u_mcu/MCU_521bd43d073e_Inst/core_clk_created_gclkinst                                                                       |
+| gclk_6  | PH1P_PHY_GCLK  | x23y39z0  |      0 |    118 | cwc_jtck_created_gclkinst                                                                                                   |
+| gclk_7  | PH1P_PHY_GCLK  | x23y39z20 |      0 |    108 | O_cam_24m_dup_1_created_gclkinst                                                                                            |
+| gclk_8  | PH1P_PHY_GCLK  | x23y39z24 |      0 |     78 | I_sys_clk_dup_6_created_gclkinst                                                                                            |
+| gclk_9  | PH1P_PHY_GCLK  | x23y39z21 |      0 |     35 | u_hdmi_tx/u_hdmi2phy_wrapper/u0_lane_lvds_8_1/I_serial_clk_created_gclkinst                                                 |
 | gclk_10 | PH1P_PHY_GCLK  | x23y39z22 |      0 |     29 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy/apb_pclk_created_gclkinst |
-| gclk_11 | PH1P_PHY_GCLK  | x23y39z2  |      0 |     24 | u_lens_i2c_ctrl/u_lens_i2c/scl_clk_created_gclkinst                                                                         |
-| gclk_12 | PH1P_PHY_GCLK  | x23y39z3  |      0 |     17 | u_uicfgcs500/uii2c_inst/scl_clk_created_gclkinst                                                                            |
-| gclk_13 | PH1P_PHY_GCLK  | x23y39z23 |      0 |      9 | u_PLL/bufg_feedback                                                                                                         |
-| gclk_14 | PH1P_PHY_GCLK  | x23y39z4  |      0 |      1 | S_mcu_ahb_clk_created_gclkinst                                                                                              |
+| gclk_11 | PH1P_PHY_GCLK  | x23y39z2  |      0 |     18 | u_uicfgcs500/uii2c_inst/scl_clk_created_gclkinst                                                                            |
+| gclk_12 | PH1P_PHY_GCLK  | x23y39z23 |      0 |      9 | u_PLL/bufg_feedback                                                                                                         |
+| gclk_13 | PH1P_PHY_GCLK  | x23y39z3  |      0 |      1 | S_mcu_ahb_clk_created_gclkinst                                                                                              |
 |         |                |           |        |        |                                                                                                                             |
 | lclk_1  | PH1P_PHY_MLCLK | x0y59z0   |      1 |      2 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_mlclk_1             |
 | lclk_2  | PH1P_PHY_MLCLK | x0y59z1   |      1 |      2 | u_ph1p35_324_ddr_wrapper/u_ddr2/ph1p_ddrmc_wrapper/ph1p_ddrmc_top/u_ddr_phy/u_ddrphy_top/u_ddrphy_clk/u_mlclk_2             |
@@ -424,17 +403,16 @@ C. IP Stat.
 | gclk_1  | x23y39z1  | B    | PH1P_PHY_MIPIIO_RX.o_fabric_div4_8_clk | x47y0z0        | S0 R       |
 | gclk_2  | x23y39z16 | T    | PH1P_PHY_PLL_V2.clkc[0]                | x0y79z0        | S1 L       |
 | gclk_3  | x23y39z17 | T    | PH1P_PHY_PLL_V2.clkc[4]                | x43y79z0       | S1 R       |
-| gclk_4  | x23y39z18 | T    | PH1P_PHY_PLL_V2.clkc[3]                | x43y79z0       | S1 R       |
-| gclk_5  | x23y39z19 | T    | PH1P_PHY_PLL_V2.clkc[2]                | x43y79z0       | S1 R       |
+| gclk_4  | x23y39z18 | T    | PH1P_PHY_PLL_V2.clkc[2]                | x43y79z0       | S1 R       |
+| gclk_5  | x23y39z19 | T    | PH1P_PHY_PLL_V2.clkc[3]                | x43y79z0       | S1 R       |
 | gclk_6  | x23y39z0  | B    | PH1P_PHY_CONFIG_V2.cwc_tck_o           | x47y0z0        | S0 R       |
 | gclk_7  | x23y39z20 | T    | PH1P_PHY_PLL_V2.clkc[1]                | x43y79z0       | S1 R       |
 | gclk_8  | x23y39z24 | T    | PH1P_PHY_HD_PAD.di                     | x33y78z0       | S1 R       |
 | gclk_9  | x23y39z21 | T    | PH1P_PHY_PLL_V2.clkc[5]                | x43y79z0       | S1 R       |
 | gclk_10 | x23y39z22 | T    | PH1P_PHY_PLL_V2.clkc[3]                | x0y40z0        | S1 L       |
-| gclk_11 | x23y39z2  | B    | PH1P_PHY_LSLICE.oqa                    | x41y3z7        | S0 R       |
-| gclk_12 | x23y39z3  | B    | PH1P_PHY_LSLICE.oqb                    | x12y1z7        | S0 L       |
-| gclk_13 | x23y39z23 | T    | PH1P_PHY_PLL_V2.clkc[0]                | x43y79z0       | S1 R       |
-| gclk_14 | x23y39z4  | B    | PH1P_PHY_MCU.ahb_clk                   | x47y20z0       | S0 R       |
+| gclk_11 | x23y39z2  | B    | PH1P_PHY_LSLICE.oqa                    | x22y1z4        | S0 L       |
+| gclk_12 | x23y39z23 | T    | PH1P_PHY_PLL_V2.clkc[0]                | x43y79z0       | S1 R       |
+| gclk_13 | x23y39z3  | B    | PH1P_PHY_MCU.ahb_clk                   | x47y20z0       | S0 R       |
 |         |           |      |                                        |                |            |
 | lclk_1  | x0y59z0   | S1 L | PH1P_PHY_PLL_V2.clkc[1]                | x0y40z0        | S1 L       |
 | lclk_2  | x0y59z1   | S1 L | PH1P_PHY_PLL_V2.clkc[2]                | x0y40z0        | S1 L       |
@@ -447,20 +425,19 @@ C. IP Stat.
 +---------+-----------------------+-------------------------+----------------------------+-----------------------------+-------------------------+--------------------+
 | Index   | FanoutGroup1          | FanoutGroup2            | FanoutGroup3               | FanoutGroup4                | FanoutGroup5            | FanoutGroup6       |
 +---------+-----------------------+-------------------------+----------------------------+-----------------------------+-------------------------+--------------------+
-| gclk_1  | PH1P_PHY_LSLICE(4936) | PH1P_PHY_MSLICE(96)     | PH1P_PHY_ERAM_V2(68)       | PH1P_PHY_SHIFTERHARDCON(12) | PH1P_PHY_DSPSIOU_V2(8)  |                    |
-| gclk_2  | PH1P_PHY_LSLICE(2006) | PH1P_PHY_MSLICE(115)    | PH1P_PHY_DRAMHARDCON(30)   | PH1P_PHY_ERAM_V2(16)        | PH1P_PHY_DDRPHY_BYTE(6) | PH1P_PHY_PLL_V2(1) |
-| gclk_3  | PH1P_PHY_LSLICE(940)  | PH1P_PHY_MSLICE(16)     | PH1P_PHY_ERAM_V2(14)       | PH1P_PHY_SHIFTERHARDCON(2)  |                         |                    |
-| gclk_4  | PH1P_PHY_LSLICE(235)  | PH1P_PHY_MCU(1)         | PH1P_PHY_ERAM_V2(1)        |                             |                         |                    |
-| gclk_5  | PH1P_PHY_LSLICE(200)  | PH1P_PHY_MCU(1)         |                            |                             |                         |                    |
-| gclk_6  | PH1P_PHY_LSLICE(151)  |                         |                            |                             |                         |                    |
-| gclk_7  | PH1P_PHY_LSLICE(100)  | PH1P_PHY_HD_PAD(1)      |                            |                             |                         |                    |
-| gclk_8  | PH1P_PHY_LSLICE(83)   |                         |                            |                             |                         |                    |
-| gclk_9  | PH1P_PHY_LSLICE(29)   | PH1P_PHY_HR_PAD_V2(8)   |                            |                             |                         |                    |
+| gclk_1  | PH1P_PHY_LSLICE(4886) | PH1P_PHY_MSLICE(96)     | PH1P_PHY_ERAM_V2(68)       | PH1P_PHY_SHIFTERHARDCON(12) | PH1P_PHY_DSPSIOU_V2(8)  |                    |
+| gclk_2  | PH1P_PHY_LSLICE(1992) | PH1P_PHY_MSLICE(132)    | PH1P_PHY_DRAMHARDCON(30)   | PH1P_PHY_ERAM_V2(16)        | PH1P_PHY_DDRPHY_BYTE(6) | PH1P_PHY_PLL_V2(1) |
+| gclk_3  | PH1P_PHY_LSLICE(925)  | PH1P_PHY_MSLICE(16)     | PH1P_PHY_ERAM_V2(14)       | PH1P_PHY_SHIFTERHARDCON(2)  |                         |                    |
+| gclk_4  | PH1P_PHY_LSLICE(295)  | PH1P_PHY_MCU(1)         |                            |                             |                         |                    |
+| gclk_5  | PH1P_PHY_LSLICE(153)  | PH1P_PHY_MCU(1)         | PH1P_PHY_ERAM_V2(1)        |                             |                         |                    |
+| gclk_6  | PH1P_PHY_LSLICE(118)  |                         |                            |                             |                         |                    |
+| gclk_7  | PH1P_PHY_LSLICE(107)  | PH1P_PHY_HD_PAD(1)      |                            |                             |                         |                    |
+| gclk_8  | PH1P_PHY_LSLICE(78)   |                         |                            |                             |                         |                    |
+| gclk_9  | PH1P_PHY_LSLICE(27)   | PH1P_PHY_HR_PAD_V2(8)   |                            |                             |                         |                    |
 | gclk_10 | PH1P_PHY_LSLICE(21)   | PH1P_PHY_DDRPHY_BYTE(6) | PH1P_PHY_DDRPHY_BANKREF(2) |                             |                         |                    |
-| gclk_11 | PH1P_PHY_LSLICE(24)   |                         |                            |                             |                         |                    |
-| gclk_12 | PH1P_PHY_LSLICE(17)   |                         |                            |                             |                         |                    |
-| gclk_13 | PH1P_PHY_LSLICE(7)    | PH1P_PHY_PLL_V2(1)      | PH1P_PHY_MCU(1)            |                             |                         |                    |
-| gclk_14 | PH1P_PHY_MCU(1)       |                         |                            |                             |                         |                    |
+| gclk_11 | PH1P_PHY_LSLICE(18)   |                         |                            |                             |                         |                    |
+| gclk_12 | PH1P_PHY_LSLICE(7)    | PH1P_PHY_PLL_V2(1)      | PH1P_PHY_MCU(1)            |                             |                         |                    |
+| gclk_13 | PH1P_PHY_MCU(1)       |                         |                            |                             |                         |                    |
 |         |                       |                         |                            |                             |                         |                    |
 | lclk_1  | PH1P_PHY_IOCLK(2)     |                         |                            |                             |                         |                    |
 | lclk_2  | PH1P_PHY_IOCLK(2)     |                         |                            |                             |                         |                    |

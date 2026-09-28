@@ -35,6 +35,11 @@
 #define UI_LENS_ADC_COUNT 0x48
 #define UI_LENS_BUS_STATE 0x4c
 
+/* Run real USB-SPI and VCM-I2C transactions often enough for a logic
+ * analyzer to trigger reliably. The main loop delay is board/SDK dependent;
+ * 0x1ff is approximately one tenth of a second on the current image. */
+#define DIAG_POLL_MASK 0x1ffu
+
 static uint32_t lens_diag_available; /* 0=none, 2=LIC2, 3=LIC3 */
 
 #define KEY_UP      (1u << 0)
@@ -362,20 +367,29 @@ AL_S32 main(void)
         lens_diag_report();
         autofocus_task();
 
-        /* Repeat the APB ID once per approximately 1.024 seconds.  This
-         * keeps a visible UART heartbeat while checking the board connection. */
-        if((last_report++ & 0x3ffu) == 0) {
+        /* Repeat the APB ID and issue real bus transactions periodically.
+         * This keeps USB-SPI and VCM-I2C clocks visible to a logic analyzer. */
+        if((last_report++ & DIAG_POLL_MASK) == 0) {
             id = ui_read(UI_ID);
             g_ui_debug_id = id;
             al_printf("SoC Started, UI APB ID=0x%08x\r\n", id);
             focus_plot(ui_read(UI_LENS_POS) & 0x3fffu,
                        ui_read(UI_FOCUS_METRIC), ui_read(UI_LENS_STAT));
             max3421e_diag_report();
-            /* Bounded pair read only while idle, never interrupt a focus move.
-             * Poll cadence uses the existing heartbeat; no MCU timer change. */
-            if(lens_diag_available == 3 && af_state == 3 &&
-               (ui_read(UI_LENS_STAT) & 7u) == 2u)
-                ui_write(UI_LENS_CMD, 4u);
+            /* Keep the VCM bus active for measurement and recovery. An error
+             * state retries the required active-mode/position sequence; an
+             * initialized idle lens performs the 0x84/0x85 ADC read pair. */
+            if(lens_diag_available == 3 && af_state == 3) {
+                uint32_t lens_status = ui_read(UI_LENS_STAT);
+                if(!(lens_status & 1u) && (lens_status & 4u)) {
+                    ui_write(UI_LENS_POS, 8192u);
+                    ui_write(UI_LENS_CMD, 2u);
+                    al_printf("LOG: LENS periodic retry; VCM-I2C transaction started\r\n");
+                } else if((lens_status & 7u) == 2u) {
+                    ui_write(UI_LENS_CMD, 4u);
+                    al_printf("LOG: LENS periodic ADC84/85 read started\r\n");
+                }
+            }
         }
         g_ui_debug_stage = 6;
         AlSys_MDelay(1);

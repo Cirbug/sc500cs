@@ -7,12 +7,12 @@ MCU QSPI1 采用 SINGLE 普通 SPI 模式，mode 0、8 位、MSB first。
 
 | MAX3421E | FPGA 管脚 | 当前来源 |
 |---|---|---|
-| SCLK | R7 | MCU qspi1_clk |
-| MOSI | U6 | MCU qspi1_d0_out |
-| MISO | T5 | MCU qspi1_d1_in；同时保留旧诊断用 d0_in 镜像 |
-| /SS | U4 | MCU qspi1_ss |
-| /RES | L16 | APB USB_CTRL.bit0 |
-| /INT | P9 | APB 同步输入 USB_STATUS.bit0 |
+| SCLK | K2 | MCU qspi1_clk |
+| MOSI | C8 | MCU qspi1_d0_out |
+| MISO | H2 | MCU qspi1_d1_in；同时保留旧诊断用 d0_in 镜像 |
+| /SS | A5 | MCU qspi1_ss |
+| /RES | M1 | APB USB_CTRL.bit0 |
+| /INT | L4 | APB 同步输入 USB_STATUS.bit0 |
 
 GPIO0~5 不再驱动外部 SPI 或 /RES。GPIO SPI 源文件保留，但 main 不再调用它。
 QSPI1 本身已在 MCU IP 中启用，不需要重新生成 MCU IP，也不用增加 PLL。
@@ -48,7 +48,7 @@ FPGA 先下载，再启动 MCU 程序；接线保持现状，不在本次操作�
 
 ## 测量
 
-优先用 U4 /SS 下降沿触发，观察 R7 SCLK、U6 MOSI、T5 MISO。
+优先用 A5 /SS 下降沿触发，观察 K2 SCLK、C8 MOSI、H2 MISO。
 读 REVISION 命令为 0x90；设备实际返回字节需要实测。
 从机无响应仍可能返回 0xFF，切回硬件 QSPI 不能证明线路或芯片已经正常。
 原 ChipWatcher 工程选择的是 GPIO 输出信号，切回后它们不再代表 SPI 波形；

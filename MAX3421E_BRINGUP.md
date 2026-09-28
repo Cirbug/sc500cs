@@ -7,12 +7,12 @@
 
 | 模块 | FPGA 管脚 | FPGA 方向 |
 |---|---|---|
-| SCLK | R7 | 输出 |
-| MISO | T5 | 输入，接入 QSPI1 D0/D1 输入（兼容半双工和全双工） |
-| MOSI | U6 | 输出，QSPI1 D0 |
-| SS | U4 | 输出，低有效 |
-| INT | P9 | 输入，低有效电平模式 |
-| /RES | L16 | 输出，低有效 |
+| SCLK | K2 | 输出 |
+| MISO | H2 | 输入，接入 QSPI1 D0/D1 输入（兼容半双工和全双工） |
+| MOSI | C8 | 输出，QSPI1 D0 |
+| SS | A5 | 输出，低有效 |
+| INT | L4 | 输入，低有效电平模式 |
+| /RES | M1 | 输出，低有效 |
 | 芯片电源 | 3.3V | 模块供电 |
 | GND | 开发板 GND | 共地 |
 
@@ -47,7 +47,7 @@ MAX3421E: READY REV=0x13 OSCOK=1 INT_n=1
 | -3 | 芯片版本无效、不稳定或运行时改变 | SCLK/MISO/MOSI/SS、供电、共地；00/FF 不是成功 |
 | -4 | PINCTL 写入读回不一致 | MOSI、SS 和 SPI 时序 |
 | -5 | OSCOK 未就绪或运行中丢失 | 模块 12MHz 晶振、供电和复位 |
-| -6 | INT 拉低/恢复高电平测试失败 | INT=P9 接线 |
+| -6 | INT 拉低/恢复高电平测试失败 | INT=L4 接线 |
 | -7 | FPGA 的 USB 复位/使能寄存器读回错误 | APB 写通路和 bit 版本 |
 
 `diag-v2` 固件启动时打印复位前后 CTRL/STATUS 和 QSPI CSID/CSDEF/DIV。
@@ -91,8 +91,8 @@ APB 基址仍是 `0x70000000`，原有偏移不变：
 
 | 信号 | FPGA 管脚 | 模块连接 |
 |---|---|---|
-| Lens SCL | K1 | CLK |
-| Lens SDA | K2 | SDA |
+| Lens SCL | R6 | CLK |
+| Lens SDA | R7 | SDA |
 
 镜头从上电后的 `5.1 ms` 等待开始，先发送 `0x18, 0x02, 0x00` 进入 active mode，
 再写入位置寄存器 `0x00/0x01`。位置范围为 0 到 16383，发送值为 `position << 2`。

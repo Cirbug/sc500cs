@@ -2,7 +2,7 @@
 | QoR metrics               |         value               |
 -----------------------------------------------------------
 | Timing                    |                             |
-|     Setup WNS             |         7467                |
+|     Setup WNS             |         7533                |
 |     Setup TNS             |            0                |
 |     Num of violated S-EP  |            0                |
 |     Hold WNS              |          502                |
@@ -10,7 +10,7 @@
 |     Num of violated H-EP  |            0                |
 -----------------------------------------------------------
 | Utilization               |                             |
-|     #registers            |          372                |
+|     #registers            |          292                |
 |     #luts                 |          103                |
 |     #lut1                 |           10                |
 |     #lut1(~A)             |            0                |
@@ -30,8 +30,8 @@
 |     #max_fanout_keep      |            0                |
 |     #async_reg            |            0                |
 -----------------------------------------------------------
-| Top 10% datanet fanout#   |        17.20                |
-| dff(single fanout)->dff   |          165                |
+| Top 10% datanet fanout#   |        19.00                |
+| dff(single fanout)->dff   |          117                |
 | dff(single fanout)->dram  |            0                |
 -----------------------------------------------------------
 | Over-quota path num*      |                             |
@@ -46,11 +46,11 @@ Note**: Rent shows the rent exponent value of the modules whose rent value excee
         Only modules under top are reported, and the threshold is defined as 0.7.
 
 Logic Level Distribution
-------------------------------------------------------------
+-----------------------------------------------------------
   Clock        |  Period            |  0    |  1    |  2
-------------------------------------------------------------
-  DeriveClock  |  20.000ns (50MHz)  |  683  |  209  |  111
-------------------------------------------------------------
+-----------------------------------------------------------
+  DeriveClock  |  20.000ns (50MHz)  |  507  |  177  |  79
+-----------------------------------------------------------
 Hierarchical Rent Exponent Report
 +--------------------------------------------------------+
 |Inst     |Model  |Rent     |Cell     |Pin     |Term     |

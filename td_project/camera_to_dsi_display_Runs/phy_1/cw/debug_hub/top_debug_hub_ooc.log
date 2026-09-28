@@ -1,10 +1,10 @@
 ============================================================
    Tang Dynasty, V6.2.168116
    Copyright (c) 2012-2025 Anlogic Inc.
-   Executable = F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/run.exe
+   Executable = F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/td_commands_prompt.exe
    Built at =   16:32:07 Jun 12 2025
    Run by =     pc
-   Run Date =   Wed Sep 23 16:39:22 2026
+   Run Date =   Mon Sep 28 19:29:50 2026
 
    Run on =     CIRBUG
 ============================================================
@@ -17,7 +17,7 @@ ARC-1001 : ----------------------------------------------------------------
 ARC-1001 :   non_jtag_persist(none)  |        35 IOs         |    gpio    
 ARC-1001 :            jtag           |  P13/P15/L14/R13/T13  |  dedicate  
 ARC-1001 : ----------------------------------------------------------------
-RUN-1003 : finish command "import_device ph1_35p.db -package PH1P35MDG324" in  2.357603s wall, 1.890625s user + 0.187500s system = 2.078125s CPU (88.1%)
+RUN-1003 : finish command "import_device ph1_35p.db -package PH1P35MDG324" in  2.375373s wall, 2.109375s user + 0.078125s system = 2.187500s CPU (92.1%)
 
 RUN-1004 : used memory is 327 MB, reserved memory is 321 MB, peak memory is 327 MB
 RUN-1002 : start command "set_param flow ooc_flow on"
@@ -51,31 +51,31 @@ RUN-1002 : start command "optimize_rtl"
 RUN-1001 : Open license file F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/license/Anlogic.lic
 SYN-1001 : Stage 1 | Optimize RTL
 SYN-1001 : Stage 1.1 | Check Design Sanity
-SYN-1001 : End Stage 1.1 | Check Design Sanity; Time: 0.004263s wall, 0.015625s user + 0.000000s system = 0.015625s CPU (366.6%); Memory(MB): used = 334, reserved = 321, peak = 334;
+SYN-1001 : End Stage 1.1 | Check Design Sanity; Time: 0.004628s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%); Memory(MB): used = 334, reserved = 321, peak = 334;
 
-SYN-1079 : finish stage Check Design Sanity. Total instances: 997, Total nets: 2083.
+SYN-1079 : finish stage Check Design Sanity. Total instances: 869, Total nets: 1747.
 
 SYN-1001 : Stage 1.2 | Initialize Design
-SYN-1001 : End Stage 1.2 | Initialize Design; Time: 0.062062s wall, 0.062500s user + 0.000000s system = 0.062500s CPU (100.7%); Memory(MB): used = 334, reserved = 321, peak = 334;
+SYN-1001 : End Stage 1.2 | Initialize Design; Time: 0.049695s wall, 0.046875s user + 0.000000s system = 0.046875s CPU (94.3%); Memory(MB): used = 334, reserved = 321, peak = 334;
 
-SYN-1079 : finish stage Initialize Design. Total instances: 300, Total nets: 1383.
+SYN-1079 : finish stage Initialize Design. Total instances: 300, Total nets: 1175.
 
 SYN-1001 : Stage 1.3 | Flatten Module
 SYN-1011 : Flatten model top_debug_hub
-SYN-1001 : End Stage 1.3 | Flatten Module; Time: 0.007626s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%); Memory(MB): used = 334, reserved = 321, peak = 334;
+SYN-1001 : End Stage 1.3 | Flatten Module; Time: 0.006728s wall, 0.015625s user + 0.000000s system = 0.015625s CPU (232.2%); Memory(MB): used = 334, reserved = 321, peak = 334;
 
-SYN-1079 : finish stage Flatten Module. Total instances: 315, Total nets: 1056.
+SYN-1079 : finish stage Flatten Module. Total instances: 315, Total nets: 896.
 
 SYN-1001 : Stage 1.4 | Uniform Instance
-SYN-1001 : End Stage 1.4 | Uniform Instance; Time: 0.002876s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%); Memory(MB): used = 334, reserved = 321, peak = 334;
+SYN-1001 : End Stage 1.4 | Uniform Instance; Time: 0.002821s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%); Memory(MB): used = 334, reserved = 321, peak = 334;
 
-SYN-1079 : finish stage Uniform Instance. Total instances: 187, Total nets: 928.
+SYN-1079 : finish stage Uniform Instance. Total instances: 187, Total nets: 768.
 
 SYN-1001 : Stage 1.5 | Optimize Design
 SYN-1016 : Merged 12 instances.
-SYN-1001 : End Stage 1.5 | Optimize Design; Time: 0.147339s wall, 0.140625s user + 0.015625s system = 0.156250s CPU (106.0%); Memory(MB): used = 304, reserved = 299, peak = 336;
+SYN-1001 : End Stage 1.5 | Optimize Design; Time: 0.147904s wall, 0.140625s user + 0.000000s system = 0.140625s CPU (95.1%); Memory(MB): used = 304, reserved = 299, peak = 336;
 
-SYN-1079 : finish stage Optimize Design. Total instances: 549, Total nets: 586.
+SYN-1079 : finish stage Optimize Design. Total instances: 469, Total nets: 506.
 
 SYN-1001 : Stage 1.6 | Optimize Iteratively
 SYN-1014 : Optimize round 1
@@ -87,31 +87,28 @@ SYN-1014 : Optimize round 1
 SYN-1015 : Optimize round 1, 10 better
 SYN-1014 : Optimize round 2
 SYN-1015 : Optimize round 2, 0 better
-SYN-1001 : End Stage 1.6 | Optimize Iteratively; Time: 0.758562s wall, 0.718750s user + 0.031250s system = 0.750000s CPU (98.9%); Memory(MB): used = 310, reserved = 308, peak = 336;
+SYN-1001 : End Stage 1.6 | Optimize Iteratively; Time: 0.499888s wall, 0.468750s user + 0.031250s system = 0.500000s CPU (100.0%); Memory(MB): used = 308, reserved = 307, peak = 336;
 
-SYN-1079 : finish stage Optimize Iteratively. Total instances: 540, Total nets: 575.
+SYN-1079 : finish stage Optimize Iteratively. Total instances: 460, Total nets: 495.
 
 SYN-1001 : Stage 1.7 | Check Design
-SYN-1001 : End Stage 1.7 | Check Design; Time: 0.000150s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%); Memory(MB): used = 310, reserved = 308, peak = 336;
+SYN-1001 : End Stage 1.7 | Check Design; Time: 0.000113s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%); Memory(MB): used = 308, reserved = 307, peak = 336;
 
-SYN-1079 : finish stage Check Design. Total instances: 540, Total nets: 575.
+SYN-1079 : finish stage Check Design. Total instances: 460, Total nets: 495.
 
-SYN-1001 : End Stage 1 | Optimize RTL; Time: 0.983451s wall, 0.937500s user + 0.046875s system = 0.984375s CPU (100.1%); Memory(MB): used = 310, reserved = 308, peak = 336;
+SYN-1001 : End Stage 1 | Optimize RTL; Time: 0.712339s wall, 0.671875s user + 0.031250s system = 0.703125s CPU (98.7%); Memory(MB): used = 308, reserved = 307, peak = 336;
 
-SYN-1079 : finish stage Optimize RTL. Total instances: 540, Total nets: 575.
+SYN-1079 : finish stage Optimize RTL. Total instances: 460, Total nets: 495.
 
-RUN-1003 : finish command "optimize_rtl" in  1.003845s wall, 0.953125s user + 0.046875s system = 1.000000s CPU (99.6%)
-
-RUN-1004 : used memory is 310 MB, reserved memory is 308 MB, peak memory is 336 MB
 RUN-1002 : start command "map_macro"
 SYN-1001 : Stage 2 | Map Reg
-SYN-1001 : End Stage 2 | Map Reg; Time: 0.021576s wall, 0.031250s user + 0.000000s system = 0.031250s CPU (144.8%); Memory(MB): used = 310, reserved = 308, peak = 336;
+SYN-1001 : End Stage 2 | Map Reg; Time: 0.011794s wall, 0.015625s user + 0.000000s system = 0.015625s CPU (132.5%); Memory(MB): used = 308, reserved = 307, peak = 336;
 
-SYN-1079 : finish stage Map Reg. Total instances: 540, Total nets: 575.
+SYN-1079 : finish stage Map Reg. Total instances: 460, Total nets: 495.
 
 SYN-1001 : Stage 3 | Map IO
 SYN-2001 : Map 0 IOs to PADs of model 'top_debug_hub'
-SYN-1001 : End Stage 3 | Map IO; Time: 0.001130s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%); Memory(MB): used = 310, reserved = 308, peak = 336;
+SYN-1001 : End Stage 3 | Map IO; Time: 0.000651s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%); Memory(MB): used = 308, reserved = 307, peak = 336;
 
 SYN-1001 : Stage 4 | Map Macro
 RUN-1002 : start command "update_pll_param -module top_debug_hub"
@@ -128,17 +125,17 @@ SYN-2501 : Optimize round 1
 SYN-2501 : Optimize round 1, 0 better
 SYN-2501 : Map 2 macro adder(s)
 SYN-1016 : Merged 8 instances.
-SYN-1001 : End Stage 4 | Map Macro; Time: 0.142362s wall, 0.140625s user + 0.000000s system = 0.140625s CPU (98.8%); Memory(MB): used = 311, reserved = 308, peak = 336;
+SYN-1001 : End Stage 4 | Map Macro; Time: 0.085539s wall, 0.093750s user + 0.000000s system = 0.093750s CPU (109.6%); Memory(MB): used = 310, reserved = 308, peak = 336;
 
-SYN-1079 : finish stage Map Macro. Total instances: 598, Total nets: 633.
+SYN-1079 : finish stage Map Macro. Total instances: 518, Total nets: 553.
 
 RUN-1002 : start command "map"
 SYN-1001 : Stage 5 | Map Gate
 SYN-2581 : Mapping with K=6, #lut = 93 (3.71), #lev = 2 (1.44), #crit_level = 0
 SYN-2551 : Post LUT mapping optimization.
 SYN-2581 : Mapping with K=6, #lut = 93 (3.70), #lev = 2 (1.44), #crit_level = 0
-SYN-3001 : Logic optimization opt = 0.21 sec, map = 0.01 sec, post map opt = 0.13 sec.
-SYN-1001 : End Stage 5 | Map Gate; Time: 0.369819s wall, 0.359375s user + 0.015625s system = 0.375000s CPU (101.4%); Memory(MB): used = 320, reserved = 321, peak = 336;
+SYN-3001 : Logic optimization opt = 0.14 sec, map = 0.01 sec, post map opt = 0.09 sec.
+SYN-1001 : End Stage 5 | Map Gate; Time: 0.251952s wall, 0.234375s user + 0.015625s system = 0.250000s CPU (99.2%); Memory(MB): used = 318, reserved = 310, peak = 336;
 
 RUN-1002 : start command "pack"
 SYN-1001 : Packing model "top_debug_hub" ...
@@ -146,11 +143,11 @@ SYN-1001 : Stage 6 | Pack Gate
 SYN-4010 : Pack lib has 43 rtl pack models with 26 top pack blocks
 SYN-1014 : Optimize round 1
 SYN-1015 : Optimize round 1, 0 better
-SYN-4002 : Packing 372 DFF/LATCH to SEQ ...
+SYN-4002 : Packing 292 DFF/LATCH to SEQ ...
 RUN-1002 : start command "start_timer"
 RUN-1002 : start command "end_timer"
 SYN-4009 : Pack 0 carry chain into lslice
-SYN-1001 : End Stage 6 | Pack Gate; Time: 0.146034s wall, 0.140625s user + 0.000000s system = 0.140625s CPU (96.3%); Memory(MB): used = 321, reserved = 321, peak = 336;
+SYN-1001 : End Stage 6 | Pack Gate; Time: 0.071516s wall, 0.062500s user + 0.000000s system = 0.062500s CPU (87.4%); Memory(MB): used = 319, reserved = 320, peak = 336;
 
 RUN-1002 : start command "report_qor -step gate -file gate.qor"
 RUN-1002 : start command "start_timer"
@@ -158,7 +155,7 @@ RUN-1002 : start command "start_timer"
 | QoR metrics               |         value               |
 -----------------------------------------------------------
 | Timing                    |                             |
-|     Setup WNS             |         7467                |
+|     Setup WNS             |         7533                |
 |     Setup TNS             |            0                |
 |     Num of violated S-EP  |            0                |
 |     Hold WNS              |          502                |
@@ -166,7 +163,7 @@ RUN-1002 : start command "start_timer"
 |     Num of violated H-EP  |            0                |
 -----------------------------------------------------------
 | Utilization               |                             |
-|     #registers            |          372                |
+|     #registers            |          292                |
 |     #luts                 |          103                |
 |     #lut1                 |           10                |
 |     #lut1(~A)             |            0                |
@@ -186,8 +183,8 @@ RUN-1002 : start command "start_timer"
 |     #max_fanout_keep      |            0                |
 |     #async_reg            |            0                |
 -----------------------------------------------------------
-| Top 10% datanet fanout#   |        17.20                |
-| dff(single fanout)->dff   |          165                |
+| Top 10% datanet fanout#   |        19.00                |
+| dff(single fanout)->dff   |          117                |
 | dff(single fanout)->dram  |            0                |
 -----------------------------------------------------------
 | Over-quota path num*      |                             |
@@ -202,12 +199,12 @@ Note**: Rent shows the rent exponent value of the modules whose rent value excee
         Only modules under top are reported, and the threshold is defined as 0.7.
 
 Logic Level Distribution
-------------------------------------------------------------
+-----------------------------------------------------------
   Clock        |  Period            |  0    |  1    |  2
-------------------------------------------------------------
-  DeriveClock  |  20.000ns (50MHz)  |  683  |  209  |  111
-------------------------------------------------------------
-Note: The table count the worst 100000 paths, each endpoint count only one time.(1003 paths analyzed)
+-----------------------------------------------------------
+  DeriveClock  |  20.000ns (50MHz)  |  507  |  177  |  79
+-----------------------------------------------------------
+Note: The table count the worst 100000 paths, each endpoint count only one time.(763 paths analyzed)
 
 Hierarchical Rent Exponent Report
 +--------------------------------------------------------+
@@ -227,9 +224,9 @@ RUN-1001 : standard
 ***Report Model: top_debug_hub Device: PH1P35MDG324***
 
 Design Statistics
-#IO                        83   out of    160   51.88%
+#IO                        67   out of    160   41.88%
   #input                   33
-  #output                  50
+  #output                  34
   #inout                    0
 #lut                      103
   #lut1                    10
@@ -238,19 +235,19 @@ Design Statistics
   #lut4                     8
   #lut5                    10
   #lut6                    19
-#reg                      372
-  #slice reg              372   out of  42432    0.88%
+#reg                      292
+  #slice reg              292   out of  42432    0.69%
   #pad reg                  0
 
 Utilization Statistics
-#slice                    133   out of  21216    0.63%
+#slice                    117   out of  21216    0.55%
   #used ram                 0
     #dram lut               0
     #shifter lut            0
-  #used logic             133
+  #used logic             117
     #with luts             73
     #with adder             0
-    #reg only              60
+    #reg only              44
 #f7mux                      0   out of  10608    0.00%
 #f8mux                      0   out of   5304    0.00%
 #eram                       0   out of    108    0.00%

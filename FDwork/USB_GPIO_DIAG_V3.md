@@ -23,12 +23,12 @@
 
 | 功能 | MCU GPIO | FPGA 引脚 |
 |---|---|---|
-| SCLK | 0 | R7 |
-| MOSI | 1 | U6 |
-| MISO | 2 | T5 |
-| CS | 3 | U4 |
-| /RES | 4 | L16 |
-| INT | 5 | P9 |
+| SCLK | 0 | K2 |
+| MOSI | 1 | C8 |
+| MISO | 2 | H2 |
+| CS | 3 | A5 |
+| /RES | 4 | M1 |
+| INT | 5 | L4 |
 
 GPIO MODE0 低六位应为 0x1B，MODE1 为 0x24。
 OVAL 中 bit3 为片选、bit4 为复位输出；reset-low 时 bit4=0，reset-high 时 bit4=1。

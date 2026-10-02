@@ -1,4 +1,4 @@
-MCU_RESET_VECTOR : 'h20E00000 : U : En :  :  : 
+MCU_RESET_VECTOR : 'h21000000 : U : En :  :  : 
 JTAG_Available : 1 : U : En :  :  : 
 GPIO0_Available : 1 : U : En :  :  : 
 GPIO1_Available : 1 : U : En :  :  : 

@@ -7,7 +7,13 @@ module mcu_ui_apb_regs #(
     parameter [15:0] AE_INIT = 16'd2246,
     parameter [15:0] AG_MIN  = 16'd16,
     parameter [15:0] AG_MAX  = 16'd143,
-    parameter [15:0] AG_INIT = 16'd80
+    parameter [15:0] AG_INIT = 16'd80,
+    // Keep the APB side inside the normal hobby-servo range.  The PWM block
+    // applies the same limits, so an early/invalid MCU write cannot create an
+    // extreme pulse.
+    parameter [15:0] SERVO_MIN = 16'd1000,
+    parameter [15:0] SERVO_MAX = 16'd2000,
+    parameter [15:0] SERVO_INIT = 16'd1500
 )(
     input  wire        I_clk,
     input  wire        I_rst,
@@ -27,7 +33,7 @@ module mcu_ui_apb_regs #(
     output reg         O_menu_enable,
     output reg         O_edit_enable,
     output reg         O_info_enable,
-    output reg  [1:0]  O_menu_index,
+    output reg  [2:0]  O_menu_index,
     output reg  [15:0] O_exposure,
     output reg  [15:0] O_gain,
     input  wire        I_lens_busy,
@@ -39,7 +45,9 @@ module mcu_ui_apb_regs #(
     input  wire [31:0] I_focus_metric,
     output reg         O_lens_cmd,
     output reg         O_lens_retry, O_lens_read_adc,
-    output reg  [13:0] O_lens_position
+    output reg  [13:0] O_lens_position,
+    output reg  [15:0] O_servo_pan_us,
+    output reg  [15:0] O_servo_tilt_us
 );
 
     localparam [31:0] ID_VALUE = 32'h55494D55; // "UIMU"
@@ -47,6 +55,9 @@ module mcu_ui_apb_regs #(
     wire apb_read  = I_psel && I_penable && !I_pwrite;
     assign O_pready = 1'b1;
     assign O_pslverr = 1'b0;
+
+    // Servo registers (microseconds): 0x50 = V6/pan, 0x54 = V4/tilt.
+    // Values are clamped to the safe initial test range 1000..2000 us.
 
     // key_remove_shakes emits one clock pulse for each active-low press.
     wire [3:0] key_pulse;
@@ -84,12 +95,14 @@ module mcu_ui_apb_regs #(
             O_menu_enable <= 1'b0;
             O_edit_enable <= 1'b0;
             O_info_enable <= 1'b0;
-            O_menu_index  <= 2'd0;
+            O_menu_index  <= 3'd0;
             O_exposure    <= AE_INIT;
             O_gain        <= AG_INIT;
             O_lens_cmd    <= 1'b0;
             O_lens_retry <= 0; O_lens_read_adc <= 0;
             O_lens_position <= 14'd8192;
+            O_servo_pan_us  <= SERVO_INIT;
+            O_servo_tilt_us <= SERVO_INIT;
         end else begin
             O_lens_cmd <= 1'b0;
             O_lens_retry <= 0; O_lens_read_adc <= 0;
@@ -107,7 +120,7 @@ module mcu_ui_apb_regs #(
                         O_edit_enable <= I_pwdata[1];
                         O_info_enable <= I_pwdata[2];
                     end
-                    8'h0c: O_menu_index <= (I_pwdata[1:0] > 2'd3) ? 2'd3 : I_pwdata[1:0];
+                    8'h0c: O_menu_index <= (I_pwdata[2:0] > 3'd5) ? 3'd5 : I_pwdata[2:0];
                     8'h10: O_exposure <= (I_pwdata[15:0] < AE_MIN) ? AE_MIN :
                                            ((I_pwdata[15:0] > AE_MAX) ? AE_MAX : I_pwdata[15:0]);
                     8'h14: O_gain <= (I_pwdata[15:0] < AG_MIN) ? AG_MIN :
@@ -125,6 +138,12 @@ module mcu_ui_apb_regs #(
                         O_lens_retry <= I_pwdata[1];
                         O_lens_read_adc <= I_pwdata[2];
                     end
+                    8'h50: if(I_pstrobe[0])
+                        O_servo_pan_us <= (I_pwdata[15:0] < SERVO_MIN) ? SERVO_MIN :
+                                          ((I_pwdata[15:0] > SERVO_MAX) ? SERVO_MAX : I_pwdata[15:0]);
+                    8'h54: if(I_pstrobe[0])
+                        O_servo_tilt_us <= (I_pwdata[15:0] < SERVO_MIN) ? SERVO_MIN :
+                                           ((I_pwdata[15:0] > SERVO_MAX) ? SERVO_MAX : I_pwdata[15:0]);
                     default: begin end
                 endcase
             end
@@ -138,7 +157,7 @@ module mcu_ui_apb_regs #(
                 8'h00: O_prdata = ID_VALUE;
                 8'h04: O_prdata = {28'd0, key_event};
                 8'h08: O_prdata = {29'd0, O_info_enable, O_edit_enable, O_menu_enable};
-                8'h0c: O_prdata = {30'd0, O_menu_index};
+                8'h0c: O_prdata = {29'd0, O_menu_index};
                 8'h10: O_prdata = {16'd0, O_exposure};
                 8'h14: O_prdata = {16'd0, O_gain};
                 8'h18: O_prdata = 32'h0001081e; // Full sensor input, HDMI 1080p30
@@ -154,6 +173,8 @@ module mcu_ui_apb_regs #(
                 8'h44: O_prdata = I_lens_adc_raw;
                 8'h48: O_prdata = I_lens_adc_count;
                 8'h4c: O_prdata = I_lens_bus_state;
+                8'h50: O_prdata = {16'd0, O_servo_pan_us};
+                8'h54: O_prdata = {16'd0, O_servo_tilt_us};
                 default: O_prdata = 32'd0;
             endcase
         end

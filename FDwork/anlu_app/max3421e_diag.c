@@ -16,7 +16,7 @@
 #define REG_MODE      0xd8u
 #define OSCOKIRQ      0x01u
 #define CHIPRES       0x20u
-#define PINCTL_VALUE  0x18u /* Separate MISO, active-low level interrupt. */
+#define PINCTL_VALUE  0x1Au /* Full-duplex MISO, level IRQ, GPXB (official setting). */
 #define SPI_POLL_LIMIT 100000u
 
 static AL_QSPI_DevStruct spi;
@@ -61,6 +61,14 @@ static int send_bytes(const uint8_t *bytes, unsigned length)
     }
     if (wait_status(1u << AL_QSPI_TX_FIFO_EMPTY, 1u << AL_QSPI_TX_FIFO_EMPTY)) return -1;
     if (wait_status(1u << AL_QSPI_BUSY, 0)) return -1;
+    /* MAX3421E is in full-duplex mode.  Every transmitted byte also
+     * produces a received byte (status during the command, zero during a
+     * write), so discard the RX FIFO here to prevent stale bytes from being
+     * mistaken for the next register-read result. */
+    while ((AlQspi_ll_GetStatus(spi.BaseAddr) &
+            (1u << AL_QSPI_RX_FIFO_EMPTY)) == 0u) {
+        (void)AlQspi_ll_RecvData(spi.BaseAddr);
+    }
     AlQspi_ll_ClrStatus(spi.BaseAddr, AL_QSPI_DONE);
     return 0;
 }
@@ -79,26 +87,31 @@ static int reg_write(uint8_t address, uint8_t value)
 
 static int reg_read(uint8_t address, uint8_t *value)
 {
-    unsigned count;
+    uint8_t rx0, rx1;
     int result = -1;
     AlQspi_ll_SetCsMode(spi.BaseAddr, AL_QSPI_CS_MODE_HOLD);
-    if (send_bytes(&address, 1)) goto done;
-    // Discard status returned during the command byte, if captured by QSPI.
-    for (count = 0; count < SPI_POLL_LIMIT; ++count) {
-        if (AlQspi_ll_GetStatus(spi.BaseAddr) & (1u << AL_QSPI_RX_FIFO_EMPTY)) break;
-        (void)AlQspi_ll_RecvData(spi.BaseAddr);
-    }
-    if (count == SPI_POLL_LIMIT) goto done;
-    AlQspi_ll_ClrStatus(spi.BaseAddr, AL_QSPI_RX_DONE);
-    AlQspi_ll_SetRxSize(spi.BaseAddr, 1);
-    AlQspi_ll_SetDirection(spi.BaseAddr, AL_QSPI_RX);
+
+    /* MAX3421E full-duplex read is one continuous transfer:
+     *   SS low, command byte, dummy 0x00 byte, SS high.
+     * Keep QSPI in TX direction while clocking both bytes. The RX FIFO still
+     * captures D1/MISO, and this avoids an RX-direction turnaround that can
+     * leave the dummy MOSI byte undefined. */
+    AlQspi_ll_SetDirection(spi.BaseAddr, AL_QSPI_TX);
+    AlQspi_ll_SetTxSize(spi.BaseAddr, 2);
+    AlQspi_ll_SetRxSize(spi.BaseAddr, 2);
+    AlQspi_ll_ClrStatus(spi.BaseAddr, AL_QSPI_DONE);
     if (wait_status(1u << AL_QSPI_TX_FIFO_FULL, 0)) goto done;
-    AlQspi_ll_SendData(spi.BaseAddr, 0);
+    AlQspi_ll_SendData(spi.BaseAddr, address);
+    if (wait_status(1u << AL_QSPI_TX_FIFO_FULL, 0)) goto done;
+    AlQspi_ll_SendData(spi.BaseAddr, 0x00u);
     if (wait_status(1u << AL_QSPI_RX_FIFO_EMPTY, 0)) goto done;
-    *value = (uint8_t)AlQspi_ll_RecvData(spi.BaseAddr);
-    if (wait_status(1u << AL_QSPI_RX_DONE, 1u << AL_QSPI_RX_DONE)) goto done;
+    rx0 = (uint8_t)AlQspi_ll_RecvData(spi.BaseAddr); /* status byte */
+    if (wait_status(1u << AL_QSPI_RX_FIFO_EMPTY, 0)) goto done;
+    rx1 = (uint8_t)AlQspi_ll_RecvData(spi.BaseAddr); /* register data */
+    *value = rx1;
     if (wait_status(1u << AL_QSPI_BUSY, 0)) goto done;
-    AlQspi_ll_ClrStatus(spi.BaseAddr, AL_QSPI_RX_DONE);
+    (void)rx0;
+    AlQspi_ll_ClrStatus(spi.BaseAddr, AL_QSPI_DONE);
     result = 0;
 done:
     AlQspi_ll_SetCsMode(spi.BaseAddr, AL_QSPI_CS_MODE_OFF);

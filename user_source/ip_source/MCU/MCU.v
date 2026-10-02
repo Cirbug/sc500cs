@@ -87,7 +87,7 @@ module MCU
   MCU_f9f874759a41
   #(
       .MCU_JTAG_SEL("1"),
-      .MCU_RESET_VECTOR('h20E00000),
+      .MCU_RESET_VECTOR('h20e00000),
       .AHB_FREQ("150.0"),
       .QSPI_FREQ("50.0"),
       .MCU_DPLL_POST_DIV(4)

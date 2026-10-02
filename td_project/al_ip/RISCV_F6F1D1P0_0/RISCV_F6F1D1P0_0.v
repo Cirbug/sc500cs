@@ -93,7 +93,7 @@ module RISCV_F6F1D1P0_0
   #(
       // Use the PAD JTAG selection; the design top does not route PIB JTAG.
       .MCU_JTAG_SEL("0"),
-      .MCU_RESET_VECTOR('h20E00000),
+      .MCU_RESET_VECTOR('h20e00000),
       .AHB_FREQ("150.0"),
       .QSPI_FREQ("50.0"),
       .MCU_DPLL_POST_DIV(4),

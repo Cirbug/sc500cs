@@ -13,9 +13,11 @@ module ui_osd #(
     input  wire        I_menu_enable,
     input  wire        I_edit_enable,
     input  wire        I_info_enable,
-    input  wire [1:0]  I_menu_index,
+    input  wire [2:0]  I_menu_index,
     input  wire [15:0] I_exposure,
     input  wire [15:0] I_gain,
+    input  wire [15:0] I_servo_pan_us,
+    input  wire [15:0] I_servo_tilt_us,
     output reg         O_vsync,
     output reg         O_hsync,
     output reg         O_de,
@@ -37,8 +39,10 @@ module ui_osd #(
     reg text_active;
     reg [4:0] glyph;
     reg glyph_on;
-    reg [9:0] exposure_bar_width;
-    reg [9:0] gain_bar_width;
+    reg [7:0] exposure_bar_width;
+    reg [7:0] gain_bar_width;
+    reg [7:0] pan_bar_width;
+    reg [7:0] tilt_bar_width;
 
     function [7:0] text_char;
         input [2:0] line;
@@ -49,8 +53,10 @@ module ui_osd #(
                 3'd0: case(index) 0:text_char="M"; 1:text_char="E"; 2:text_char="N"; 3:text_char="U"; endcase
                 3'd1: case(index) 0:text_char="E"; 1:text_char="X"; 2:text_char="P"; 3:text_char="O"; 4:text_char="S"; 5:text_char="U"; 6:text_char="R"; 7:text_char="E"; endcase
                 3'd2: case(index) 0:text_char="G"; 1:text_char="A"; 2:text_char="I"; 3:text_char="N"; endcase
-                3'd3: case(index) 0:text_char="I"; 1:text_char="N"; 2:text_char="F"; 3:text_char="O"; endcase
-                3'd4: case(index) 0:text_char="E"; 1:text_char="X"; 2:text_char="I"; 3:text_char="T"; endcase
+                3'd3: case(index) 0:text_char="P"; 1:text_char="A"; 2:text_char="N"; endcase
+                3'd4: case(index) 0:text_char="T"; 1:text_char="I"; 2:text_char="L"; 3:text_char="T"; endcase
+                3'd5: case(index) 0:text_char="I"; 1:text_char="N"; 2:text_char="F"; 3:text_char="O"; endcase
+                3'd6: case(index) 0:text_char="E"; 1:text_char="X"; 2:text_char="I"; 3:text_char="T"; endcase
                 default: text_char = 8'h20;
             endcase
         end
@@ -216,19 +222,23 @@ module ui_osd #(
         text_x = 12'd0;
         text_y = 12'd0;
         text_active = 1'b0;
-        // Panel: x=24..492, y=24..300.
-        if(I_menu_enable && (x >= 12'd24) && (x < 12'd492) && (y >= 12'd24) && (y < 12'd300)) begin
+        // Panel: x=24..492, y=24..312. Six selectable rows.
+        if(I_menu_enable && (x >= 12'd24) && (x < 12'd492) && (y >= 12'd24) && (y < 12'd312)) begin
             overlay = 1'b1;
             pixel = 24'h101820;
-            if((x < 12'd28) || (x >= 12'd488) || (y < 12'd28) || (y >= 12'd296))
+            if((x < 12'd28) || (x >= 12'd488) || (y < 12'd28) || (y >= 12'd308))
                 pixel = 24'h3090d0;
-            else if((y >= 12'd72) && (y < 12'd108) && (I_menu_index == 2'd0))
+            else if((y >= 12'd72) && (y < 12'd108) && (I_menu_index == 3'd0))
                 pixel = I_edit_enable ? 24'hd08020 : 24'h205080;
-            else if((y >= 12'd108) && (y < 12'd144) && (I_menu_index == 2'd1))
+            else if((y >= 12'd108) && (y < 12'd144) && (I_menu_index == 3'd1))
                 pixel = I_edit_enable ? 24'hd08020 : 24'h205080;
-            else if((y >= 12'd144) && (y < 12'd180) && (I_menu_index == 2'd2))
+            else if((y >= 12'd144) && (y < 12'd180) && (I_menu_index == 3'd2))
+                pixel = I_edit_enable ? 24'hd08020 : 24'h205080;
+            else if((y >= 12'd180) && (y < 12'd216) && (I_menu_index == 3'd3))
+                pixel = I_edit_enable ? 24'hd08020 : 24'h205080;
+            else if((y >= 12'd216) && (y < 12'd252) && (I_menu_index == 3'd4))
                 pixel = 24'h205080;
-            else if((y >= 12'd180) && (y < 12'd216) && (I_menu_index == 2'd3))
+            else if((y >= 12'd252) && (y < 12'd288) && (I_menu_index == 3'd5))
                 pixel = 24'h205080;
 
             // Eight 32-pixel character cells: 20-pixel glyph + 12-pixel gap.
@@ -248,6 +258,10 @@ module ui_osd #(
                     text_active = 1'b1; line_no = 3'd3; text_y = y - 12'd148;
                 end else if((y >= 12'd184) && (y < 12'd212)) begin
                     text_active = 1'b1; line_no = 3'd4; text_y = y - 12'd184;
+                end else if((y >= 12'd220) && (y < 12'd248)) begin
+                    text_active = 1'b1; line_no = 3'd5; text_y = y - 12'd220;
+                end else if((y >= 12'd256) && (y < 12'd284)) begin
+                    text_active = 1'b1; line_no = 3'd6; text_y = y - 12'd256;
                 end
                 row = text_y[4:2];
                 ch = text_char(line_no, char_no);
@@ -256,22 +270,30 @@ module ui_osd #(
                            ((glyph & (5'b10000 >> col)) != 0);
             end
             if(glyph_on) pixel = 24'hffffff;
-            // Exposure and gain value bars; the selected row is brighter.
-            if((y >= 12'd224) && (y < 12'd236)) begin
-                pixel = (x >= 12'd44 && x < 12'd44 + exposure_bar_width) ? 24'h40d080 : 24'h304050;
-            end else if((y >= 12'd244) && (y < 12'd256)) begin
-                pixel = (x >= 12'd44 && x < 12'd44 + gain_bar_width) ? 24'hd0c040 : 24'h504820;
+            // Four short value bars fit beside the labels. The servo bars
+            // cover the conservative 1000..2000 us range used by the menu.
+            if((x >= 12'd330) && (x < 12'd458)) begin
+                if((y >= 12'd84) && (y < 12'd96))
+                    pixel = (x < 12'd330 + exposure_bar_width) ? 24'h40d080 : 24'h304050;
+                else if((y >= 12'd120) && (y < 12'd132))
+                    pixel = (x < 12'd330 + gain_bar_width) ? 24'hd0c040 : 24'h504820;
+                else if((y >= 12'd156) && (y < 12'd168))
+                    pixel = (x < 12'd330 + pan_bar_width) ? 24'h40d0d0 : 24'h304050;
+                else if((y >= 12'd192) && (y < 12'd204))
+                    pixel = (x < 12'd330 + tilt_bar_width) ? 24'hd080d0 : 24'h504050;
             end
         end
-        if(I_info_enable && I_menu_enable && (x >= 12'd24) && (x < 12'd492) && (y >= 12'd264) && (y < 12'd292))
+        if(I_info_enable && I_menu_enable && (x >= 12'd330) && (x < 12'd458) && (y >= 12'd228) && (y < 12'd240))
             pixel = 24'h206060;
     end
 
     always @(posedge I_clk or negedge I_rst_n) begin
         if(!I_rst_n) begin
             x <= 0; y <= 0; de_d <= 0; vs_d <= 0;
-            exposure_bar_width <= 10'd140;
-            gain_bar_width <= 10'd180;
+            exposure_bar_width <= 8'd48;
+            gain_bar_width <= 8'd64;
+            pan_bar_width <= 8'd62;
+            tilt_bar_width <= 8'd62;
             O_vsync <= 0; O_hsync <= 0; O_de <= 0; O_data <= 0;
         end else begin
             O_vsync <= I_vsync;
@@ -284,16 +306,20 @@ module ui_osd #(
                 x <= 0; y <= 0;
                 // The bars update once per frame.  Shift/add approximations
                 // avoid putting a multiplier/divider in the pixel data path.
-                exposure_bar_width <= (I_exposure >= 16'd5760) ? 10'd360 : I_exposure[13:4];
+                exposure_bar_width <= (I_exposure >= 16'd5990) ? 8'd127 :
+                                      ((I_exposure >> 6) + (I_exposure >> 8));
                 if(I_gain <= 16'd16)
-                    gain_bar_width <= 10'd0;
+                    gain_bar_width <= 8'd0;
                 else if(I_gain >= 16'd143)
-                    gain_bar_width <= 10'd360;
+                    gain_bar_width <= 8'd127;
                 else
-                    gain_bar_width <= ((I_gain - 16'd16) << 1) +
-                                      ((I_gain - 16'd16) >> 1) +
-                                      ((I_gain - 16'd16) >> 2) +
-                                      ((I_gain - 16'd16) >> 4);
+                    gain_bar_width <= I_gain - 16'd16;
+                pan_bar_width <= (I_servo_pan_us <= 16'd1000) ? 8'd0 :
+                                 (I_servo_pan_us >= 16'd2000) ? 8'd125 :
+                                 (I_servo_pan_us - 16'd1000) >> 3;
+                tilt_bar_width <= (I_servo_tilt_us <= 16'd1000) ? 8'd0 :
+                                  (I_servo_tilt_us >= 16'd2000) ? 8'd125 :
+                                  (I_servo_tilt_us - 16'd1000) >> 3;
             end else if(I_de) begin
                 x <= x + 1'b1;
             end else if(de_d) begin

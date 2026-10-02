@@ -34,6 +34,12 @@
 #define UI_LENS_ADC_RAW 0x44
 #define UI_LENS_ADC_COUNT 0x48
 #define UI_LENS_BUS_STATE 0x4c
+/* Servo pulse widths in microseconds: V6/pan and V4/tilt. */
+#define UI_SERVO_PAN_US  0x50
+#define UI_SERVO_TILT_US 0x54
+#define SERVO_MENU_MIN_US  1000u
+#define SERVO_MENU_MAX_US  2000u
+#define SERVO_MENU_STEP_US 25u
 
 /* Run real USB-SPI and VCM-I2C transactions often enough for a logic
  * analyzer to trigger reliably. The main loop delay is board/SDK dependent;
@@ -75,6 +81,22 @@ static inline void ui_write(uint32_t offset, uint32_t value)
 static void ui_ctrl(uint32_t menu, uint32_t edit, uint32_t info)
 {
     ui_write(UI_CTRL, (menu ? 1u : 0u) | (edit ? 2u : 0u) | (info ? 4u : 0u));
+}
+
+static void servo_menu_step(uint32_t offset, uint32_t *pulse_us, int direction)
+{
+    uint32_t next = *pulse_us;
+    if(direction > 0)
+        next = (next >= SERVO_MENU_MAX_US - SERVO_MENU_STEP_US) ?
+               SERVO_MENU_MAX_US : next + SERVO_MENU_STEP_US;
+    else
+        next = (next <= SERVO_MENU_MIN_US + SERVO_MENU_STEP_US) ?
+               SERVO_MENU_MIN_US : next - SERVO_MENU_STEP_US;
+    ui_write(offset, next);
+    *pulse_us = ui_read(offset);
+    al_printf("SERVO: %s pulse=%u us (readback=%u)\r\n",
+              offset == UI_SERVO_PAN_US ? "PAN/V6" : "TILT/V4",
+              next, *pulse_us);
 }
 
 /* FireWater fixed six channels: target, metric, status, raw84, raw85, valid.
@@ -249,12 +271,17 @@ AL_S32 main(void)
 {
     uint32_t id;
     uint32_t events;
-    uint32_t menu = 1;
+    /* Keep the video path untouched at boot; press OK to open the OSD menu. */
+    uint32_t menu = 0;
     uint32_t edit = 0;
     uint32_t info = 0;
     uint32_t index = 0;
     uint32_t exposure = 2246;
     uint32_t gain = 80;
+    uint32_t servo_pan_us = 1500;
+    uint32_t servo_tilt_us = 1500;
+    uint32_t servo_menu_available = 0;
+    uint32_t menu_items = 4;
     uint32_t last_report = 0;
 
     g_ui_debug_stage = 1;
@@ -292,6 +319,14 @@ AL_S32 main(void)
 
     exposure = ui_read(UI_EXPOSURE);
     gain = ui_read(UI_GAIN);
+    servo_pan_us = ui_read(UI_SERVO_PAN_US);
+    servo_tilt_us = ui_read(UI_SERVO_TILT_US);
+    servo_menu_available = (servo_pan_us >= 500u && servo_pan_us <= 2500u &&
+                            servo_tilt_us >= 500u && servo_tilt_us <= 2500u);
+    menu_items = servo_menu_available ? 6u : 4u;
+    al_printf("SERVO: %s PAN/V6=%u us TILT/V4=%u us\r\n",
+              servo_menu_available ? "menu ready" : "new FPGA bit required",
+              servo_pan_us, servo_tilt_us);
     /* APB 检查通过后自动显示菜单，便于直接确认 CPU 到 OSD 的链路。 */
     ui_write(UI_INDEX, index);
     ui_ctrl(menu, edit, info);
@@ -335,24 +370,39 @@ AL_S32 main(void)
                 } else if(events & KEY_UP) {
                     if(index == 0 && exposure < 5990) exposure += (exposure <= 5870) ? 120 : (5990 - exposure);
                     if(index == 1 && gain < 143) gain++;
+                    if(index == 0) ui_write(UI_EXPOSURE, exposure);
+                    if(index == 1) ui_write(UI_GAIN, gain);
+                    if(index == 2 && servo_menu_available)
+                        servo_menu_step(UI_SERVO_PAN_US, &servo_pan_us, 1);
+                    if(index == 3 && servo_menu_available)
+                        servo_menu_step(UI_SERVO_TILT_US, &servo_tilt_us, 1);
                 } else if(events & KEY_DOWN) {
                     if(index == 0) exposure = (exposure > 123) ? exposure - 120 : 3;
                     if(index == 1) gain = (gain > 16) ? gain - 1 : 16;
+                    if(index == 0) ui_write(UI_EXPOSURE, exposure);
+                    if(index == 1) ui_write(UI_GAIN, gain);
+                    if(index == 2 && servo_menu_available)
+                        servo_menu_step(UI_SERVO_PAN_US, &servo_pan_us, -1);
+                    if(index == 3 && servo_menu_available)
+                        servo_menu_step(UI_SERVO_TILT_US, &servo_tilt_us, -1);
                 }
-                ui_write(index == 0 ? UI_EXPOSURE : UI_GAIN, index == 0 ? exposure : gain);
             } else {
                 if(events & KEY_BACK) {
                     menu = 0;
                     info = 0;
                 } else if(events & KEY_UP) {
-                    index = (index == 0) ? 3 : index - 1;
+                    index = (index == 0) ? menu_items - 1u : index - 1u;
                 } else if(events & KEY_DOWN) {
-                    index = (index == 3) ? 0 : index + 1;
+                    index = (index == menu_items - 1u) ? 0u : index + 1u;
                 } else if(events & KEY_OK) {
-                    if(index == 0 || index == 1) {
+                    if(index == 0 || index == 1 ||
+                       (servo_menu_available && (index == 2 || index == 3))) {
                         edit = 1;
                         info = 0;
-                    } else if(index == 2) {
+                        if(index == 2 || index == 3)
+                            al_printf("SERVO: edit %s, UP/DOWN = 25 us, BACK/OK = finish\r\n",
+                                      index == 2 ? "PAN/V6" : "TILT/V4");
+                    } else if(index == menu_items - 2u) {
                         info = !info;
                     } else {
                         menu = 0;

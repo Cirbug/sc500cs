@@ -4,7 +4,7 @@ set_pin_assignment	{ I_rst_n }				{ LOCATION = R10; IOSTANDARD = LVCMOS33; PULLT
 
 # MAX3421E module on GPIOB (3.3 V logic).
 set_pin_assignment { O_usb_sclk }  { LOCATION = K2;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
-set_pin_assignment { I_usb_miso }  { LOCATION = H2;  IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment { I_usb_miso }  { LOCATION = B10;  IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
 set_pin_assignment { O_usb_mosi }  { LOCATION = C8;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
 set_pin_assignment { O_usb_ss_n }  { LOCATION = A5;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
 set_pin_assignment { I_usb_int_n } { LOCATION = L4;  IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
@@ -13,6 +13,10 @@ set_pin_assignment { O_usb_res_n } { LOCATION = M1; IOSTANDARD = LVCMOS33; DRIVE
 # Lens actuator I2C (separate from SC500 camera configuration I2C on K3/J3).
 set_pin_assignment { O_lens_scl } { LOCATION = R6; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
 set_pin_assignment { IO_lens_sda } { LOCATION = R7; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+
+# Servo signal outputs. Use an external servo supply and share ground with FPGA.
+set_pin_assignment { O_servo_pan }  { LOCATION = V6; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLDOWN; }
+set_pin_assignment { O_servo_tilt } { LOCATION = V4; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLDOWN; }
 
 # Board USB-UART bridge.
 set_pin_assignment	{ I_mcu_uart_rx }		{ LOCATION = J1; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }

@@ -4,14 +4,10 @@
    Executable = F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/run.exe
    Built at =   16:32:07 Jun 12 2025
    Run by =     pc
-   Run Date =   Sun Sep 27 20:44:36 2026
+   Run Date =   Fri Oct  2 17:16:29 2026
 
    Run on =     CIRBUG
 ============================================================
-KIT-5603 WARNING: Net S_mcu_gpio0_out is invalid in chipwatcher, ignored.
-KIT-5603 WARNING: Net S_mcu_gpio1_out is invalid in chipwatcher, ignored.
-KIT-5603 WARNING: Net S_mcu_gpio3_out is invalid in chipwatcher, ignored.
-KIT-5603 WARNING: Net S_mcu_gpio4_out is invalid in chipwatcher, ignored.
 PHY-5060 CRITICAL-WARNING: Clock net candidate u_uicfgcs500/uii2c_inst/scl_clk has mixed fanouts of 1 clock pins; 2 data/ctrl pins. Please check connection of the net in design.
 PHY-5060 CRITICAL-WARNING: Clock net candidate O_cam_24m_syn_3 has mixed fanouts of 150 clock pins; 1 data/ctrl pins. Please check connection of the net in design.
 PHY-5016 WARNING: PLL clkc is driving an IO without location.

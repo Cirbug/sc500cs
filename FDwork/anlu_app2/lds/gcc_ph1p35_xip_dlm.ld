@@ -10,6 +10,7 @@ ENTRY( _start )
 
 MEMORY
 {
+/* MCU QSPI0 shares the FPGA configuration flash; link at its XIP window. */
 flash (rxa!w) : ORIGIN = 0x20E00000, LENGTH = 4M
 dlm (wxa!r)   : ORIGIN = 0x08008000, LENGTH = 16K
 }

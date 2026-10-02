@@ -10,7 +10,10 @@ module design_top_wrapper (
     output wire       O_mcu_uart_tx,
     output wire       O_usb_sclk,
     input  wire       I_usb_miso,
-    output wire       O_usb_mosi,
+    // MAX3421E uses this same pad as the return-data line while its
+    // half-duplex SPI mode is active.  It must therefore be tri-stated during
+    // QSPI receive phases instead of being a permanently driven output.
+    inout  wire       O_usb_mosi,
     output wire       O_usb_ss_n,
     input  wire       I_usb_int_n,
     output wire       O_usb_res_n,
@@ -22,7 +25,10 @@ module design_top_wrapper (
     // Lens actuator I2C: SCL=R6, SDA=R7.
     inout  wire       O_lens_scl,
     inout  wire       IO_lens_sda,
-      
+    // Two hobby-servo control outputs, constrained to V6 and V4.
+    output wire       O_servo_pan,
+    output wire       O_servo_tilt,
+
     input wire [3:0]  I_button,
 
     output wire       O_screen_pwm,
@@ -214,6 +220,8 @@ module design_top_wrapper (
     wire [31:0] S_lens_adc_raw, S_lens_adc_count, S_lens_bus_state;
     wire [31:0] S_focus_metric_pix;
     wire [31:0] S_focus_metric_apb;
+    wire [15:0] S_servo_pan_us;
+    wire [15:0] S_servo_tilt_us;
     wire        S_focus_frame_toggle;
     reg [31:0]  S_focus_metric_sync1;
     reg [31:0]  S_focus_metric_sync2;
@@ -258,7 +266,13 @@ module design_top_wrapper (
             assign O_usb_res_n = S_rst_n;
         end else begin : g_usb_qspi_normal
             assign O_usb_sclk = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_clk : 1'b0;
-            assign O_usb_mosi = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_d0_out : 1'b0;
+            // MAX3421E is configured for full-duplex SPI.  Keep C8 as the
+            // master MOSI output for both the command and the 0x00 dummy
+            // byte; the response is sampled from the separate B10/MISO pad.
+            // Do not use qspi1_dir here: releasing C8 would select the
+            // MAX3421E half-duplex turnaround protocol instead.
+            assign O_usb_mosi = (S_rst_n && S_apb_usb_spi_enable)
+                              ? S_mcu_qspi1_d0_out : 1'bz;
             assign O_usb_ss_n = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_ss : 1'b1;
             assign O_usb_res_n = S_rst_n && S_apb_usb_res_n;
         end
@@ -281,7 +295,7 @@ module design_top_wrapper (
     wire        S_ui_enable_apb;
     wire        S_ui_edit_apb;
     wire        S_ui_info_apb;
-    wire [1:0]  S_ui_index_apb;
+    wire [2:0]  S_ui_index_apb;
     wire [15:0] S_ui_ae_apb;
     wire [15:0] S_ui_ag_apb;
     reg [15:0]  S_ae_sync1;
@@ -291,9 +305,11 @@ module design_top_wrapper (
     reg         S_ui_enable_p1, S_ui_enable_p2;
     reg         S_ui_edit_p1, S_ui_edit_p2;
     reg         S_ui_info_p1, S_ui_info_p2;
-    reg [1:0]   S_ui_index_p1, S_ui_index_p2;
+    reg [2:0]   S_ui_index_p1, S_ui_index_p2;
     reg [15:0]  S_ui_ae_p1, S_ui_ae_p2;
     reg [15:0]  S_ui_ag_p1, S_ui_ag_p2;
+    reg [15:0]  S_ui_servo_pan_p1, S_ui_servo_pan_p2;
+    reg [15:0]  S_ui_servo_tilt_p1, S_ui_servo_tilt_p2;
     wire        S_osd_vsync;
     wire        S_osd_hsync;
     wire        S_osd_de;
@@ -669,12 +685,16 @@ module design_top_wrapper (
             S_ui_edit_p2   <= 1'b0;
             S_ui_info_p1   <= 1'b0;
             S_ui_info_p2   <= 1'b0;
-            S_ui_index_p1  <= 2'd0;
-            S_ui_index_p2  <= 2'd0;
+            S_ui_index_p1  <= 3'd0;
+            S_ui_index_p2  <= 3'd0;
             S_ui_ae_p1     <= 16'd2246;
             S_ui_ae_p2     <= 16'd2246;
             S_ui_ag_p1     <= 16'd80;
             S_ui_ag_p2     <= 16'd80;
+            S_ui_servo_pan_p1  <= 16'd1500;
+            S_ui_servo_pan_p2  <= 16'd1500;
+            S_ui_servo_tilt_p1 <= 16'd1500;
+            S_ui_servo_tilt_p2 <= 16'd1500;
         end else begin
             S_ui_enable_p1 <= S_ui_enable_apb;
             S_ui_enable_p2 <= S_ui_enable_p1;
@@ -688,6 +708,10 @@ module design_top_wrapper (
             S_ui_ae_p2     <= S_ui_ae_p1;
             S_ui_ag_p1     <= S_ui_ag_apb;
             S_ui_ag_p2     <= S_ui_ag_p1;
+            S_ui_servo_pan_p1  <= S_servo_pan_us;
+            S_ui_servo_pan_p2  <= S_ui_servo_pan_p1;
+            S_ui_servo_tilt_p1 <= S_servo_tilt_us;
+            S_ui_servo_tilt_p2 <= S_ui_servo_tilt_p1;
         end
     end
 	
@@ -751,12 +775,15 @@ module design_top_wrapper (
         .i2c_scl_in  ( 1'b0               ),
         .i2c_scl_out ( S_mcu_i2c_scl_out  ),
         .i2c_scl_sel ( S_mcu_i2c_scl_sel  ),
-        // QSPI1 single-SPI mode: D0=MOSI, D1=MISO. QSPI0 boot flash is separate.
+        // QSPI1 single-SPI mode: D0=MOSI/half-duplex return, D1=MISO in
+        // full-duplex mode. QSPI0 is hardwired to the FPGA configuration
+        // flash; QSPI1 is the external MAX3421E interface below.
         .qspi1_clk   ( S_mcu_qspi1_clk    ),
         .qspi1_ss    ( S_mcu_qspi1_ss     ),
-        // Diagnostic mapping: feed MISO to both possible QSPI receive lanes.
-        // Software must enable PINCTL.FDUPSPI before reading MAX3421E.
-        // This does not implement bidirectional transfers on the MOSI pin.
+        // In RX direction the PH1P QSPI single-SPI path may sample either
+        // its D0 or D1 input.  MAX3421E is configured for FDUPSPI, so both
+        // receive inputs are tied to the actual B10/MISO pad.  MOSI remains
+        // driven independently through qspi1_d0_out/C8.
         .qspi1_d0_in ( I_usb_miso         ),
         .qspi1_d1_in ( I_usb_miso         ),
         .qspi1_d2_in ( 1'b0               ),
@@ -823,6 +850,19 @@ module design_top_wrapper (
         .O_bus_state   ( S_lens_bus_state )
     );
 
+    // 50 MHz APB clock: 20 ns/count, so 1 us equals 50 counts.
+    servo_pwm_2ch u_servo_pwm_2ch (
+        .I_clk       ( S_mcu_apb_clk  ),
+        .I_rst_n     ( S_rst_n         ),
+        // Use the reset-safe APB copies.  The raw APB outputs can change in
+        // the same cycle as MCU startup; feeding them directly to PWM can
+        // create a malformed first pulse.
+        .I_pan_us    ( S_ui_servo_pan_p2  ),
+        .I_tilt_us   ( S_ui_servo_tilt_p2 ),
+        .O_pan       ( O_servo_pan    ),
+        .O_tilt      ( O_servo_tilt   )
+    );
+
     mcu_ui_apb_regs u_mcu_ui_apb_regs (
         .I_clk         ( S_mcu_apb_clk ),
         .I_rst         ( ~S_rst_n ),
@@ -857,7 +897,9 @@ module design_top_wrapper (
         .O_lens_cmd    ( S_lens_cmd ),
         .O_lens_retry  ( S_lens_retry ),
         .O_lens_read_adc( S_lens_read_adc ),
-        .O_lens_position( S_lens_position )
+        .O_lens_position( S_lens_position ),
+        .O_servo_pan_us ( S_servo_pan_us ),
+        .O_servo_tilt_us( S_servo_tilt_us )
     );
 
 
@@ -1227,6 +1269,8 @@ isp_top u_isp_top (
         .I_menu_index   ( S_ui_index_p2 ),
         .I_exposure     ( S_ui_ae_p2 ),
         .I_gain         ( S_ui_ag_p2 ),
+        .I_servo_pan_us ( S_ui_servo_pan_p2 ),
+        .I_servo_tilt_us( S_ui_servo_tilt_p2 ),
         .O_vsync        ( S_osd_vsync ),
         .O_hsync        ( S_osd_hsync ),
         .O_de           ( S_osd_de ),

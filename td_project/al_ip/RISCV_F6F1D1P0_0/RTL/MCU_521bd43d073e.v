@@ -133,7 +133,7 @@ module MCU_521bd43d073e
 		.por_reset(por_reset),
 		.core_clk_en(1'b1),
 		.dbg_stop(1'b0),
-		.dbg_stop_on_reset(1'b1),
+		.dbg_stop_on_reset(1'b0),
 		.dbg_stop_at_boot(1'b0),
 		.dbg_mux_sel(2'h3),
 		.nmi(nmi),

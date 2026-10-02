@@ -9,7 +9,7 @@
             <ipxact:instanceName>MCU_f9f874759a41_Inst</ipxact:instanceName>
             <ipxact:componentRef vendor="anlogic.com" library="ip" name="RISCV_F6F1D1P0" version="1.0"/>
             <ipxact:configurableElementValues>
-                <ipxact:configurableElementValue referenceId="MCU_RESET_VECTOR">'h20E00000</ipxact:configurableElementValue>
+                <ipxact:configurableElementValue referenceId="MCU_RESET_VECTOR">'h20e00000</ipxact:configurableElementValue>
                 <ipxact:configurableElementValue referenceId="JTAG_Available">1</ipxact:configurableElementValue>
                 <ipxact:configurableElementValue referenceId="GPIO0_Available">1</ipxact:configurableElementValue>
                 <ipxact:configurableElementValue referenceId="GPIO1_Available">1</ipxact:configurableElementValue>

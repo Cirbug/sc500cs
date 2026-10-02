@@ -1,0 +1,23 @@
+--cpu Cortex-M3
+"spi_text\startup_stm32f103xb.o"
+"spi_text\main.o"
+"spi_text\stm32f1xx_it.o"
+"spi_text\stm32f1xx_hal_msp.o"
+"spi_text\stm32f1xx_hal_gpio_ex.o"
+"spi_text\stm32f1xx_hal_spi.o"
+"spi_text\stm32f1xx_hal.o"
+"spi_text\stm32f1xx_hal_rcc.o"
+"spi_text\stm32f1xx_hal_rcc_ex.o"
+"spi_text\stm32f1xx_hal_gpio.o"
+"spi_text\stm32f1xx_hal_dma.o"
+"spi_text\stm32f1xx_hal_cortex.o"
+"spi_text\stm32f1xx_hal_pwr.o"
+"spi_text\stm32f1xx_hal_flash.o"
+"spi_text\stm32f1xx_hal_flash_ex.o"
+"spi_text\stm32f1xx_hal_exti.o"
+"spi_text\stm32f1xx_hal_uart.o"
+"spi_text\system_stm32f1xx.o"
+--strict --scatter "spi_text\spi_text.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "spi_text.map" -o spi_text\spi_text.axf

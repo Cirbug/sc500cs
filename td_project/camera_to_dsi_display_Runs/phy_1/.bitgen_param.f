@@ -1,5 +1,5 @@
-bin off
-bin_compress off
+bin on
+bin_compress on
 compress on
 data_ram  
 gen_mask off

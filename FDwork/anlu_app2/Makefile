@@ -53,6 +53,9 @@ ASM_SRCS :=
 # 3. CFLAGS
 #########################################################################
 CFLAGS := -O2 -g
+# This application only formats integer diagnostics.  The SDK default pulls
+# in the floating-point printf formatter and wastes several KiB of the image.
+PFLOAT := 0
 
 
 #########################################################################

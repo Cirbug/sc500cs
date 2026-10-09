@@ -274,7 +274,9 @@ module design_top_wrapper (
             assign O_usb_mosi = (S_rst_n && S_apb_usb_spi_enable)
                               ? S_mcu_qspi1_d0_out : 1'bz;
             assign O_usb_ss_n = (S_rst_n && S_apb_usb_spi_enable) ? S_mcu_qspi1_ss : 1'b1;
-            assign O_usb_res_n = S_rst_n && S_apb_usb_res_n;
+            // Diagnostic mode: keep MAX3421E /RES released after FPGA reset.
+            // The pin is still low while the FPGA itself is in reset.
+            assign O_usb_res_n = S_rst_n;
         end
     endgenerate
     (* keep *) wire        S_mcu_ahb_clk;
@@ -780,10 +782,10 @@ module design_top_wrapper (
         // flash; QSPI1 is the external MAX3421E interface below.
         .qspi1_clk   ( S_mcu_qspi1_clk    ),
         .qspi1_ss    ( S_mcu_qspi1_ss     ),
-        // In RX direction the PH1P QSPI single-SPI path may sample either
-        // its D0 or D1 input.  MAX3421E is configured for FDUPSPI, so both
-        // receive inputs are tied to the actual B10/MISO pad.  MOSI remains
-        // driven independently through qspi1_d0_out/C8.
+        // The PH1P SINGLE receive path differs between MCU IP revisions
+        // (some sample D0, others sample D1). Mirror the external MAX3421E
+        // MISO pad into both receive inputs; MOSI is still driven only by
+        // qspi1_d0_out/C8, so this cannot create a second external driver.
         .qspi1_d0_in ( I_usb_miso         ),
         .qspi1_d1_in ( I_usb_miso         ),
         .qspi1_d2_in ( 1'b0               ),

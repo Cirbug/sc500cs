@@ -16,7 +16,7 @@
     <intAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbClientCliPortNumber" value="7777"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbClientOtherCommands" value="set mem inaccessible-by-default off&#13;&#10;set remotetimeout 250&#13;&#10;set arch riscv:rv32"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbClientOtherOptions" value=""/>
-    <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerCable" value="{&quot;name&quot;:&quot;JTAG Cable (3-1)&quot;,&quot;frequency&quot;:&quot;10000&quot;,&quot;usbPort&quot;:&quot;3-1&quot;,&quot;devices&quot;:[{&quot;name&quot;:&quot;auto0&quot;,&quot;idCode&quot;:&quot;0x10300a6d&quot;,&quot;irLength&quot;:&quot;5&quot;,&quot;isFPGA&quot;:false},{&quot;name&quot;:&quot;auto1&quot;,&quot;idCode&quot;:&quot;0x4808f0e7&quot;,&quot;irLength&quot;:&quot;8&quot;,&quot;isFPGA&quot;:false}]}"/>
+    <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerCable" value="{&quot;name&quot;:&quot;JTAG Cable (3-1.4)&quot;,&quot;frequency&quot;:&quot;10000&quot;,&quot;usbPort&quot;:&quot;3-1.4&quot;,&quot;devices&quot;:[{&quot;name&quot;:&quot;auto0&quot;,&quot;idCode&quot;:&quot;0x10300a6d&quot;,&quot;irLength&quot;:&quot;5&quot;,&quot;isFPGA&quot;:false},{&quot;name&quot;:&quot;auto1&quot;,&quot;idCode&quot;:&quot;0x4808f0e7&quot;,&quot;irLength&quot;:&quot;8&quot;,&quot;isFPGA&quot;:false}]}"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerExecutable" value="${IDE_ROOT_PATH}/toolchain/openocd/fpsoc/bin/openocd.exe"/>
     <intAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerGdbPortNumber" value="3333"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerOther" value="-f &quot;D:/2026fpga/lab_hd_1_mipi_hdmi/FDwork/anlu_app2/onecable_ph1p35.cfg&quot;"/>
@@ -32,7 +32,6 @@
     <booleanAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.runPlatInit" value="false"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.secondResetType" value=""/>
     <intAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.telnetPortNumber" value="4444"/>
-    <!-- Flash/XIP test: do not switch to JTAG boot. -->
     <booleanAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.useJtagBoot" value="false"/>
     <booleanAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.usePjtag" value="false"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.svdPath" value=""/>
@@ -40,7 +39,6 @@
     <stringAttribute key="org.eclipse.cdt.debug.gdbjtag.core.imageOffset" value=""/>
     <stringAttribute key="org.eclipse.cdt.debug.gdbjtag.core.ipAddress" value="localhost"/>
     <stringAttribute key="org.eclipse.cdt.debug.gdbjtag.core.jtagDevice" value="GNU MCU OpenOCD"/>
-    <!-- The image is programmed separately with Program Flash. -->
     <booleanAttribute key="org.eclipse.cdt.debug.gdbjtag.core.loadImage" value="false"/>
     <booleanAttribute key="org.eclipse.cdt.debug.gdbjtag.core.loadSymbols" value="true"/>
     <stringAttribute key="org.eclipse.cdt.debug.gdbjtag.core.pcRegister" value=""/>
@@ -60,7 +58,7 @@
     <intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="2"/>
     <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="build/anlu_app2.elf"/>
     <stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="anlu_app2"/>
-    <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="false"/>
+    <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>
     <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value=""/>
     <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_SYSTEM_CONSOLE_ENCODING" value="false"/>
     <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">

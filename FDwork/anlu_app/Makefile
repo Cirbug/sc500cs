@@ -54,6 +54,10 @@ ASM_SRCS :=
 # 3. CFLAGS
 #########################################################################
 CFLAGS := -O2 -g
+# This application only formats integer diagnostics.  The SDK default pulls
+# in the floating-point printf formatter and wastes several KiB of the 48 KiB
+# TCM image.
+PFLOAT := 0
 
 
 #########################################################################
@@ -92,5 +96,9 @@ LINKER_SCRIPT := ./lds/gcc_$(CHIP)_$(DOWNLOAD).ld
 
 # include rules.mk
 include $(SDK_ROOT)/tools/make/rules.mk
+
+# Keep startup stack-address loads intact. This toolchain can incorrectly
+# relax _sp to a GP-relative load as the TCM image grows.
+LDFLAGS += -Wl,--no-relax
 
 # vim: syntax=make

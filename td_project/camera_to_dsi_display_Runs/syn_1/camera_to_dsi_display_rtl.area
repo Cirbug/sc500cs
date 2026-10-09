@@ -8,8 +8,8 @@ IO Statistics
   #inout                   36
 
 Gate Statistics
-#Basic gates            26805
-  #and                   1119
+#Basic gates            26804
+  #and                   1118
   #nand                     0
   #or                     829
   #nor                      0
@@ -40,7 +40,7 @@ Report Hierarchy Area:
 +-----------------------------------------------------------------------------------------------------------------------------------------+
 |Instance                                                         |Module                                         |gates  |seq    |macros |
 +-----------------------------------------------------------------------------------------------------------------------------------------+
-|top                                                              |design_top_wrapper                             |8654   |18151  |913    |
+|top                                                              |design_top_wrapper                             |8653   |18151  |913    |
 |  u_PLL                                                          |PLL                                            |0      |0      |1      |
 |    ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst                       |ph1p_phy_pll_wrapper_25a56e5ce2f9              |0      |0      |0      |
 |  u_ae_set                                                       |ae_set                                         |8      |43     |6      |

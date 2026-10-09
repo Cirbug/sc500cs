@@ -8,7 +8,7 @@
 | 模块 | FPGA 管脚 | FPGA 方向 |
 |---|---|---|
 | SCLK | K2 | 输出 |
-| MISO | H2 | 输入，接入 QSPI1 D0/D1 输入（兼容半双工和全双工） |
+| MISO | B10 | 输入，同时接入 QSPI1 D0/D1 接收端 |
 | MOSI | C8 | 输出，QSPI1 D0 |
 | SS | A5 | 输出，低有效 |
 | INT | L4 | 输入，低有效电平模式 |
@@ -64,7 +64,7 @@ FD Expressions 可查看 `g_usb_debug_stage`、`g_usb_revision`、`g_usb_last_sp
 
 ## 实现说明
 
-- 复用现有 MCU IP 的 QSPI1，单线 SPI、Mode 0、8bit、MSB first。顶层将外部 MISO 同时送入 QSPI1 D0/D1 输入，用于排查控制器接收通道映射；这不是 MAX3421E 半双工读回的实现。必须先写 PINCTL.FDUPSPI，才能从独立 MISO 读取。该映射是否解决当前 FF 问题，仍需上板验证。
+- 复用现有 MCU IP 的 QSPI1，单线 SPI、Mode 0、8bit、MSB first。MOSI 由 QSPI1 D0 输出；外部 MISO 同时送入 D0/D1 接收端，以兼容不同 PH1P MCU IP 对 SINGLE 模式接收线的选择。固件按 STM32 已验证的方式在同一片选周期内发送“命令 + dummy”全双工事务。MAX3421E 先写 PINCTL.FDUPSPI 后再进行独立 MISO 读回。
 - `SckDiv=149`，按 SDK 标注的 300MHz 输入计算为 1MHz；实物频率以测量为准。
 - 命令和数据之间保持 SS 为低，事务结束释放 SS。
 - MAX3421E 上电默认半双工，先写 PINCTL=0x18，再通过独立 MISO 读取。

@@ -9,7 +9,7 @@ MCU QSPI1 采用 SINGLE 普通 SPI 模式，mode 0、8 位、MSB first。
 |---|---|---|
 | SCLK | K2 | MCU qspi1_clk |
 | MOSI | C8 | MCU qspi1_d0_out |
-| MISO | H2 | MCU qspi1_d1_in；同时保留旧诊断用 d0_in 镜像 |
+| MISO | B10 | 同时接入 MCU qspi1_d0_in/qspi1_d1_in，兼容 SINGLE 接收通道 |
 | /SS | A5 | MCU qspi1_ss |
 | /RES | M1 | APB USB_CTRL.bit0 |
 | /INT | L4 | APB 同步输入 USB_STATUS.bit0 |
@@ -21,7 +21,7 @@ QSPI1 本身已在 MCU IP 中启用，不需要重新生成 MCU IP，也不用�
 ## 固件
 
 main 改为调用 max3421e_diag_init/report，使用已有 max3421e_diag.c。
-恢复原 QSPI 读写方式：命令/数据期间保持 CS，收发通过有限次数轮询，不使用无期限等待。
+恢复 QSPI 读写方式：命令和 dummy 数据期间保持 CS，采用连续全双工事务；收发通过有限次数轮询，不使用无期限等待。
 新增官方 QSPI 例程中的 QSPI1 时钟使能和模块复位，不操作 QSPI0。
 SCKDIV=149，SCLK=QSPI输入时钟/[2*(149+1)]；IP 中的频率参数与 SDK 的时钟描述不能代替实测。
 SPI 时钟由硬件分频产生，不再通过软件 GPIO 延时翻转。

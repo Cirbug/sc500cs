@@ -16,13 +16,13 @@
     <intAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbClientCliPortNumber" value="7777"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbClientOtherCommands" value="set mem inaccessible-by-default off&#13;&#10;set remotetimeout 250&#13;&#10;set arch riscv:rv32"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbClientOtherOptions" value=""/>
-    <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerCable" value="{&quot;name&quot;:&quot;JTAG Cable (3-1.1)&quot;,&quot;frequency&quot;:&quot;10000&quot;,&quot;usbPort&quot;:&quot;3-1.1&quot;,&quot;devices&quot;:[{&quot;name&quot;:&quot;auto0&quot;,&quot;idCode&quot;:&quot;0x10300a6d&quot;,&quot;irLength&quot;:&quot;5&quot;,&quot;isFPGA&quot;:false},{&quot;name&quot;:&quot;auto1&quot;,&quot;idCode&quot;:&quot;0x4808f0e7&quot;,&quot;irLength&quot;:&quot;8&quot;,&quot;isFPGA&quot;:false}]}"/>
+    <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerCable" value="{&quot;name&quot;:&quot;JTAG Cable (3-1.2)&quot;,&quot;frequency&quot;:&quot;10000&quot;,&quot;usbPort&quot;:&quot;3-1.2&quot;,&quot;devices&quot;:[{&quot;name&quot;:&quot;auto0&quot;,&quot;idCode&quot;:&quot;0x4808f0e7&quot;,&quot;irLength&quot;:&quot;8&quot;,&quot;isFPGA&quot;:false}]}"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerExecutable" value="${IDE_ROOT_PATH}/toolchain/openocd/fpsoc/bin/openocd.exe"/>
     <intAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerGdbPortNumber" value="3333"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerOther" value="-f &quot;D:/2026fpga/lab_hd_1_mipi_hdmi/FDwork/anlu_app/onecable_ph1p35.cfg&quot;"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerTclPortNumber" value="6666"/>
     <intAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.gdbServerTelnetPortNumber" value="4444"/>
-    <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.hwserverInfo" value=""/>
+    <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.hwserverInfo" value="0.0.0.0:5555"/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.otherInitCommands" value=""/>
     <stringAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.otherRunCommands" value=""/>
     <intAttribute key="ilg.gnumcueclipse.debug.gdbjtag.openocd.rbbPortNumber" value="5555"/>
@@ -59,7 +59,7 @@
     <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="build/anlu_app.elf"/>
     <stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="anlu_app"/>
     <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="false"/>
-    <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.release.1937532182"/>
+    <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value=""/>
     <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_SYSTEM_CONSOLE_ENCODING" value="false"/>
     <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
         <listEntry value="/anlu_app"/>

@@ -35,6 +35,15 @@
 /* USER CODE BEGIN PD */
 #define MAX_REG_PINCTL       17u
 #define MAX_REG_REVISION     18u
+#define MAX_REG_USBIRQ       13u
+#define MAX_REG_USBCTL       15u
+#define MAX_REG_HIRQ         25u
+#define MAX_REG_MODE         27u
+#define MAX_CHIPRES          0x20u
+#define MAX_OSCOKIRQ         0x01u
+#define MAX_FRAMEIRQ         0x40u
+#define MAX_MODE_HOST        0xC1u
+#define MAX_MODE_SOF         0xC9u
 #define MAX_PINCTL_FULL_DUP  0x1Au
 #define MAX_SPI_TIMEOUT_MS   100u
 
@@ -64,6 +73,7 @@ static void uart_printf(const char *fmt, ...);
 static HAL_StatusTypeDef max3421e_write_reg(uint8_t reg, uint8_t value);
 static HAL_StatusTypeDef max3421e_read_reg(uint8_t reg, uint8_t *value, uint8_t *status);
 static void max3421e_reset(void);
+static void max3421e_clock_test(void);
 static void max3421e_test(void);
 
 /* USER CODE END PFP */
@@ -80,7 +90,7 @@ static void uart_printf(const char *fmt, ...)
   length = vsnprintf(buffer, sizeof(buffer), fmt, args);
   va_end(args);
   if (length <= 0) return;
-  if (length > (int)sizeof(buffer)) length = sizeof(buffer);
+  if (length >= (int)sizeof(buffer)) length = sizeof(buffer) - 1;
   HAL_UART_Transmit(&huart1, (uint8_t *)buffer, (uint16_t)length,
                     MAX_SPI_TIMEOUT_MS);
 }
@@ -133,6 +143,79 @@ static void max3421e_reset(void)
   HAL_Delay(2);
 }
 
+static void max3421e_clock_test(void)
+{
+  uint8_t value, irq;
+  unsigned poll, frames = 0u, oscok = 0u;
+  const char *result = "SPI_FAIL";
+
+  /* The SPI port can respond even with its USB oscillator stopped. Test
+   * internal-clock-dependent registers separately, using CHIPRES only. */
+  if (max3421e_write_reg(MAX_REG_USBCTL, MAX_CHIPRES) != HAL_OK ||
+      max3421e_read_reg(MAX_REG_USBCTL, &value, NULL) != HAL_OK) goto done;
+  uart_printf("MAX3421E: USBCTL stop=0x%02X\r\n", value);
+  result = "RESET_FAIL";
+  if ((value & 0x30u) != MAX_CHIPRES) goto done;
+  HAL_Delay(10);
+  result = "SPI_FAIL";
+  if (max3421e_write_reg(MAX_REG_USBCTL, 0u) != HAL_OK ||
+      max3421e_read_reg(MAX_REG_USBCTL, &value, NULL) != HAL_OK) goto done;
+  uart_printf("MAX3421E: USBCTL run=0x%02X\r\n", value);
+  result = "RESET_FAIL";
+  if (value & 0x30u) goto done;
+  for (poll = 0u; poll < 1000u; ++poll) {
+    result = "SPI_FAIL";
+    if (max3421e_read_reg(MAX_REG_USBIRQ, &irq, NULL) != HAL_OK) goto done;
+    if (irq & MAX_OSCOKIRQ) { oscok = 1u; break; }
+    HAL_Delay(1);
+  }
+  uart_printf("MAX3421E: OSCOK(init)=%u USBIRQ=0x%02X wait=%u ms\r\n",
+              oscok, irq, poll);
+
+  /* Also test fresh frame events when OSCOK is missing. HOST entry clears
+   * OSCOK, so preserve the initialization result instead of rereading it. */
+  result = "SPI_FAIL";
+  if (max3421e_write_reg(MAX_REG_MODE, MAX_MODE_HOST) != HAL_OK) goto done;
+  HAL_Delay(2);
+  if (max3421e_read_reg(MAX_REG_MODE, &value, NULL) != HAL_OK) goto done;
+  uart_printf("MAX3421E: HOST write=0xC1 read=0x%02X\r\n", value);
+  result = "HOST_FAIL";
+  if (value != MAX_MODE_HOST) goto done;
+  result = "SPI_FAIL";
+  if (max3421e_write_reg(MAX_REG_MODE, MAX_MODE_SOF) != HAL_OK) goto done;
+  HAL_Delay(2);
+  if (max3421e_read_reg(MAX_REG_MODE, &value, NULL) != HAL_OK) goto done;
+  uart_printf("MAX3421E: SOF write=0xC9 read=0x%02X\r\n", value);
+  result = "SOF_FAIL";
+  if (value != MAX_MODE_SOF) goto done;
+  while (frames < 3u) {
+    result = "SPI_FAIL";
+    if (max3421e_write_reg(MAX_REG_HIRQ, MAX_FRAMEIRQ) != HAL_OK ||
+        max3421e_read_reg(MAX_REG_HIRQ, &irq, NULL) != HAL_OK) goto done;
+    result = "CLEAR_FAIL";
+    if (irq & MAX_FRAMEIRQ) goto done;
+    for (poll = 0u; poll < 1000u; ++poll) {
+      result = "SPI_FAIL";
+      if (max3421e_read_reg(MAX_REG_HIRQ, &irq, NULL) != HAL_OK) goto done;
+      if (irq & MAX_FRAMEIRQ) break;
+      HAL_Delay(1);
+    }
+    result = "NO_FRAME";
+    if (poll == 1000u) goto done;
+    ++frames;
+  }
+  result = oscok ? "PASS" : "FRAMES_WITHOUT_OSCOK";
+done:
+  /* Stop frame generation and clear its flag; the next run resets via CHIPRES. */
+  {
+    HAL_StatusTypeDef cleanup = max3421e_write_reg(MAX_REG_MODE, MAX_MODE_HOST);
+    HAL_StatusTypeDef clear = max3421e_write_reg(MAX_REG_HIRQ, MAX_FRAMEIRQ);
+    if (cleanup != HAL_OK || clear != HAL_OK) result = "SPI_FAIL";
+  }
+  uart_printf("MAX3421E: CLOCK test %s OSCOK(init)=%u FRAME events=%u/3\r\n",
+              result, oscok, frames);
+}
+
 static void max3421e_test(void)
 {
   uint8_t revision = 0u, pinctl = 0u, status = 0u;
@@ -158,9 +241,11 @@ static void max3421e_test(void)
   uart_printf("MAX3421E: PINCTL=0x%02X read=%s\r\n",
               pinctl, (result == HAL_OK) ? "OK" : "ERROR");
 
-  if ((revision == 0x01u || revision == 0x12u || revision == 0x13u) &&
+  if (result == HAL_OK &&
+      (revision == 0x01u || revision == 0x12u || revision == 0x13u) &&
       pinctl == MAX_PINCTL_FULL_DUP) {
-    uart_printf("MAX3421E: PASS module responds\r\n");
+    uart_printf("MAX3421E: SPI PASS; checking USB clock next\r\n");
+    max3421e_clock_test();
   } else {
     uart_printf("MAX3421E: FAIL expected REV=01/12/13 and PINCTL=1A\r\n");
   }
@@ -200,7 +285,7 @@ int main(void)
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  uart_printf("\r\nMAX3421E STM32 SPI test start\r\n");
+  uart_printf("\r\nMAX3421E STM32 clock-test-v2 start\r\n");
   uart_printf("SPI1: PA5=SCLK PA6=MISO PA7=MOSI PB0=CS PA3=RES PA4=INT\r\n");
   max3421e_reset();
   max3421e_test();
@@ -344,17 +429,23 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, res_Pin|int_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(res_GPIO_Port, res_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : res_Pin int_Pin */
-  GPIO_InitStruct.Pin = res_Pin|int_Pin;
+  /*Configure GPIO pin : res_Pin */
+  GPIO_InitStruct.Pin = res_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(res_GPIO_Port, &GPIO_InitStruct);
+
+  /* MAX3421E drives INT; STM32 must sample it as an input. */
+  GPIO_InitStruct.Pin = int_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(int_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SPI1_CS_Pin */
   GPIO_InitStruct.Pin = SPI1_CS_Pin;

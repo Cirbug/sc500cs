@@ -29,52 +29,26 @@ module tb_hdmi_stats_osd;
             @(negedge clk);
         end
     endtask
-    function [4:0] top_row;
-        input [7:0] c;
-        begin
-            case(c)
-                "H","M":top_row=5'b10001;
-                "D","P","R":top_row=5'b11110;
-                "I":top_row=5'b11111;
-                "F","E":top_row=5'b11111;
-                "S":top_row=5'b01111;
-                "A","0":top_row=5'b01110;
-                "3":top_row=5'b11110;
-                "4":top_row=5'b00010;
-                default:top_row=0;
-            endcase
-        end
-    endfunction
-    integer i,px,py,fd,index,col;
-    reg [111:0] line;
-    reg [4:0] bits;
-    reg [23:0] expected;
+    integer i,px,py,checked=0;
     initial begin
         repeat(2) @(negedge clk);rst=1;
         for(i=0;i<1000;i=i+1) begin vs=(i==99 || i==199 || i==299);tick();end
-        vs=1;tick();vs=0;tick(); // fourth frame, displays prior window = 3 FPS
-        fd=$fopen("build/hdmi_stats_preview.ppm","w");
-        $fwrite(fd,"P3\n1920 192\n255\n");
+        vs=1;tick();vs=0;tick(); // Frame edges must no longer create a statistics panel.
         for(py=0;py<192;py=py+1) begin
             de=1;
             for(px=0;px<1920;px=px+1) begin
                 tick();
-                $fwrite(fd,"%d %d %d\n",a[23:16],a[15:8],a[7:0]);
-                if(!((px>=818 && px<1102 && py>=16 && py<60) ||
-                     (px>=1440 && px<1904 && py>=16 && py<168)) && a!==24'h526879)
-                    $fatal(1,"Overlay outside panels");
-                if((py==24 || py==60 || py==96 || py==132) && px>=1448 && px<1896) begin
-                    line=py==24?"MIPI FPS 000  ":py==60?"FRAME 00000000":py==96?"HDMI FPS 003  ":"FRAME 00000003";
-                    index=(px-1448)/32;col=((px-1448)%32)/4;
-                    bits=top_row(line[111-index*8 -:8]);
-                    expected=(col<5 && (bits & (5'b10000>>col)))?(py<96?24'h80e0ff:24'hffe082):24'h101820;
-                    if(a!==expected) $fatal(1,"Stats glyph at %d,%d got=%h expected=%h",px,py,a,expected);
+                if(!(px>=818 && px<1102 && py>=16 && py<60) && a!==24'h526879)
+                    $fatal(1,"Unexpected overlay at %d,%d",px,py);
+                if(px>=1440 && px<1904 && py>=16 && py<168) begin
+                    if(a!==24'h526879) $fatal(1,"Removed FPS/frame panel is not transparent");
+                    checked=checked+1;
                 end
-                if(ascii_osd.fps_frame!==12'h003) $fatal(1,"FPS changed during active frame");
+                if(px==818 && py==16 && a!==24'h309060) $fatal(1,"RTC border removed");
             end
             de=0;tick();tick();
         end
-        $fclose(fd);
-        $display("PASS centered clock, dual MIPI/HDMI FPS/frame digits, bounds, frame freeze, Chinese pipeline alignment");$finish;
+        if(checked!=464*152) $fatal(1,"Missing statistics-panel coverage");
+        $display("PASS no FPS/frame overlay: %0d restored video pixels, RTC preserved, ASCII/Chinese pipeline alignment",checked);$finish;
     end
 endmodule

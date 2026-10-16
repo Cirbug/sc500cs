@@ -1657,7 +1657,8 @@ isp_top u_isp_top (
     red_target_tracker #(
         .IMG_WIDTH    (`DISPLAY_WIDTH),
         .IMG_HEIGHT   (`DISPLAY_HEIGHT),
-        .SAMPLE_SHIFT (4)
+        .SAMPLE_SHIFT (4),
+        .REPORT_AREA_PERCENT (0)
     ) u_red_target_tracker_99 (
         .I_clk       ( S_hdmi_pixel_clk ),
         .I_rst_n     ( S_hdmi_rst_n ),

@@ -17,7 +17,9 @@ module red_target_tracker #(
     parameter integer LEVEL_X_MEDIUM = 160,
     parameter integer LEVEL_X_LARGE = 400,
     parameter integer LEVEL_Y_MEDIUM = 120,
-    parameter integer LEVEL_Y_LARGE = 300
+    parameter integer LEVEL_Y_LARGE = 300,
+    // Display-only percentage conversion; raw area still drives association.
+    parameter integer REPORT_AREA_PERCENT = 1
 )(
     input wire I_clk, I_rst_n, I_enable, I_reacquire,
     input wire I_user, I_de,
@@ -217,7 +219,8 @@ module red_target_tracker #(
                     state<=SCAN_ADDR;
                 end
                 PUBLISH: begin
-                    percent_remainder<=({4'd0,best_area}<<6)+({4'd0,best_area}<<5)+({4'd0,best_area}<<2);
+                    if(REPORT_AREA_PERCENT)
+                        percent_remainder<=({4'd0,best_area}<<6)+({4'd0,best_area}<<5)+({4'd0,best_area}<<2);
                     percent_value<=0;
                     if(best_area!=0) begin
                         previous_cx<=best_cx;previous_cy<=best_cy;previous_area<=best_area;misses<=0;
@@ -249,11 +252,13 @@ module red_target_tracker #(
                     O_dir_y<=(!O_valid || stop_y) ? 0 : (O_error_y[12] ? 1 : 2);
                     O_level_x<=(!O_valid || stop_x) ? 0 : ((abs_ex>=LEVEL_X_LARGE) ? 3 : ((abs_ex>=LEVEL_X_MEDIUM) ? 2 : 1));
                     O_level_y<=(!O_valid || stop_y) ? 0 : ((abs_ey>=LEVEL_Y_LARGE) ? 3 : ((abs_ey>=LEVEL_Y_MEDIUM) ? 2 : 1));
-                    state<=PERCENT;
+                    state<=REPORT_AREA_PERCENT ? PERCENT : FINISH;
                 end
                 PERCENT: begin
-                    if(percent_remainder>=CELLS) begin percent_remainder<=percent_remainder-CELLS;percent_value<=percent_value+1'b1;end
-                    else begin O_area_percent<=percent_value;state<=FINISH;end
+                    if(REPORT_AREA_PERCENT) begin
+                        if(percent_remainder>=CELLS) begin percent_remainder<=percent_remainder-CELLS;percent_value<=percent_value+1'b1;end
+                        else begin O_area_percent<=percent_value;state<=FINISH;end
+                    end else state<=FINISH;
                 end
                 FINISH: begin O_new_result<=1;state<=IDLE;end
                 default: state<=IDLE;

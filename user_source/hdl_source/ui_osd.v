@@ -1,5 +1,4 @@
 `include "ui_font_cn.v"
-`include "hdmi_frame_stats.v"
 `include "camera_menu_support.v"
 // Fixed Chinese menu subset in synchronous ROM; ASCII digits retain 5x7 font.
 // Chinese mode adds one aligned pipeline cycle to video and all controls.
@@ -9,6 +8,7 @@ module ui_osd #(
     parameter integer MENU_CHINESE = 1,
     parameter integer PIXEL_CLOCK_HZ = 75000000
 )(
+    // Legacy diagnostic ports are kept for source compatibility; no FPS counters.
     input wire I_mipi_clk,I_mipi_frame_start,
     input wire [22:0] I_camera_display,
     input  wire        I_clk,
@@ -69,23 +69,7 @@ module ui_osd #(
     localparam [11:0] MENU_Y0 = 12'd644;
     localparam integer CLOCK_X0 = (H_ACTIVE - 284) / 2;
     localparam integer CLOCK_Y0 = 16;
-    localparam integer STATS_X0 = H_ACTIVE - 480;
     reg [22:0] camera_display_frame;
-    wire [31:0] mipi_frames;
-    wire [11:0] mipi_fps;
-    reg [11:0] mipi_fps_frame;
-    reg [31:0] mipi_frames_frame,hdmi_frames_frame;
-    reg [31:0] stats_total;
-    reg [11:0] stats_fps;
-    wire [31:0] hdmi_frames;
-    wire [11:0] hdmi_fps;
-    wire hdmi_fps_valid;
-    reg [11:0] fps_frame;
-    reg fps_valid_frame;
-    video_dual_frame_stats #(.PIXEL_CLOCK_HZ(PIXEL_CLOCK_HZ)) frame_stats(
-        .clk(I_clk),.rst_n(I_rst_n),.vsync(I_vsync),.mipi_clk(I_mipi_clk),.mipi_fs(I_mipi_frame_start),
-        .hdmi_frames(hdmi_frames),.hdmi_fps(hdmi_fps),.fps_valid(hdmi_fps_valid),
-        .mipi_frames(mipi_frames),.mipi_fps(mipi_fps));
     reg [7:0] rtc_hours_frame, rtc_minutes_frame, rtc_seconds_frame;
     reg rtc_valid_frame;
     reg [15:0] picture_frame;
@@ -498,8 +482,6 @@ module ui_osd #(
     endfunction
 
     always @* begin
-        stats_total=(y>=96)?hdmi_frames_frame:mipi_frames_frame;
-        stats_fps=(y>=96)?fps_frame:mipi_fps_frame;
         pixel = I_data;
         overlay = 1'b0;
         ch = 8'h20;
@@ -740,38 +722,7 @@ module ui_osd #(
                             24'hffffff : 24'hffb080;
             end
         end
-        // Both statistics are frozen in vertical blanking, including totals.
-        if(x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<168) begin
-            pixel=24'h101820;
-            if(x<STATS_X0+4 || x>=STATS_X0+460 || y<20 || y>=164)pixel=24'h306080;
-            if(x>=STATS_X0+8 && x<STATS_X0+456 &&
-               ((y>=24 && y<52)||(y>=60 && y<88)||(y>=96 && y<124)||(y>=132 && y<160)))begin
-                text_x=x-(STATS_X0+8);char_no=text_x[8:5];col=text_x[4:2];
-                text_y=(y<60)?y-24:(y<96)?y-60:(y<132)?y-96:y-132;
-                row=text_y[4:2];ch=" ";
-                if(y<60 || (y>=96 && y<132))begin
-                    case(char_no)
-                        0:ch=y<96?"M":"H";1:ch=y<96?"I":"D";2:ch=y<96?"P":"M";3:ch="I";
-                        5:ch="F";6:ch="P";7:ch="S";
-                        9:ch=fps_valid_frame?"0"+stats_fps[11:8]:"-";
-                        10:ch=fps_valid_frame?"0"+stats_fps[7:4]:"-";
-                        11:ch=fps_valid_frame?"0"+stats_fps[3:0]:"-";
-                        default:ch=" ";
-                    endcase
-                end else begin
-                    case(char_no)
-                        0:ch="F";1:ch="R";2:ch="A";3:ch="M";4:ch="E";
-                        6:ch="0"+stats_total[31:28];7:ch="0"+stats_total[27:24];
-                        8:ch="0"+stats_total[23:20];9:ch="0"+stats_total[19:16];
-                        10:ch="0"+stats_total[15:12];11:ch="0"+stats_total[11:8];
-                        12:ch="0"+stats_total[7:4];13:ch="0"+stats_total[3:0];
-                        default:ch=" ";
-                    endcase
-                end
-                glyph=glyph_bits(ch,row);
-                if(col<5 && ((glyph & (5'b10000>>col))!=0))pixel=y<96?24'h80e0ff:24'hffe082;
-            end
-        end
+
     end
 
     always @(posedge I_clk or negedge I_rst_n) begin
@@ -780,8 +731,7 @@ module ui_osd #(
             rec1<=0;rec2<=0;rec_frame<=0;focus_roi_frame<=0;
             rtc_hours_frame <= 0; rtc_minutes_frame <= 0; rtc_seconds_frame <= 0;
             rtc_valid_frame <= 0;
-            fps_frame<=0; fps_valid_frame<=0;
-            mipi_fps_frame<=0;mipi_frames_frame<=0;hdmi_frames_frame<=0;camera_display_frame<={7'd127,16'h2000};
+            camera_display_frame<={7'd127,16'h2000};
             picture_frame <= 16'h1050; black_tens<="1"; black_ones<="6";
             exposure_bar_width <= 8'd48;
             gain_bar_width <= 8'd64;
@@ -809,8 +759,6 @@ module ui_osd #(
             de_d <= I_de;
             if(I_vsync && !vs_d) begin
                 focus_roi_frame<=I_focus_roi;
-                fps_frame<=hdmi_fps; fps_valid_frame<=hdmi_fps_valid;
-                mipi_fps_frame<=mipi_fps;mipi_frames_frame<=mipi_frames;hdmi_frames_frame<=hdmi_frames;
                 camera_display_frame<=I_camera_display;
                 picture_frame<=I_picture_ctrl;
                 black_tens<="0"+I_picture_ctrl[5:0]/10;

@@ -26,10 +26,13 @@ def main():
         (out/(name+'.log')).write_text(r.stdout+r.stderr);print(name+': '+r.stdout.strip(),flush=True)
     h=root/'user_source/hdl_source';lib=out/'simlib';tool=Path(a.modelsim)
     if not lib.exists():subprocess.run([str(tool/'vlib.exe'),str(lib)],check=True,capture_output=True)
-    sources=[h/n for n in ['red_target_tracker.v','red_track_mailbox.v','mcu_ui_apb_regs.v','key_remove_shakes.v']]
-    for top in ['tb_red_track_mailbox','tb_red_target_tracker','tb_red_tracker_1080p']:
-        script=out/(top+'.do');log=out/(top+'.log')
-        script.write_text('onerror {quit -code 1 -force}\nvlog -sv -work {'+lib.as_posix()+'} {+incdir+'+h.as_posix()+'} '+' '.join('{'+p.as_posix()+'}' for p in sources+[root/'tests'/(top+'.sv')])+'\nvsim -voptargs=+acc -lib {'+lib.as_posix()+'} '+top+'\nonbreak {quit -code 1 -force}\nrun -all\nquit -code 0 -force\n')
+    sources=[h/n for n in ['red_target_tracker.v','red_track_mailbox.v','mcu_ui_apb_regs.v','key_remove_shakes.v','red_tracking_osd.v']]
+    cases=[(top,'') for top in ['tb_red_track_mailbox','tb_red_target_tracker','tb_red_tracker_1080p','tb_red_tracking_osd']]
+    cases.append(('tb_red_target_tracker','-gREPORT_AREA_PERCENT=0'))
+    for top,parameter in cases:
+        name=top+('_no_percent' if parameter else '')
+        script=out/(name+'.do');log=out/(name+'.log')
+        script.write_text('onerror {quit -code 1 -force}\nvlog -sv -work {'+lib.as_posix()+'} {+incdir+'+h.as_posix()+'} '+' '.join('{'+p.as_posix()+'}' for p in sources+[root/'tests'/(top+'.sv')])+'\nvsim -voptargs=+acc '+parameter+' -lib {'+lib.as_posix()+'} '+top+'\nonbreak {quit -code 1 -force}\nrun -all\nquit -code 0 -force\n')
         subprocess.run([str(tool/'vsim.exe'),'-c','-do',str(script),'-l',str(log)],cwd=root,check=True,stdout=subprocess.DEVNULL)
         s=log.read_text(errors='replace');assert 'PASS ' in s and '** Error' not in s and '** Fatal' not in s,str(log)
         print('\n'.join(l for l in s.splitlines() if 'PASS ' in l),flush=True)

@@ -278,14 +278,25 @@ TryNext:
             Check = 0;
             break;
         case 'l':
+#ifdef AL_CAMERA_SHARED_PRINTF
+            /* RV32: %lx consumes 32 bits, %llx/%llu consume 64 bits. */
+            if(LongFlag<2) ++LongFlag;
+#else
             LongFlag = 1;
+#endif
             Check = 0;
             break;
         case 'u':
             Param.UnsignedFlag = 1;
         case 'i':
         case 'd':
-            if (LongFlag != 0) {
+            if (LongFlag
+#ifdef AL_CAMERA_SHARED_PRINTF
+                >= 2
+#else
+                != 0
+#endif
+            ) {
                 OutNumLong((AL_S64)va_arg(Args, AL_S64), PRINT_SCALE_DECIMAL, &Param);
             } else {
                 OutNum((AL_S32)va_arg(Args, AL_S32), PRINT_SCALE_DECIMAL, &Param);
@@ -300,7 +311,13 @@ TryNext:
         case 'X':
         case 'x':
             Param.UnsignedFlag = 1;
-            if (LongFlag != 0) {
+            if (LongFlag
+#ifdef AL_CAMERA_SHARED_PRINTF
+                >= 2
+#else
+                != 0
+#endif
+            ) {
                 OutNumLong((AL_S64)va_arg(Args, AL_S64), PRINT_SCALE_HEX, &Param);
             } else {
                 OutNum((AL_S32)va_arg(Args, AL_S32), PRINT_SCALE_HEX, &Param);

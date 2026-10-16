@@ -1,0 +1,142 @@
+挡位 4：红色目标识别与云台跟随 / 2026-10-16 / MCU V2
+
+V2 实机反馈修正
+  用户提供的视频中，目标随云台动作离开画面；用户进一步确认：
+  红色物品在左侧时镜头向右转，上下方向也相反，未修改默认参数。
+  用户重新编译的 21:13 ELF 与首版归档 ELF 的 SHA256 一致。
+  因此本次反转自动 PAN/TILT 默认符号为 -1/+1；手动触摸映射保持原状。
+  同时把增量降为 1/2/4 us、间隔增至 80 ms，短时丢失恢复也重新等待 200 ms。
+  本次只修改 MCU 控制及其测试、文档，不需要重新构建 FPGA。
+  两轴方向的相机响应模型测试通过；模型延迟/增益不是实测参数。
+  新版尚未由助手下载或验证实机效果，用户需重新下载 MCU TCM ELF 后复测。
+
+工程基准
+  以 C:/Users/XIAOXIAO/Desktop/fpga/sc500cs/sc500cs 的实际文件为准。
+  开始检查时 Git HEAD：59c2175c723700b364866a7848d49a24d2465af5，工作区干净。
+  屏幕挡位 4 对应 IMAGE_CTRL 的内部编号 5，不要写成内部编号 4。
+  本次固件目标是 FDwork/anlu_app，DOWNLOAD=tcm。
+  anlu_app2 是另外的固件目标，本次未加入自动控制；不要混用其 ELF。
+  原有 camera build ID 0x20261011 未改，不能用它确认本功能或精确构建版本。
+  新增 TRK1 能力标记表示结果接口存在；具体源码/产物用交付清单的 SHA256 区分。
+  助手只进行本地构建和离线仿真，没有下载 FPGA、烧写 Flash 或连接并暂停板上 MCU。
+  用户已提供首版实机方向反转的反馈；板上精确版本未通过读回确认，V2 效果待复测。
+
+检查结果及实现
+  原工程已有 red_target_tracker、red_tracking_osd，以及 V6/PAN、V4/TILT PWM。
+  原来的识别结果只接 OSD，MCU 没有结果读取接口，舵机由手动拖动控制。
+  现在复用检测器和 OSD；增加 HDMI 像素域到 APB 的握手结果邮箱，
+  MCU 消费每个新结果一次，再写现有 0x50/0x54 舵机寄存器。
+  没有增加图像缓存、检测算法、硬件 PID、乘法器或除法器。
+  邮箱保持完整数据直到三拍确认返回；请求同步三拍后才采样。
+  配套 SDC 仅约束邮箱跨域路径，保留同步器级间时序检查。
+  主循环和 SD 协作服务均调用跟随服务，防止录制服务长期占用主循环。
+
+保留的识别行为及适用范围
+  1920x1080 图像，每 16x16 像素采样一次，采样网格 120x68。
+  红色条件：R>=80、R>=G+32、R>=B+32。使用现有平滑 RGB 输入。
+  首次捕获选择最大的合格红色连通块，要求连续 3 个结果一致。
+  捕获/保持门槛分别为采样网格的 5%/3%（408/245 个采样点）。
+  首次试验应使用画面中较大的、连续的红色物品；小红点不会被捕获。
+  已锁定后按位置和面积关联目标；任何一次无有效目标立即停止追加运动，
+  连续 5 次丢失后回到搜索。不是物体语义识别，也不是多目标跟随。
+  坐标是连通块外接框中心，带已有低通平滑，不是像素质心。
+  保留原 OSD 框、中心十字、方向/等级、面积及 SEARCH/LOCK/LOST 状态。
+  原面板标题中的 15% 是旧测试提示，真实捕获门槛是上述 5%/3%。
+
+控制策略
+  进入挡位 4 后自动跟随，默认启动仍是普通画面。
+  FPGA 已有滞回死区：横向停止/启动为 32/48 像素，纵向为 24/36 像素。
+  偏差等级 1/2/3 对应每次 1/2/4 us 增量；两次调整至少相隔 80 ms。
+  每帧结果最多执行一次，更新过快的结果被消费但不会累积补走。
+  使用现有 500..2500 us 限位；丢失目标时保持最后的 PWM 位置，不关闭 PWM。
+  手动触摸拖动优先；进入模式、重新捕获、松开拖动后先等待 200 ms 和新结果。
+  任一失效结果重置等待基准，恢复锁定后至少距最后失效结果 200 ms 才追加运动。
+  250 ms 没有新结果时标为 STALE；恢复后丢弃滞留结果，重新等待再行动。
+  此超时针对识别结果邮箱；摄像头冻结而 HDMI 重复旧画面的检测不在本次范围内。
+  退出挡位 4、旧 FPGA 没有 TRK1、运行时禁用跟随，均不再追加自动舵机命令。
+  用户已确认首版两轴方向反转；修正后的方向、响应速度、机械行程和负载需实机复测。
+
+APB 接口（基地址 0x70000000）
+  0x50 / 0x54：原有 PAN / TILT 脉宽，单位 us。
+  0x58：原有 IMAGE_CTRL，bits[2:0]=5 为挡位 4，bit9 写 1 请求重新捕获。
+  0xA8：只读 0x54524B31，ASCII TRK1。
+  0xAC：原子结果字：
+        [31:16] 16 位结果序号（包含使能/复位失效通知）
+        [15] 检测使能；[14] 有效；[13:12] SEARCH=0 / LOCK=1 / LOST=2
+        [11:10] X 方向；[9:8] Y 方向：0 保持，1 左/上，2 右/下
+        [7:6] X 等级；[5:4] Y 等级；[3:0] 保留为 0
+  0xB0：[12:0] X 有符号偏差；[28:16] Y 有符号偏差，各为 13 位二补码。
+        要读取误差快照，按 STATUS / ERRORS / STATUS 顺序读取，序号变化则重试。
+        控制只用一个原子 STATUS 字，不存在 MCU 分次读取误差撕裂的问题。
+
+FD / TCM 调试步骤
+  1. 使用本次生成的 camera_red_tracking_20261016.bit 配置 FPGA。
+  2. FD 选择本次 anlu_app ELF，沿用项目已有板载 JTAG/OpenOCD 的 RAM 下载流程。
+     默认 launch 指向工程 build/anlu_app.elf；确认重建并下载 V2 ELF，而非仅继续运行旧 RAM 程序。
+     若板上已有支持 TRK1 的 FPGA，V2 只需更新 MCU，FPGA 位流继续使用。
+     不使用 anlu_app2 的 Flash 下载脚本，不更改 JTAG/PAD/复位向量设置。
+  3. 启动后检查 g_track_capability == 0x54524B31，再进入显示模式第 4 项。
+  4. 首先用较大的红色物品确认 LOCK 和框位置。需要先只看框时，GDB Console：
+        set var g_track_config.enabled = 0
+     首次低速测试可以设置：
+        set var g_track_config.max_step_us = 2
+        set var g_track_config.enabled = 1
+  5. 分别将物品放在中心右侧、上侧，确认物品偏差逐渐变小。
+     V2 默认 pan_sign=-1、tilt_sign=+1，依据用户反馈反转首版两轴自动方向。
+     某轴反向时，先禁用跟随，再把该轴符号在 +1/-1 间反转后重新启用：
+        set var g_track_config.pan_sign = -1
+        set var g_track_config.tilt_sign = 1
+     上面两条命令是 V2 默认值；只有实测仍反向时才再次改变对应符号。
+     任一符号设 0 可以单独禁止该轴自动运动。max_step_us 超过 4 仍按 4 限制。
+  6. 移走物品，应显示 LOST 并保持舵机位置；重新捕获后恢复。
+     拖动时只接受手动控制；退出挡位 4 应保持当前位置。
+  7. 可观察 g_track_control.sample / seen_ms / move_ms / reason：
+     reason：0 OFF、1 WAIT、2 SEARCH、3 LOCKED、4 MANUAL、5 STALE。
+     MCU 无串口也可以在 FD 中检查上述变量。精确板上版本须另行读回确认。
+
+资源及构建
+  原完整构建（2026-10-16 18:28）：18,460/21,216 Slice = 87.01%，
+  ERAM 81/108，DSP 14/40，Setup WNS +0.104 ns，Hold WNS +0.020 ns。
+  首版完整 FPGA 构建（2026-10-16 20:43）：18,606/21,216 Slice = 87.70%，
+  相比增加 146 Slice（+0.69 个百分点），ERAM 81、DSP 14 均不增加。
+  最终 Setup WNS +0.046 ns、Hold WNS +0.020 ns，TNS=0，违例端点为 0。
+  这是当前工程约束下的通过结果，STA coverage 为 94.59%；建立时间余量仍很小。
+  邮箱 52 条前向、1 条返回最大延迟约束均匹配生效，没有整域切断时序检查。
+  最终原始报告见交付包中的 final.area、timing_status.txt、route.qor。
+  旧源码/历史构建的报告不视为本次产物的报告。
+  MCU 共享两套整数日志格式化器，仅 anlu_app 启用 AL_CAMERA_SHARED_PRINTF。
+  保留整数诊断和 RV32 异常寄存器打印；原格式化器路径也做了回归。
+  保持 1 KiB heap、2 KiB stack，不缩减 USB 缓冲。
+  新 ELF：heap 从 0x0800B330 到 0x0800B730；stack 从 0x0800B800 到 0x0800C000。
+  堆和栈之间静态余量 208 字节，后续 MCU 扩展仍需严格检查 TCM。
+  V2 MCU 重新构建也保留上述布局和 208 字节静态间隙，没有新增 FPGA 资源。
+
+复现命令（在工程根目录运行；工具路径按当前电脑）
+  & D:/python/python.exe tests/run_red_tracking.py
+  & D:/python/python.exe tests/run_main_vts.py --tops tb_main_vts tb_main_meter
+  & D:/TD/bin/td_commands_prompt.exe tests/build_red_tracking.tcl
+  & ./FDwork/anlu_app/build.ps1 -FdRoot D:/FD/FD -BuildRoot ./build/red_tracking_mcu
+  FPGA 脚本默认输出 build/red_tracking_20261016，可用 RED_TRACK_BUILD_DIR 环境变量指定。
+  MCU BuildRoot 下的 build/ 才是新 ELF 目录；本脚本无需修改 SDK 安装路径。
+  TD 可能在脚本错误时返回退出码 0，须同时确认 RED_TRACK_BUILD_COMPLETE 和最终时序。
+
+离线覆盖
+  C：新帧去重、使能/挡位门控、速率限制、目标丢失、手动优先、延迟结果、
+     方向反转、限位、计时器和序号回绕；原有触摸/菜单/VTS 回归。
+  RTL：异步邮箱与忙时重新捕获、数据稳定性、APB 兼容、三帧确认、
+       分离干扰块、非红色、丢失回搜索、重新捕获、退出模式。
+  原生 1920x1080：底部裁剪、全红连通块/栈容量、4,080 个分离红点。
+  本地测试不能代替实机的光照、颜色阈值和云台方向/增益调试。
+
+TD 主工程接入修复
+  如果顶层已更新，但 TD 的 .al / syn_1 .prj 源清单缺少 red_track_mailbox.v，
+  elaboration 会报 red_track_mailbox is a black box。
+  现在 design_top_wrapper.v 直接 include red_track_mailbox.v，后者有包含保护。
+  不再依赖在 GUI 单独添加该源文件，也不修改会被 TD 重新生成的 syn_1 清单。
+  两个文件放在同一 hdl_source 目录，已有 video_params.vh 的搜索路径即可找到它。
+  工程内已直接修复，可在 TD 重新运行综合；无需改动 MCU、引脚或识别逻辑。
+  只检查主工程的模块展开：
+    & D:/TD/bin/td_commands_prompt.exe tests/check_red_tracking_project.tcl
+  验证具体的 GUI 运行清单：先设置 RED_TRACK_CHECK_PROJECT 为该 .prj 的绝对路径。
+  此接入修复单独验证主工程和 GUI 清单的 elaboration，不把原先的完整构建报告
+  标记为“修复后已重新完成布局布线”；先前交付的 bit/ELF 内容不变。

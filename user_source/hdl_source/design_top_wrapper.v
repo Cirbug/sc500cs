@@ -1,4 +1,6 @@
 `include "video_params.vh"
+// Keep the mailbox reachable from existing TD GUI/generated source lists.
+`include "red_track_mailbox.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
@@ -224,6 +226,7 @@ module design_top_wrapper (
     wire [11:0] S_track_x0, S_track_y0, S_track_x1, S_track_y1, S_track_cx, S_track_cy;
     wire signed [12:0] S_track_ex, S_track_ey;
     wire [6:0]  S_track_area;
+    wire [31:0] S_track_status_apb, S_track_errors_apb;
     wire [23:0] S_hdmi_base_data;
     wire        S_hdmi_overlay_valid;
     wire        S_effect_vsync, S_effect_hsync, S_effect_de;
@@ -1170,6 +1173,7 @@ module design_top_wrapper (
         .O_rtc_set_time0(S_rtc_set_time0), .O_rtc_set_time1(S_rtc_set_time1),
         .O_rtc_set(S_rtc_set), .I_rtc_set_status(S_rtc_set_status),
         .O_wifi_ctrl(S_wifi_ctrl), .I_wifi_pads(S_wifi_pad_sync),
+        .I_track_status(S_track_status_apb), .I_track_errors(S_track_errors_apb),
         .O_lens_cmd    ( S_lens_cmd ),
         .O_lens_retry  ( S_lens_retry ),
         .O_lens_read_adc( S_lens_read_adc ),
@@ -1671,6 +1675,17 @@ isp_top u_isp_top (
         .O_dir_x (S_track_dx), .O_dir_y (S_track_dy),
         .O_level_x (S_track_lx), .O_level_y (S_track_ly),
         .O_area_percent (S_track_area)
+    );
+
+    red_track_mailbox u_red_track_mailbox (
+        .pixel_clk(S_hdmi_pixel_clk), .apb_clk(S_mcu_apb_clk),
+        .rst_n(S_hdmi_rst_n && S_rst_n),
+        .enable(S_dbg_step == 3'd5), .reacquire(S_track_reacquire),
+        .new_result(S_track_new), .valid(S_track_valid), .state(S_track_state),
+        .dir_x(S_track_dx), .dir_y(S_track_dy),
+        .level_x(S_track_lx), .level_y(S_track_ly),
+        .error_x(S_track_ex), .error_y(S_track_ey),
+        .status(S_track_status_apb), .errors(S_track_errors_apb)
     );
 
     hdmi_mixer #(

@@ -49,3 +49,10 @@ set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_display/held* u_
 set_false_path -hold -through [get_nets {u_camera_display/held* u_camera_display/req}] -to [get_clocks {HDMI_PIXEL_CLK}]
 set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_display/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 set_false_path -hold -through [get_nets {u_camera_display/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+
+# Tracking result mailbox: held bundle remains fixed until the 3-stage ack.
+# Limit only the crossing paths; internal synchronizer stages remain timed.
+set_max_delay -datapath_only 8.000 -through [get_nets {u_red_track_mailbox/held* u_red_track_mailbox/req}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_false_path -hold -through [get_nets {u_red_track_mailbox/held* u_red_track_mailbox/req}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_max_delay -datapath_only 8.000 -through [get_nets {u_red_track_mailbox/ack}] -to [get_clocks {HDMI_PIXEL_CLK}]
+set_false_path -hold -through [get_nets {u_red_track_mailbox/ack}] -to [get_clocks {HDMI_PIXEL_CLK}]

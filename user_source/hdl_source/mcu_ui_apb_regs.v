@@ -65,6 +65,7 @@ module mcu_ui_apb_regs #(
     output reg O_rtc_set,
     output reg [1:0] O_wifi_ctrl,
     input wire [1:0] I_wifi_pads,
+    input wire [31:0] I_track_status, I_track_errors,
     output reg         O_lens_cmd,
     output reg         O_lens_retry, O_lens_read_adc,
     output reg  [13:0] O_lens_position,
@@ -235,6 +236,9 @@ module mcu_ui_apb_regs #(
                 8'h9c: O_prdata = {16'd0,O_vts};
                 8'ha0: O_prdata = 32'h56545331; // VTS1: dynamic frame length + eight-row menu
                 8'ha4: O_prdata = {9'd0,O_camera_display};
+                8'ha8: O_prdata = 32'h54524b31; // TRK1: coherent tracking result mailbox
+                8'hac: O_prdata = I_track_status;
+                8'hb0: O_prdata = I_track_errors;
                 8'h14: O_prdata = {16'd0, O_gain};
                 8'h18: O_prdata = 32'h0001081e; // Full sensor input, HDMI 1080p30
                 8'h1c: O_prdata = 32'h4d415831; // "MAX1": USB extension present

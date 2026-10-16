@@ -9,6 +9,20 @@ void al_simp_putchar(char c) {
     AlLog_Write((unsigned char*)&c, 1);
 }
 
+#ifdef AL_CAMERA_SHARED_PRINTF
+/* The RAM camera uses integer diagnostics only. Share one formatter instead
+ * of linking both parsers into its 48 KiB TCM. Other SDK applications retain
+ * the original implementation below. Single 'l' follows the camera RV32 ABI. */
+extern void al_vprintf(const char *format, va_list args);
+int al_simp_printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args,format);
+    al_vprintf(format,args);
+    va_end(args);
+    return 0;
+}
+#else
 static void printf_c(int c)
 {
     al_simp_putchar(c);
@@ -211,6 +225,8 @@ int al_simp_printf(const char *format, ...)
 
     return 0;
 }
+
+#endif /* AL_CAMERA_SHARED_PRINTF */
 
 
 int al_simp_puts(char *s){

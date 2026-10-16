@@ -37,3 +37,15 @@ set_clock_groups -asynchronous \
     -group [get_clocks {mipi_rx_ck_pad MIPI_RX_BYTE_CLK}] \
     -group [get_clocks {sys_clk_50m pll_clk_100m pll_clk_24m HDMI_PIXEL_CLK HDMI_SERIAL_CLK}] \
     -group [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/ddr_clk u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
+
+# u_camera_settings: held bundle is sampled only after 3 request stages and held until ack.
+set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_settings/held* u_camera_settings/req}] -to [get_clocks {pll_clk_24m}]
+set_false_path -hold -through [get_nets {u_camera_settings/held* u_camera_settings/req}] -to [get_clocks {pll_clk_24m}]
+set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_settings/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_false_path -hold -through [get_nets {u_camera_settings/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+
+# u_camera_display: held bundle is sampled only after 3 request stages and held until ack.
+set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_display/held* u_camera_display/req}] -to [get_clocks {HDMI_PIXEL_CLK}]
+set_false_path -hold -through [get_nets {u_camera_display/held* u_camera_display/req}] -to [get_clocks {HDMI_PIXEL_CLK}]
+set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_display/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_false_path -hold -through [get_nets {u_camera_display/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]

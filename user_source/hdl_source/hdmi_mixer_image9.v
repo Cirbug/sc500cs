@@ -18,6 +18,7 @@ module hdmi_mixer_image9 #(
     parameter IMG_WIDTH = `DISPLAY_WIDTH,
     parameter IMG_HEIGHT = `DISPLAY_HEIGHT,
     parameter integer DEBUG_MODE = 0,
+    parameter SPRITE_ENABLE = 1'b0, // Compile-time: rebuild bitstream to restore sprite.
     parameter DBG_UI_EN = 1'b1          // 0 = 关掉右上角 AWB 状态指示灯（做正式版本时用）
 )(
     input wire        I_clk,
@@ -113,7 +114,7 @@ module hdmi_mixer_image9 #(
     localparam LOG2_DH    = 12'd80;   // 屏幕上显示的高度 (= LOG2_H * 4)
     localparam LOG2_X0    = 12'd900;  // 起始位置
     localparam LOG2_Y0    = 12'd500;
-    localparam LOG2_EN    = 1'b1;
+    localparam LOG2_EN    = SPRITE_ENABLE;
     localparam LOG2_ANIM  = 1'b1;     // 1'b0 -> 停在起始位置
     localparam LOG2_SPEED = 12'd6;    // 每帧移动像素数（30fps 约 180 像素/秒）
     localparam AREA_W     = `DISPLAY_WIDTH;   // 反弹范围 = 整个画面
@@ -149,8 +150,15 @@ module hdmi_mixer_image9 #(
 
     // OSD 输出流水：OSD 命中/颜色与视频数据各再寄存一拍后合成，
     // 这样深组合路径只到 S_osd_*_1d，不把输出级选择器算进最差路径。
-    reg        S_osd_hit_1d;
-    reg [23:0] S_osd_color_1d;
+    reg        S_osd_rest_hit_1d;
+    reg [23:0] S_osd_rest_color_1d;
+    reg        S_l1_valid_1d;
+    wire [24:0] S_l1_pixel;
+    // The synchronous logo read and the other OSD registers sample the same
+    // coordinates. Resolve L1 priority here, keeping the original latency.
+    wire S_l1_hit_1d = S_l1_valid_1d && S_l1_pixel[24];
+    wire S_osd_hit_1d = S_l1_hit_1d || S_osd_rest_hit_1d;
+    wire [23:0] S_osd_color_1d = S_l1_hit_1d ? S_l1_pixel[23:0] : S_osd_rest_color_1d;
     reg [23:0] S_video_rd_data_1d;
     reg [23:0] S_effect_prev_data;
 
@@ -196,7 +204,6 @@ module hdmi_mixer_image9 #(
     reg [11:0] S_l1_x;
     reg [11:0] S_l1_y;
     reg [13:0] S_l1_addr;
-    wire[24:0] S_l1_pixel;
 
     reg [11:0] S_l2_x;
     reg [11:0] S_l2_y;
@@ -220,6 +227,7 @@ module hdmi_mixer_image9 #(
 
     // ================= 位图 ROM / 字库 ======================================
     anlogic_logo_rom u_log1_rom(
+        .I_clk   ( I_clk ),
         .I_addr  ( S_l1_addr  ),
         .O_pixel ( S_l1_pixel )
     );
@@ -290,8 +298,8 @@ module hdmi_mixer_image9 #(
         S_osd_hit   = 1'b0;
         S_osd_color = 24'd0;
 
-        // All three ROMs decode in parallel. Gate their OUTPUTS with the
-        // layer bounds below, never their addresses with another ROM's hit.
+        // Addresses do not depend on any other layer hit. L1 has a synchronous
+        // read; L2 and text are registered in parallel before L1 priority.
         S_l1_x = (S_x - LOG1_X) >> 1;
         S_l1_y = (S_y_pix - LOG1_Y) >> 1;
         S_l1_addr = S_l1_y * LOG1_W + S_l1_x;
@@ -307,16 +315,7 @@ module hdmi_mixer_image9 #(
         S_tx_on = 1'b0;
 
         if(S_video_de_2d && !I_recog_mode && I_logo_enable) begin
-            // ---------------- L1 安陆 LOGO（半分辨率 ROM + 2x2 放大） ----------------
-            if((S_x >= LOG1_X) && (S_x < (LOG1_X + LOG1_DW)) &&
-               (S_y_pix >= LOG1_Y) && (S_y_pix < (LOG1_Y + LOG1_DH))) begin
-                // 半分辨率 ROM -> 屏幕像素：坐标右移 1 位 = 2x2 放大
-                if(S_l1_pixel[24]) begin
-                    S_osd_hit   = 1'b1;
-                    S_osd_color = S_l1_pixel[23:0];
-                end
-            end
-
+            // L1 is read synchronously and takes priority after this register.
             // ---------------- L2 照片图标（碰撞反弹） ----------------
             if(LOG2_EN && (!S_osd_hit) &&
                (S_x >= S_l2_pos_x) && (S_x < (S_l2_pos_x + LOG2_DW)) &&
@@ -939,8 +938,9 @@ module hdmi_mixer_image9 #(
             S_video_de_1d    <= 1'b0;
             S_video_de_2d    <= 1'b0;
             S_video_de_3d    <= 1'b0;
-            S_osd_hit_1d     <= 1'b0;
-            S_osd_color_1d   <= 24'd0;
+            S_l1_valid_1d <= 1'b0;
+            S_osd_rest_hit_1d     <= 1'b0;
+            S_osd_rest_color_1d   <= 24'd0;
             S_shape_hit_1d   <= 1'b0;
             S_shape_color_1d <= 24'd0;
             S_recog_mode_1d  <= 1'b0;
@@ -963,8 +963,11 @@ module hdmi_mixer_image9 #(
         end
         else begin
             // OSD / 视频各寄存一拍（合成在下一拍做，缩短关键路径）
-            S_osd_hit_1d       <= S_osd_hit;
-            S_osd_color_1d     <= S_osd_color;
+            S_l1_valid_1d <= S_video_de_2d && !I_recog_mode && I_logo_enable &&
+                (S_x >= LOG1_X) && (S_x < LOG1_X + LOG1_DW) &&
+                (S_y_pix >= LOG1_Y) && (S_y_pix < LOG1_Y + LOG1_DH);
+            S_osd_rest_hit_1d       <= S_osd_hit;
+            S_osd_rest_color_1d     <= S_osd_color;
             S_shape_hit_1d     <= S_shape_hit;
             S_shape_color_1d   <= S_shape_color;
             S_recog_mode_1d    <= I_recog_mode;

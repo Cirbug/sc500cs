@@ -358,10 +358,16 @@ static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
          * the user's preference. OSD shows the effective hardware setting. */
         s->picture=(ui_read(0x70) & ~(1u << 6)) | (s->picture & (1u << 6));
     }
+    if(s->vts_available && s->vts != old->vts) {
+        ui_write(UI_VTS,s->vts);s->vts=ui_read(UI_VTS);
+        if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);
+    }
     if(s->exposure != old->exposure) {
         ui_write(UI_EXPOSURE, s->exposure);
         s->exposure = ui_read(UI_EXPOSURE);
     }
+    if(s->vts_available && (s->vts!=old->vts || s->exposure!=old->exposure))
+        ui_write(UI_CAMERA_DISPLAY,camera_display_word(s));
     if(s->gain != old->gain) {
         ui_write(UI_GAIN, s->gain);
         s->gain = ui_read(UI_GAIN);
@@ -476,12 +482,16 @@ AL_S32 main(void)
 
     /* Apply startup defaults even when the previous APB value is legal.
      * Legacy gain 16 is a valid sensor code but displays as an empty bar. */
+    ui.vts_available=(ui_read(UI_VTS_ID)==0x56545331u);
+    ui.vts=2000u;
+    if(ui.vts_available) {ui_write(UI_VTS,ui.vts);ui.vts=ui_read(UI_VTS);}
     ui.exposure = 3990u;
     ui.gain = 80u;
     ui_write(UI_EXPOSURE, ui.exposure);
     ui_write(UI_GAIN, ui.gain);
     ui.exposure = ui_read(UI_EXPOSURE);
     ui.gain = ui_read(UI_GAIN);
+    if(ui.vts_available)ui_write(UI_CAMERA_DISPLAY,camera_display_word(&ui));
     al_printf("CAM: exposure_user=%u gain_user=%u gain_index=%u (sensor table)\r\n",
               ui.exposure, ui.gain, (ui.gain >= 16u) ? ui.gain - 16u : 0u);
     al_printf("CAM: firmware=20261011 fpga=0x%08x expected=0x%08x\r\n",

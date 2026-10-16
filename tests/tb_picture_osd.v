@@ -5,7 +5,7 @@ module tb_picture_osd;
     wire [23:0] pixel;
     integer px,py,fd,i;
     integer values[0:6];
-    ui_osd #(.MENU_CHINESE(0)) dut(.I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),.I_de(de),
+    ui_osd #(.MENU_CHINESE(0)) dut(.I_mipi_clk(clk),.I_mipi_frame_start(1'b0),.I_camera_display({7'd127,16'h2000}),.I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),.I_de(de),
         .I_data(24'h526879),.I_menu_enable(1'b1),.I_edit_enable(1'b1),.I_info_enable(1'b0),
         .I_menu_index(3'd5),.I_picture_page(1'b1),.I_picture_ctrl(16'h1050),
         .I_exposure(16'd5990),.I_gain(16'd80),.I_servo_pan_us(16'd1500),.I_servo_tilt_us(16'd1500),
@@ -21,10 +21,10 @@ module tb_picture_osd;
             de=1;
             for(px=0;px<1920;px=px+1) begin
                 @(posedge clk); #1;
-                if(px>=24 && px<492 && py>=680)
+                if(px>=24 && px<492 && py>=644)
                     $fwrite(fd,"%d %d %d\n",pixel[23:16],pixel[15:8],pixel[7:0]);
-                if(px>=330 && px<458 && py>=732 && py<976 && pixel===24'h80e0c0)
-                    values[(py-732)/36]=values[(py-732)/36]+1;
+                if(px>=330 && px<458 && py>=696 && py<940 && pixel===24'h80e0c0)
+                    values[(py-696)/36]=values[(py-696)/36]+1;
                 if((px==600 || px==1200) && pixel!==24'h526879) $fatal(1,"overlay escaped menu");
                 @(negedge clk);
             end

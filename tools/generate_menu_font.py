@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 LABELS = [
-    ["菜单", "曝光", "增益", "图像设置", "录制设置", "显示模式", "图像特效", "标志"],
+    ["菜单", "曝光", "增益", "图像设置", "录制设置", "显示模式", "图像特效", "标志", "帧长"],
     ["图像设置", "黑电平", "伽马", "数字亮度", "饱和度", "白平衡", "降噪", "恢复默认"],
     ["录制设置", "单张拍照", "开始录制", "停止录制", "保存间隔", "已保存", "状态", "返回"],
     ["显示模式", "普通画面", "图形识别", "运动检测", "红色目标跟踪", "", "", ""],
@@ -20,13 +20,26 @@ LABELS = [
 VALUES = ["返回", "关闭", "开启", "自动", "平滑", "近灰", "低", "中", "高", "恢复", "空闲", "写入", "错误", "录制"]
 
 
-def generate(font_path):
+def generate(font_path, extend_existing=False):
     font = ImageFont.truetype(str(font_path), 28)
+    try: font.set_variation_by_name('Bold')
+    except (OSError,ValueError): pass
+    prior=None
+    if extend_existing:
+        prior=json.loads((ROOT/'assets/menu_font/manifest.json').read_text(encoding='utf8'))
     chars = list(dict.fromkeys("".join(sum(LABELS, []) + VALUES)))
+    old_chars=list(prior['glyph_ids']) if prior else []
+    if prior: chars=old_chars+[ch for ch in chars if ch not in old_chars]
+    old_words=[int(v,16) for v in (ROOT/'assets/menu_font/rows.hex').read_text().split()] if prior else []
     assert len(chars) < 128
     ids = {c: i + 1 for i, c in enumerate(chars)}
     images = [Image.new("1", (32, 32))]
     for c in chars:
+        if c in old_chars:
+            im=Image.new('1',(32,32))
+            for y in range(32):
+                for x in range(32): im.putpixel((x,y),bool(old_words[ids[c]*32+y] & (1<<(31-x))))
+            images.append(im);continue
         im = Image.new("L", (32, 32))
         box = font.getbbox(c)
         assert box[2] - box[0] <= 32 and box[3] - box[1] <= 32
@@ -55,13 +68,13 @@ def generate(font_path):
               "endmodule", "`endif", ""]
     (hdl / "ui_font_cn.v").write_text("\n".join(lines), encoding="ascii")
     mapping = ["// Generated menu glyph IDs; zero is a transparent space.",
-               "function [6:0] cn_label_id;", "    input [1:0] page; input [2:0] line_id, cell_id;",
+               "function [6:0] cn_label_id;", "    input [1:0] page; input [3:0] line_id; input [2:0] cell_id;",
                "    begin", "        cn_label_id=0;", "        case({page,line_id,cell_id})"]
     for page, labels in enumerate(LABELS):
         for line, label in enumerate(labels):
             for cell, c in enumerate(label):
-                key = (page << 6) | (line << 3) | cell
-                mapping.append(f"            8'd{key}: cn_label_id=7'd{ids[c]};")
+                key = (page << 7) | (line << 3) | cell
+                mapping.append(f"            9'd{key}: cn_label_id=7'd{ids[c]};")
     mapping += ["        endcase", "    end", "endfunction",
                 "function [6:0] cn_value_id;", "    input [3:0] kind; input [1:0] cell_id;",
                 "    begin", "        cn_value_id=0;", "        case({kind,cell_id})"]
@@ -73,6 +86,8 @@ def generate(font_path):
     out = ROOT / "assets/menu_font"
     out.mkdir(parents=True, exist_ok=True)
     (out / "manifest.json").write_text(json.dumps({
+        "preserved_previous_glyphs": len(old_chars),
+        "previous_font_sha256": prior.get("font_sha256") if prior else None,
         "font": font.getname(), "font_sha256": hashlib.sha256(font_path.read_bytes()).hexdigest(),
         "size": 32, "raster_size": 28, "threshold": 128,
         "layout": "32 rows per glyph, bit31 leftmost, ID0 blank",
@@ -81,7 +96,7 @@ def generate(font_path):
     (out / "rows.hex").write_text("".join(f"{w:08x}\n" for w in words), encoding="ascii")
     (out / "labels.hex").write_text("".join(
         f"{ids[label[cell]] if cell < len(label) else 0:02x}\n"
-        for labels in LABELS for label in labels for cell in range(8)), encoding="ascii")
+        for labels in LABELS for label in (labels+[""]*(16-len(labels))) for cell in range(8)), encoding="ascii")
     (out / "values.hex").write_text("".join(
         f"{ids[label[cell]] if cell < len(label) else 0:02x}\n"
         for label in VALUES for cell in range(4)), encoding="ascii")
@@ -95,4 +110,6 @@ def generate(font_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--font", type=Path, required=True)
-    generate(parser.parse_args().font)
+    parser.add_argument("--extend-existing",action="store_true")
+    args=parser.parse_args()
+    generate(args.font,args.extend_existing)

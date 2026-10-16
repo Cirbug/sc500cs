@@ -410,6 +410,9 @@ module design_top_wrapper (
             S_mode_page_p1<=S_mode_page_apb; S_mode_page_p2<=S_mode_page_p1;
         end
     end
+    wire [15:0] S_ui_vts_apb,S_cam_vts;
+    wire [47:0] S_camera_settings;
+    wire [22:0] S_camera_display_apb,S_camera_display_pixel;
     wire [15:0] S_ui_ae_apb;
     wire [15:0] S_ui_ag_apb;
     wire [2:0]  S_image_step_apb;
@@ -417,10 +420,6 @@ module design_top_wrapper (
     wire [1:0]  S_image_target_apb;
     wire        S_image_logo_apb;
     wire        S_image_track_toggle_apb;
-    reg [15:0]  S_ae_sync1;
-    reg [15:0]  S_ae_sync2;
-    reg [15:0]  S_ag_sync1;
-    reg [15:0]  S_ag_sync2;
     reg         S_ui_enable_p1, S_ui_enable_p2;
     reg         S_ui_edit_p1, S_ui_edit_p2;
     reg         S_ui_info_p1, S_ui_info_p2;
@@ -805,19 +804,12 @@ module design_top_wrapper (
 	assign O_cam_rst 	= 1'b1;
     assign O_cam_24m 	= S_24m_clk;
 
-    always @(posedge S_24m_clk or negedge S_rst_n) begin
-        if(!S_rst_n) begin
-            S_ae_sync1 <= 16'd5990;
-            S_ae_sync2 <= 16'd5990;
-            S_ag_sync1 <= 16'd80;
-            S_ag_sync2 <= 16'd80;
-        end else begin
-            S_ae_sync1 <= S_ui_ae_apb;
-            S_ae_sync2 <= S_ae_sync1;
-            S_ag_sync1 <= S_ui_ag_apb;
-            S_ag_sync2 <= S_ag_sync1;
-        end
-    end
+    camera_menu_cdc #(.WIDTH(48),.RESET_VALUE({16'd3990,16'd80,16'd2000})) u_camera_settings (
+        .src_clk(S_mcu_apb_clk),.dst_clk(S_24m_clk),.rst_n(S_rst_n),
+        .requested({S_ui_ae_apb,S_ui_ag_apb,S_ui_vts_apb}),.active(S_camera_settings));
+    camera_menu_cdc #(.WIDTH(23),.RESET_VALUE({7'd127,16'h2000})) u_camera_display (
+        .src_clk(S_mcu_apb_clk),.dst_clk(S_hdmi_pixel_clk),.rst_n(S_rst_n),
+        .requested(S_camera_display_apb),.active(S_camera_display_pixel));
 
     always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
         if(!S_hdmi_rst_n) begin
@@ -1155,6 +1147,7 @@ module design_top_wrapper (
         .O_mode_page   ( S_mode_page_apb ),
         .O_picture_ctrl( S_picture_apb ),
         .O_exposure    ( S_ui_ae_apb ),
+        .O_vts(S_ui_vts_apb), .O_camera_display(S_camera_display_apb),
         .O_gain        ( S_ui_ag_apb ),
         .O_image_step  ( S_image_step_apb ),
         .O_image_effect( S_image_effect_apb ),
@@ -1194,13 +1187,15 @@ module design_top_wrapper (
       .I_rst(~S_rst_n),
       .I_btn(4'b1111),
       .I_mcu_control_en(1'b1),
-      .I_mcu_ae(S_ae_sync2),
-      .I_mcu_ag(S_ag_sync2),
+      .I_mcu_ae(S_camera_settings[47:32]),
+      .I_mcu_ag(S_camera_settings[31:16]),
+      .I_mcu_vts(S_camera_settings[15:0]),
       .I_cam_cfg_done(S_cam_cfg_done),
       .I_ae_cfg_done(S_ae_cfg_done),
       .O_ae_req(S_ae_req),
       .O_ae(S_ae),
-      .O_ag(S_ag)
+      .O_ag(S_ag),
+      .O_vts(S_cam_vts)
   );
   
     uicfgcs500 #(
@@ -1211,6 +1206,7 @@ module design_top_wrapper (
       .I_ae_req(S_ae_req),
       .I_ae(S_ae),
       .I_ag(S_ag),
+      .I_vts(S_cam_vts),
       .O_cam_scl(O_cam_scl),  //I2C总线，SCL时钟
       .IO_cam_sda(IO_cam_sda),  //I2C总线，SDA数据
       .O_cfg_done(S_cam_cfg_done),  //摄像头寄存器初始化完成
@@ -1815,6 +1811,8 @@ isp_top u_isp_top (
         .PIXEL_CLOCK_HZ(`HDMI_PIXEL_CLOCK_HZ)
     ) u_ui_osd (
         .I_record_status (rec_ui_status),
+        .I_mipi_clk(S_csi_rx_clk), .I_mipi_frame_start(S_csi_frame_start),
+        .I_camera_display(S_camera_display_pixel),
         .I_clk          ( S_hdmi_pixel_clk ),
         .I_rst_n        ( S_hdmi_rst_n ),
         .I_vsync        ( S_final_vsync ),

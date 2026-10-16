@@ -254,17 +254,20 @@ module rgb24_denoise (
     //   |d| ? T   ? d>>>2      ????? 1/4???? 4???????? 25%?
     //   |d| > T   ? d ? T/2    ?????????????????????????
     //   out = orig + clamp(k?ds, ?lim)?k_sh?0=?1.0 1=?0.5 2=?0.75 3=?2.0
+    // Exact bounds for all 8-bit arguments: d/ds in [-255,255],
+    // p in [-510,510], and r after limiting in [-255,510].
+    // Signed 10-bit intermediates retain the original shifts and clipping.
     function [7:0] sharp_a;
         input [7:0]  orig;
         input [7:0]  blur;
         input [7:0]  t;
         input [1:0]  k_sh;
         input [7:0]  lim;
-        reg signed [13:0] d, ds, p, r;
-        reg signed [13:0] tt;
+        reg signed [9:0] d, ds, p, r;
+        reg signed [9:0] tt;
         begin
-            d  = $signed({6'b000000, orig}) - $signed({6'b000000, blur});
-            tt = $signed({6'b000000, t});
+            d  = $signed({2'b00, orig}) - $signed({2'b00, blur});
+            tt = $signed({2'b00, t});
             if((d <= tt) && (d >= -tt))
                 ds = d >>> 2;                            // ????????? 1/4
             else if(d > 0)
@@ -277,13 +280,13 @@ module rgb24_denoise (
                 2'd3:    p = ds <<< 1;                        // ?2.0
                 default: p = ds;                              // ?1.0
             endcase
-            if(p > $signed({6'b000000, lim}))
-                p = $signed({6'b000000, lim});
-            else if(p < -$signed({6'b000000, lim}))
-                p = -$signed({6'b000000, lim});
-            r = $signed({6'b000000, orig}) + p;
-            if(r[13])            sharp_a = 8'd0;
-            else if(|r[12:8])    sharp_a = 8'd255;
+            if(p > $signed({2'b00, lim}))
+                p = $signed({2'b00, lim});
+            else if(p < -$signed({2'b00, lim}))
+                p = -$signed({2'b00, lim});
+            r = $signed({2'b00, orig}) + p;
+            if(r[9])            sharp_a = 8'd0;
+            else if(|r[8])    sharp_a = 8'd255;
             else                 sharp_a = r[7:0];
         end
     endfunction

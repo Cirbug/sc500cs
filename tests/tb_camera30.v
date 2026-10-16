@@ -10,7 +10,7 @@ module tb_camera30;
     wire [8:0] reg_size;
     integer value;
     ae_set dut(.I_clk(clk),.I_rst(rst),.I_btn(4'hf),
-        .I_mcu_control_en(1'b1),.I_mcu_ae(requested),.I_mcu_ag(16'd80),
+        .I_mcu_control_en(1'b1),.I_mcu_ae(requested),.I_mcu_vts(16'd2000),.I_mcu_ag(16'd80),
         .I_ae_cfg_done(1'b1),.I_cam_cfg_done(1'b1),
         .O_ae_req(req),.O_ae(ae),.O_ag(ag));
     uics500reg table_dut(.REG_INDEX(index),.REG_DATA(reg_data),.REG_SIZE(reg_size));

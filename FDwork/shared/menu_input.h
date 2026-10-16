@@ -40,6 +40,7 @@ static inline int touch_decode(TouchDecoder *d, const uint8_t *r,
 typedef struct {
     uint32_t menu, edit, info, index;
     uint32_t exposure, gain, servo_pan_us, servo_tilt_us;
+    uint32_t vts, vts_available;
     uint32_t servo_menu_available;
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
@@ -92,6 +93,21 @@ static inline uint32_t menu_step(uint32_t v, int direction,
     return v - low < step ? low : v - step;
 }
 
+/* Full 1944-line sensor mode; matching VTS1 bitstream required. */
+#define UI_VTS 0x9cu
+#define UI_VTS_ID 0xa0u
+#define UI_CAMERA_DISPLAY 0xa4u
+static inline uint32_t camera_exposure_max(const MenuState *s)
+{ return s->vts_available ? 2u*s->vts-10u : 3990u; }
+static inline uint32_t camera_display_word(const MenuState *s)
+{
+    unsigned v=s->vts,bcd=0,shift;
+    for(shift=0;shift<16;shift+=4) { bcd|=(v%10u)<<shift;v/=10u; }
+    unsigned range=camera_exposure_max(s)-3u;
+    unsigned bar=((s->exposure-3u)*127u+range/2u)/range;
+    return bcd|((bar>127u?127u:bar)<<16);
+}
+
 /* One adjustment implementation for touch actions and physical keys. */
 static inline unsigned menu_adjust(MenuState *s, int direction)
 {
@@ -106,7 +122,7 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
     }
     if(s->picture_page) { picture_adjust(s,direction); return 0; }
     switch(s->index) {
-    case 0: s->exposure = menu_step(s->exposure, direction, 3, 3990, 120); break;
+    case 0: s->exposure = menu_step(s->exposure, direction, 3, camera_exposure_max(s), 120); break;
     case 1: s->gain = menu_step(s->gain, direction, 16, 143, 8); break;
     /* The former PAN status row opens picture settings. Servo position
      * remains controlled by relative dragging outside the menu. */
@@ -123,6 +139,10 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
                                                 : (s->image_effect == 0 ? 5 : s->image_effect - 1);
             break;
     case 6: s->logo_enable = !s->logo_enable; break;
+    case 7: if(s->vts_available) {
+        s->vts=menu_step(s->vts,direction,2000u,4000u,100u);
+        if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);
+    } break;
     }
     return 0;
 }
@@ -154,8 +174,8 @@ static inline unsigned menu_key(MenuState *s, unsigned keys)
             else if(s->picture_page) { s->picture_page=0; s->index=2; }
             else { s->menu = 0; s->info = 0; }
         }
-        else if(keys & 1) s->index = s->index == 0 ? 6 : s->index - 1;
-        else if(keys & 2) s->index = s->index == 6 ? 0 : s->index + 1;
+        else if(keys & 1) s->index = s->index == 0 ? ((!s->picture_page && !s->record_page && s->vts_available)?7:6) : s->index - 1;
+        else if(keys & 2) s->index = s->index == ((!s->picture_page && !s->record_page && s->vts_available)?7:6) ? 0 : s->index + 1;
         else if(keys & 8) {
             if(s->record_page || (!s->picture_page && (s->index>=2 && s->index<=4))) return menu_adjust(s,1);
             if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT; return 0; }
@@ -168,7 +188,7 @@ static inline unsigned menu_key(MenuState *s, unsigned keys)
 static inline void menu_slider(MenuState *s, unsigned row, unsigned x)
 {
     unsigned p = x <= 330 ? 0 : x >= 457 ? 127 : x - 330;
-    if(row == 0) s->exposure = 3 + (p * (3990 - 3) + 63) / 127;
+    if(row == 0) s->exposure = 3 + (p * (camera_exposure_max(s) - 3) + 63) / 127;
     if(row == 1) s->gain = 16 + p;
 }
 
@@ -176,7 +196,7 @@ static inline int touch_in_menu_area(const MenuState *s, const TouchEvent *e)
 {
     unsigned x = e->x, y = e->y;
     /* Match ui_osd.v: lower-left menu panel plus its always-visible button. */
-    if(s->menu && x >= 24u && x < 492u && y >= 680u && y < 1004u)
+    if(s->menu && x >= 24u && x < 492u && y >= 644u && y < 1004u)
         return 1;
     if(x < 240u && y >= 1008u && y < 1080u)
         return 1;
@@ -229,7 +249,7 @@ static inline unsigned menu_touch(MenuState *s, const TouchEvent *e)
         if(s->menu && s->touch_capture >= 0 && s->touch_capture < 2) {
             row = (unsigned)s->touch_capture;
             /* Ignore excursions into other rows; never transfer a drag. */
-            if(y >= 728 + row * 36 && y < 764 + row * 36)
+            if(y >= 692 + row * 36 && y < 728 + row * 36)
                 menu_slider(s, row, x);
         }
         return 0;
@@ -242,34 +262,35 @@ static inline unsigned menu_touch(MenuState *s, const TouchEvent *e)
         return 0;
     }
     /* Visible menu gets first hit-test priority over the picture. */
-    if(s->menu && x >= 24 && x < 492 && y >= 680 && y < 1004) {
+    if(s->menu && x >= 24 && x < 492 && y >= 644 && y < 1004) {
         s->touch_capture = 6;
         if(s->picture_page==2) {
-            if(y<728) {s->picture_page=0;s->index=4;s->edit=0;return 0;}
-            if(y>=872) return 0;
-            s->index=(y-728)/36;s->edit=0;
+            if(y<692) {s->picture_page=0;s->index=4;s->edit=0;return 0;}
+            if(y>=836) return 0;
+            s->index=(y-692)/36;s->edit=0;
             return menu_adjust(s,1);
         }
         if(s->record_page) {
-            if(y<728) {s->record_page=0;s->index=3;s->edit=0;return 0;}
-            if(y>=980) return 0;
-            s->index=(y-728)/36;s->edit=0;
+            if(y<692) {s->record_page=0;s->index=3;s->edit=0;return 0;}
+            if(y>=944) return 0;
+            s->index=(y-692)/36;s->edit=0;
             return menu_adjust(s,x<330?-1:1);
         }
         if(s->picture_page) {
-            if(y<728) { s->picture_page=0; s->index=2; s->edit=0; return 0; }
-            if(y>=980) return 0;
-            s->index=(y-728)/36; s->edit=1;
+            if(y<692) { s->picture_page=0; s->index=2; s->edit=0; return 0; }
+            if(y>=944) return 0;
+            s->index=(y-692)/36; s->edit=1;
             picture_adjust(s,x<330?-1:1);
             return 0;
         }
-        if(y < 728 || y >= 980) return 0;
-        row = (y - 728) / 36;
+        if(y < 692 || y >= 980) return 0;
+        row = (y - 692) / 36;
+        if(row==7 && !s->vts_available) return 0;
         s->index = row; s->edit = 1; s->info = 0;
         if(row < 2 && x >= 306) {
             s->touch_capture = (int)row;
             menu_slider(s, row, x);
-        } else if(row >= 2) return menu_adjust(s, 1);
+        } else if(row >= 2) return menu_adjust(s, row==7 && x<330 ? -1 : 1);
         return 0;
     }
     return 0;

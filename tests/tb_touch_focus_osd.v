@@ -6,7 +6,7 @@ module tb_touch_focus_osd;
  integer sx=0,sy=0,rx=880,ry=480,checked=0;
  reg expected_check=0,next_check,old_check;
  reg [23:0] expected_data,next_data,old_data;
- ui_osd dut(.I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),
+ ui_osd dut(.I_mipi_clk(clk),.I_mipi_frame_start(1'b0),.I_camera_display({7'd127,16'h2000}),.I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),
    .I_de(de),.I_data(24'h2468ac),.I_focus_roi(roi),.I_menu_enable(1'b0),
    .I_edit_enable(1'b0),.I_info_enable(1'b0),.I_menu_index(3'd0),
    .I_record_status(32'd0),.I_picture_page(1'b0),.I_mode_page(1'b0),

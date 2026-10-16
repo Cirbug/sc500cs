@@ -38,19 +38,22 @@ input wire [3:0]I_btn,
 input wire        I_mcu_control_en,
 input wire [15:0] I_mcu_ae,
 input wire [15:0] I_mcu_ag,
+input wire [15:0] I_mcu_vts,
 input wire I_ae_cfg_done,
 input wire I_cam_cfg_done,
 output wire O_ae_req,
 output wire [15:0] O_ae,
+output wire [15:0] O_vts,
 output wire [15:0] O_ag
 );
 	
 
-// Full mode: VTS=2000, nominal camera rate 30 fps with existing PLL/HTS.
-// Exposure is in half-lines: 3..(2*VTS-10), about 33.25 ms maximum.
-// HDMI timing is unchanged; shorter VTS reduces 20-to-30 Hz frame repetition.
+// Full 2592x1944 mode. VTS controls frame period; exposure is in half-lines.
 localparam [15:0] AE_MIN         = 16'd3;
-localparam [15:0] AE_MAX         = 16'd3990;
+wire [15:0] mcu_vts=(I_mcu_vts<2000)?16'd2000:(I_mcu_vts>4000)?16'd4000:I_mcu_vts;
+wire [15:0] AE_MAX=(mcu_vts<<1)-16'd10;
+reg [15:0] r_vts_set=2000;
+reg [15:0] r_vts;
 localparam [15:0] AE_INIT        = 16'd3990;
 localparam [15:0] AE_STEP_FINE   = 16'd120;
 // SC500 模拟增益范围为 1.0x..15.75x；索引 16..143 对应查表输入 0..127。
@@ -79,7 +82,9 @@ always @(posedge I_clk or posedge I_rst) begin
 	if(I_rst) begin
 		r_ae_set <= AE_INIT;
 		r_ag_set <= AG_INIT;
+        r_vts_set <= 2000;
 	end else if(I_mcu_control_en) begin
+        r_vts_set <= mcu_vts;
 		// The APB register values are intentionally sampled only once per
 		// camera clock; software changes them much slower than this domain.
 		r_ae_set <= (I_mcu_ae < AE_MIN) ? AE_MIN : ((I_mcu_ae > AE_MAX) ? AE_MAX : I_mcu_ae);
@@ -103,6 +108,7 @@ end
 reg 	[15:0] 	r_ae ; 
 reg 	[15:0] 	r_ag ; 
 reg 			r_ae_req = 0; //synthesis keep
+assign O_vts = r_vts;
 assign O_ae = r_ae;
 assign O_ag = r_ag;
 assign O_ae_req = r_ae_req;
@@ -112,12 +118,14 @@ always @(posedge I_clk or posedge I_rst) begin
 		r_ae_req <= 0; 
 		r_ae     <= AE_INIT;
 		r_ag     <= AG_INIT;
+        r_vts <= 2000;
 	end else if(r_ae_req) begin
 		r_ae_req <= 0; 
-	end else if(((r_ae != r_ae_set) || (r_ag != r_ag_set)) &&
+	end else if(((r_ae != r_ae_set) || (r_ag != r_ag_set) || (r_vts != r_vts_set)) &&
 	            (I_cam_cfg_done==1'b1) && (I_ae_cfg_done==1'b1)) begin
 		r_ae     <= r_ae_set; 
 		r_ag     <= r_ag_set;
+        r_vts <= r_vts_set;
 		r_ae_req <= 1; 
 	end
 end

@@ -1,4 +1,6 @@
-﻿C 盘主工程：菜单帧长调节与 MIPI/HDMI 双帧数功能
+﻿历史报告：下述为中午版本；现行范围已改为 1980～2500，步长 20，详情见同目录 VTS_RANGE_UPDATE.txt。
+
+C 盘主工程：菜单帧长调节与 MIPI/HDMI 双帧数功能
 日期：2026-10-16
 目标工程：C:\Users\XIAOXIAO\Desktop\fpga\sc500cs\sc500cs
 

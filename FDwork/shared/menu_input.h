@@ -93,7 +93,8 @@ static inline uint32_t menu_step(uint32_t v, int direction,
     return v - low < step ? low : v - step;
 }
 
-/* Full 1944-line sensor mode; matching VTS1 bitstream required. */
+/* Full 1944-line mode. 1980 is a trial floor, not a sensor-guaranteed minimum.
+ * Keep the proven 2000 default; matching range-update FPGA bit required. */
 #define UI_VTS 0x9cu
 #define UI_VTS_ID 0xa0u
 #define UI_CAMERA_DISPLAY 0xa4u
@@ -140,7 +141,7 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
             break;
     case 6: s->logo_enable = !s->logo_enable; break;
     case 7: if(s->vts_available) {
-        s->vts=menu_step(s->vts,direction,2000u,4000u,100u);
+        s->vts=menu_step(s->vts,direction,1980u,2500u,20u);
         if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);
     } break;
     }

@@ -72,8 +72,8 @@ module mcu_ui_apb_regs #(
     output reg  [15:0] O_servo_tilt_us
 );
 
-    // Full 1944-line sensor mode: retain the proven 2000-line floor.
-    wire [15:0] write_vts=(I_pwdata[15:0]<2000)?16'd2000:(I_pwdata[15:0]>4000)?16'd4000:I_pwdata[15:0];
+    // Full 1944-line mode: trial range 1980..2500; reset remains 2000.
+    wire [15:0] write_vts=(I_pwdata[15:0]<1980)?16'd1980:(I_pwdata[15:0]>2500)?16'd2500:I_pwdata[15:0];
     wire [15:0] ae_max_dynamic=(O_vts<<1)-16'd10;
     wire [15:0] write_vts_limit=(write_vts<<1)-16'd10;
     localparam [31:0] ID_VALUE = 32'h55494D55; // "UIMU"

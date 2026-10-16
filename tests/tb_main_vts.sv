@@ -47,7 +47,7 @@ module tb_main_vts;
                 4:re[11:4]=byte_data;5:re[3:0]=byte_data[7:4];
                 8:if(byte_data!=16)$fatal(1,"group end");
                 9:begin
-                    if(byte_data!=96 || rv<2000 || rv>4000 || re<3 || re>2*rv-10)$fatal(1,"illegal sensor command");
+                    if(byte_data!=96 || rv<1980 || rv>2500 || re<3 || re>2*rv-10)$fatal(1,"illegal sensor command");
                     if({re,rv}!={ae,vts})$fatal(1,"command encoding mismatch");
                     applied_e=re;applied_v=rv;groups=groups+1;
                 end
@@ -70,19 +70,21 @@ module tb_main_vts;
         write_reg(8'h9c,3000,1);read_check(8'h9c,2000); // reject half a VTS
         write_reg(8'ha4,23'h642500);read_check(8'ha4,23'h642500);
         write_reg(8'ha4,0,1);read_check(8'ha4,23'h642500);
-        write_reg(8'h9c,4000);write_reg(8'h10,65535);settled(7990,4000);
+        write_reg(8'h9c,4000);read_check(8'h9c,2500);write_reg(8'h10,65535);settled(4990,2500);
+        write_reg(8'h9c,0);read_check(8'h10,3950);settled(3950,1980);
+        write_reg(8'h9c,2500);write_reg(8'h10,65535);settled(4990,2500);
         write_reg(8'h9c,2000);read_check(8'h10,3990);settled(3990,2000);
         write_reg(8'h10,0);settled(3,2000);
         // Sweep every 16-bit VTS write and enforce the APB-side exposure invariant.
         for(k=0;k<65536;k=k+1)begin
-            write_reg(8'h9c,k);expected_v=k<2000?2000:k>4000?4000:k;
+            write_reg(8'h9c,k);expected_v=k<1980?1980:k>2500?2500:k;
             if(desired_vts!=expected_v || desired_ae<3 || desired_ae>2*desired_vts-10)$fatal(1,"APB VTS clamp %d",k);
         end
         // Bursts change both fields while an earlier I2C group remains in flight.
-        for(k=0;k<200;k=k+1)begin write_reg(8'h9c,2000+(k*137)%2001);write_reg(8'h10,6000+k*11);end
-        write_reg(8'h9c,2600);write_reg(8'h10,5100);settled(5100,2600);
+        for(k=0;k<200;k=k+1)begin write_reg(8'h9c,1980+(k*137)%521);write_reg(8'h10,6000+k*11);end
+        write_reg(8'h9c,2400);write_reg(8'h10,5100);settled(4790,2400);
         write_reg(8'h0c,7);read_check(8'h0c,7);
-        $display("PASS MAIN VTS: all 65536 VTS values, APB limits/readback/strobes, group hold, busy coalescing; groups=%0d writes=%0d",groups,writes);$finish;
+        $display("PASS MAIN VTS 1980..2500: all 65536 VTS values, APB limits/readback/strobes, group hold, busy coalescing; groups=%0d writes=%0d",groups,writes);$finish;
     end
     initial begin #60000000;$fatal(1,"timeout");end
 endmodule

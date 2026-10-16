@@ -2,7 +2,7 @@
 set root [file normalize [file join [file dirname [info script]] ..]]
 source [file join $root tests check_mcu_pad_jtag.tcl]
 check_mcu_pad_jtag $root
-set out [file join $root build menu_vts_dual_fps_20261016]
+set out [file join $root build menu_vts_1980_2500_20261016]
 file mkdir $out
 cd [file join $root td_project]
 import_device ph1_35p.db -package PH1P35MDG324 -speed 3
@@ -33,7 +33,7 @@ report_timing_summary -file final_timing.rpt
 report_timing_exception -file cdc_exceptions.rpt
 report_qor -step route -file route.qor
 export_db optimized_route.db
-bitgen -bit camera_menu_vts_dual_fps_20261016.bit
-puts MAIN_VTS_BUILD_COMPLETE
+bitgen -bit camera_menu_vts_1980_2500_20261016.bit
+puts VTS_RANGE_BUILD_COMPLETE
 exit
 

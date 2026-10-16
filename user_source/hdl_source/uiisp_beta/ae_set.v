@@ -50,7 +50,7 @@ output wire [15:0] O_ag
 
 // Full 2592x1944 mode. VTS controls frame period; exposure is in half-lines.
 localparam [15:0] AE_MIN         = 16'd3;
-wire [15:0] mcu_vts=(I_mcu_vts<2000)?16'd2000:(I_mcu_vts>4000)?16'd4000:I_mcu_vts;
+wire [15:0] mcu_vts=(I_mcu_vts<1980)?16'd1980:(I_mcu_vts>2500)?16'd2500:I_mcu_vts;
 wire [15:0] AE_MAX=(mcu_vts<<1)-16'd10;
 reg [15:0] r_vts_set=2000;
 reg [15:0] r_vts;

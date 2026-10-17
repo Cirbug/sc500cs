@@ -1,4 +1,5 @@
 `include "ui_font_cn.v"
+`include "mcu_menu_table.v"
 `include "camera_menu_support.v"
 `include "hdmi_frame_stats.v"
 // Fixed Chinese menu subset in synchronous ROM; ASCII digits retain 5x7 font.
@@ -7,9 +8,15 @@ module ui_osd #(
     parameter integer H_ACTIVE = 1920,
     parameter integer V_ACTIVE = 1080,
     parameter integer MENU_CHINESE = 1,
+    parameter integer MCU_MENU = 0,
     parameter integer RESULT_CHINESE = 0,
     parameter integer PIXEL_CLOCK_HZ = 75000000
 )(
+    input wire I_apb_clk, I_apb_rst_n, I_menu_sel, I_menu_penable, I_menu_pwrite,
+    input wire [7:0] I_menu_paddr,
+    input wire [3:0] I_menu_pstrobe,
+    input wire [31:0] I_menu_pwdata,
+    output wire [31:0] O_menu_prdata,
     // Legacy raw-source ports; main keeps its separately synchronized MIPI counters.
     input wire I_mipi_clk,I_mipi_frame_start,
     input wire [22:0] I_camera_display,
@@ -168,8 +175,28 @@ module ui_osd #(
             end
         end
     end
+    wire render_vs,render_hs,render_de,render_active;
+    wire [23:0] render_pixel,render_color;
+    wire [6:0] render_id;
+    wire [4:0] render_row,render_col;
+    generate if(MCU_MENU) begin: mcu_menu
+        mcu_menu_table table_renderer(
+            .apb_clk(I_apb_clk),.rst_n(I_apb_rst_n),.sel(I_menu_sel),
+            .enable(I_menu_penable),.write(I_menu_pwrite),.addr(I_menu_paddr),
+            .strobe(I_menu_pstrobe),.wdata(I_menu_pwdata),.rdata(O_menu_prdata),
+            .clk(I_clk),.vs(I_vsync),.hs(I_hsync),.de(I_de),.x(x),.y(y),.pixel(pixel),
+            .cn_id(cn_id),.cn_row(cn_row),.cn_col(cn_col),.cn_active(cn_active),.cn_color(cn_color),
+            .out_vs(render_vs),.out_hs(render_hs),.out_de(render_de),.out_pixel(render_pixel),
+            .out_id(render_id),.out_row(render_row),.out_col(render_col),
+            .out_active(render_active),.out_color(render_color));
+    end else begin: legacy_menu
+        assign O_menu_prdata=0;
+        assign {render_vs,render_hs,render_de}={I_vsync,I_hsync,I_de};
+        assign render_pixel=pixel;assign render_id=cn_id;assign render_row=cn_row;
+        assign render_col=cn_col;assign render_active=cn_active;assign render_color=cn_color;
+    end endgenerate
     generate if(MENU_CHINESE) begin: chinese_font
-        ui_font_cn font(.clk(I_clk), .address({cn_id,cn_row}), .row_bits(cn_row_bits));
+        ui_font_cn font(.clk(I_clk), .address({render_id,render_row}), .row_bits(cn_row_bits));
     end else begin: english_font
         assign cn_row_bits=32'd0;
     end endgenerate
@@ -199,7 +226,7 @@ module ui_osd #(
         else if(y>=874 && y<906) begin cn_line_active=1; cn_line=6; cn_dy=y-874; end
         else if(y>=910 && y<942) begin cn_line_active=1; cn_line=7; cn_dy=y-910; end
         else if(y>=946 && y<978 && !I_picture_page && !mode_page && !rec_page) begin cn_line_active=1;cn_line=8;cn_dy=y-946;end
-        if(MENU_CHINESE && I_menu_enable && cn_line_active && x>=24 && x<492) begin
+        if(!MCU_MENU && MENU_CHINESE && I_menu_enable && cn_line_active && x>=24 && x<492) begin
             cn_row=cn_dy[4:0];
             if(x>=44 && x<300) begin
                 cn_dx=x-44; cn_col=cn_dx[4:0];
@@ -241,7 +268,7 @@ module ui_osd #(
             end
         end
         // Center the two-character menu button in its existing touch target.
-        if(MENU_CHINESE && x>=90 && x<154 && y>=1030 && y<1062) begin
+        if(!MCU_MENU && MENU_CHINESE && x>=90 && x<154 && y>=1030 && y<1062) begin
             cn_dx=x-90; cn_dy=y-1030; cn_col=cn_dx[4:0]; cn_row=cn_dy[4:0];
             cn_id=cn_label_id(1'b0,3'd0,cn_dx[7:5]);
             cn_active=1; cn_color=24'hffffff;
@@ -300,272 +327,7 @@ module ui_osd #(
     endfunction
 
     // 5x7 font; each dot occupies 4x4 output pixels (20x28 per glyph).
-    function [4:0] glyph_bits;
-        input [7:0] c;
-        input [2:0] r;
-        begin
-            glyph_bits = 5'b00000;
-            case(c)
-                "B": case(r) 0,3,6:glyph_bits=5'b11110; 1,2,4,5:glyph_bits=5'b10001; endcase
-                "H": case(r) 3:glyph_bits=5'b11111; default:glyph_bits=5'b10001; endcase
-                "W": case(r) 0,1,2,6:glyph_bits=5'b10001; 3,4,5:glyph_bits=5'b10101; endcase
-                "K": case(r) 0,6:glyph_bits=5'b10001; 1,5:glyph_bits=5'b10010; 2,4:glyph_bits=5'b10100; 3:glyph_bits=5'b11000; endcase
-                "Y": case(r) 0,1:glyph_bits=5'b10001; 2:glyph_bits=5'b01010; default:glyph_bits=5'b00100; endcase
-                ".": case(r) 6:glyph_bits=5'b00100; endcase
-                "A": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10001;
-                    3'd3: glyph_bits = 5'b11111;
-                    3'd4: glyph_bits = 5'b10001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b10001;
-                endcase
-                "C": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10000;
-                    3'd3: glyph_bits = 5'b10000;
-                    3'd4: glyph_bits = 5'b10000;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                "D": case(r)
-                    3'd0: glyph_bits = 5'b11110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10001;
-                    3'd3: glyph_bits = 5'b10001;
-                    3'd4: glyph_bits = 5'b10001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b11110;
-                endcase
-                "E": case(r)
-                    3'd0: glyph_bits = 5'b11111;
-                    3'd1: glyph_bits = 5'b10000;
-                    3'd2: glyph_bits = 5'b10000;
-                    3'd3: glyph_bits = 5'b11110;
-                    3'd4: glyph_bits = 5'b10000;
-                    3'd5: glyph_bits = 5'b10000;
-                    3'd6: glyph_bits = 5'b11111;
-                endcase
-                "F": case(r)
-                    3'd0: glyph_bits = 5'b11111;
-                    3'd1: glyph_bits = 5'b10000;
-                    3'd2: glyph_bits = 5'b10000;
-                    3'd3: glyph_bits = 5'b11110;
-                    3'd4: glyph_bits = 5'b10000;
-                    3'd5: glyph_bits = 5'b10000;
-                    3'd6: glyph_bits = 5'b10000;
-                endcase
-                "G": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10000;
-                    3'd3: glyph_bits = 5'b10111;
-                    3'd4: glyph_bits = 5'b10001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                "I": case(r)
-                    3'd0: glyph_bits = 5'b11111;
-                    3'd1: glyph_bits = 5'b00100;
-                    3'd2: glyph_bits = 5'b00100;
-                    3'd3: glyph_bits = 5'b00100;
-                    3'd4: glyph_bits = 5'b00100;
-                    3'd5: glyph_bits = 5'b00100;
-                    3'd6: glyph_bits = 5'b11111;
-                endcase
-                "L": case(r)
-                    3'd0: glyph_bits = 5'b10000;
-                    3'd1: glyph_bits = 5'b10000;
-                    3'd2: glyph_bits = 5'b10000;
-                    3'd3: glyph_bits = 5'b10000;
-                    3'd4: glyph_bits = 5'b10000;
-                    3'd5: glyph_bits = 5'b10000;
-                    3'd6: glyph_bits = 5'b11111;
-                endcase
-                "M": case(r)
-                    3'd0: glyph_bits = 5'b10001;
-                    3'd1: glyph_bits = 5'b11011;
-                    3'd2: glyph_bits = 5'b10101;
-                    3'd3: glyph_bits = 5'b10101;
-                    3'd4: glyph_bits = 5'b10001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b10001;
-                endcase
-                "N": case(r)
-                    3'd0: glyph_bits = 5'b10001;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b11001;
-                    3'd3: glyph_bits = 5'b10101;
-                    3'd4: glyph_bits = 5'b10011;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b10001;
-                endcase
-                "O": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10001;
-                    3'd3: glyph_bits = 5'b10001;
-                    3'd4: glyph_bits = 5'b10001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                "P": case(r)
-                    3'd0: glyph_bits = 5'b11110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10001;
-                    3'd3: glyph_bits = 5'b11110;
-                    3'd4: glyph_bits = 5'b10000;
-                    3'd5: glyph_bits = 5'b10000;
-                    3'd6: glyph_bits = 5'b10000;
-                endcase
-                "R": case(r)
-                    3'd0: glyph_bits = 5'b11110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10001;
-                    3'd3: glyph_bits = 5'b11110;
-                    3'd4: glyph_bits = 5'b10100;
-                    3'd5: glyph_bits = 5'b10010;
-                    3'd6: glyph_bits = 5'b10001;
-                endcase
-                "S": case(r)
-                    3'd0: glyph_bits = 5'b01111;
-                    3'd1: glyph_bits = 5'b10000;
-                    3'd2: glyph_bits = 5'b10000;
-                    3'd3: glyph_bits = 5'b01110;
-                    3'd4: glyph_bits = 5'b00001;
-                    3'd5: glyph_bits = 5'b00001;
-                    3'd6: glyph_bits = 5'b11110;
-                endcase
-                "T": case(r)
-                    3'd0: glyph_bits = 5'b11111;
-                    3'd1: glyph_bits = 5'b00100;
-                    3'd2: glyph_bits = 5'b00100;
-                    3'd3: glyph_bits = 5'b00100;
-                    3'd4: glyph_bits = 5'b00100;
-                    3'd5: glyph_bits = 5'b00100;
-                    3'd6: glyph_bits = 5'b00100;
-                endcase
-                "U": case(r)
-                    3'd0: glyph_bits = 5'b10001;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10001;
-                    3'd3: glyph_bits = 5'b10001;
-                    3'd4: glyph_bits = 5'b10001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                "X": case(r)
-                    3'd0: glyph_bits = 5'b10001;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b01010;
-                    3'd3: glyph_bits = 5'b00100;
-                    3'd4: glyph_bits = 5'b01010;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b10001;
-                endcase
-                "0": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10011;
-                    3'd3: glyph_bits = 5'b10101;
-                    3'd4: glyph_bits = 5'b11001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                "1": case(r)
-                    3'd0: glyph_bits = 5'b00100;
-                    3'd1: glyph_bits = 5'b01100;
-                    3'd2: glyph_bits = 5'b00100;
-                    3'd3: glyph_bits = 5'b00100;
-                    3'd4: glyph_bits = 5'b00100;
-                    3'd5: glyph_bits = 5'b00100;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                "2": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b00001;
-                    3'd3: glyph_bits = 5'b00010;
-                    3'd4: glyph_bits = 5'b00100;
-                    3'd5: glyph_bits = 5'b01000;
-                    3'd6: glyph_bits = 5'b11111;
-                endcase
-                "3": case(r)
-                    3'd0: glyph_bits = 5'b11110;
-                    3'd1: glyph_bits = 5'b00001;
-                    3'd2: glyph_bits = 5'b00001;
-                    3'd3: glyph_bits = 5'b01110;
-                    3'd4: glyph_bits = 5'b00001;
-                    3'd5: glyph_bits = 5'b00001;
-                    3'd6: glyph_bits = 5'b11110;
-                endcase
-                "4": case(r)
-                    3'd0: glyph_bits = 5'b00010;
-                    3'd1: glyph_bits = 5'b00110;
-                    3'd2: glyph_bits = 5'b01010;
-                    3'd3: glyph_bits = 5'b10010;
-                    3'd4: glyph_bits = 5'b11111;
-                    3'd5: glyph_bits = 5'b00010;
-                    3'd6: glyph_bits = 5'b00010;
-                endcase
-                "5": case(r)
-                    3'd0: glyph_bits = 5'b11111;
-                    3'd1: glyph_bits = 5'b10000;
-                    3'd2: glyph_bits = 5'b10000;
-                    3'd3: glyph_bits = 5'b11110;
-                    3'd4: glyph_bits = 5'b00001;
-                    3'd5: glyph_bits = 5'b00001;
-                    3'd6: glyph_bits = 5'b11110;
-                endcase
-                "6": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10000;
-                    3'd2: glyph_bits = 5'b10000;
-                    3'd3: glyph_bits = 5'b11110;
-                    3'd4: glyph_bits = 5'b10001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                "7": case(r)
-                    3'd0: glyph_bits = 5'b11111;
-                    3'd1: glyph_bits = 5'b00001;
-                    3'd2: glyph_bits = 5'b00010;
-                    3'd3: glyph_bits = 5'b00100;
-                    3'd4: glyph_bits = 5'b01000;
-                    3'd5: glyph_bits = 5'b01000;
-                    3'd6: glyph_bits = 5'b01000;
-                endcase
-                "8": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10001;
-                    3'd3: glyph_bits = 5'b01110;
-                    3'd4: glyph_bits = 5'b10001;
-                    3'd5: glyph_bits = 5'b10001;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                "9": case(r)
-                    3'd0: glyph_bits = 5'b01110;
-                    3'd1: glyph_bits = 5'b10001;
-                    3'd2: glyph_bits = 5'b10001;
-                    3'd3: glyph_bits = 5'b01111;
-                    3'd4: glyph_bits = 5'b00001;
-                    3'd5: glyph_bits = 5'b00001;
-                    3'd6: glyph_bits = 5'b01110;
-                endcase
-                ":": case(r)
-                    3'd2: glyph_bits = 5'b00100;
-                    3'd4: glyph_bits = 5'b00100;
-                endcase
-                "-": case(r)
-                    3'd3: glyph_bits = 5'b11111;
-                endcase
-                default: glyph_bits = 5'b00000;
-            endcase
-        end
-    endfunction
+    `include "ui_ascii_glyph.vh"
 
     always @* begin
         pixel = I_data;
@@ -593,7 +355,7 @@ module ui_osd #(
         end
         // Panel: lower-left, x=24..492, y=644..1004. The lower-left MENU
         // button remains visible even when this panel is hidden.
-        if(I_menu_enable && (x >= MENU_X0) && (x < MENU_X0 + 12'd468) &&
+        if(!MCU_MENU && I_menu_enable && (x >= MENU_X0) && (x < MENU_X0 + 12'd468) &&
            (y >= MENU_Y0) && (y < MENU_Y0 + 12'd360)) begin
             overlay = 1'b1;
             pixel = 24'h101820;
@@ -735,7 +497,7 @@ module ui_osd #(
             end
         end
         // Four BCD count digits / interval, no pixel-clock division.
-        if(I_menu_enable && rec_page && x>=330 && x<458) begin
+        if(!MCU_MENU && I_menu_enable && rec_page && x>=330 && x<458) begin
             text_x=x-330;col=text_x[4:2];char_no={2'b0,text_x[6:5]};
             text_active=0;picture_value="    ";text_y=0;
             if(y>=804 && y<832) begin
@@ -753,15 +515,15 @@ module ui_osd #(
             if(text_active && col<5 && ((glyph & (5'b10000>>col))!=0)) pixel=24'h80e0c0;
         end
         // Small persistent recording indicator beside the menu toggle.
-        if(x>=236 && x<260 && y>=1034 && y<1058)
+        if(!MCU_MENU && x>=236 && x<260 && y>=1034 && y<1058)
             pixel=rec_frame[7:0]!=0?24'hff3020:rec_frame[8]?24'hff2020:rec_frame[9]?24'hffb020:24'h305040;
-        if(I_info_enable && I_menu_enable && (x >= MENU_X0 + 12'd306) &&
+        if(!MCU_MENU && I_info_enable && I_menu_enable && (x >= MENU_X0 + 12'd306) &&
            (x < MENU_X0 + 12'd434) && (y >= MENU_Y0 + 12'd204) &&
            (y < MENU_Y0 + 12'd216))
             pixel = 24'h206060;
 
         // Always-visible touch target for showing/hiding the menu.
-        if((x >= 12'd24) && (x < 12'd220) &&
+        if(!MCU_MENU && (x >= 12'd24) && (x < 12'd220) &&
            (y >= 12'd1016) && (y < 12'd1076)) begin
             pixel = 24'h183050;
             if((x < 12'd28) || (x >= 12'd216) || (y < 12'd1020) || (y >= 12'd1072))
@@ -870,10 +632,10 @@ module ui_osd #(
             vs_pipe<=0; hs_pipe<=0; de_pipe<=0; pixel_d<=0;
             cn_active_d<=0; cn_col_d<=0; cn_color_d<=0;
         end else begin
-            vs_pipe<=I_vsync; hs_pipe<=I_hsync; de_pipe<=I_de; pixel_d<=pixel;
+            vs_pipe<=render_vs; hs_pipe<=render_hs; de_pipe<=render_de; pixel_d<=render_pixel;
             rec1<=I_record_status;rec2<=rec1;
             if(I_vsync && !vs_d) rec_frame<=rec2;
-            cn_active_d<=cn_active; cn_col_d<=cn_col; cn_color_d<=cn_color;
+            cn_active_d<=render_active; cn_col_d<=render_col; cn_color_d<=render_color;
             if(MENU_CHINESE) begin
                 O_vsync<=vs_pipe; O_hsync<=hs_pipe; O_de<=de_pipe;
                 O_data<=!de_pipe ? 24'd0 :

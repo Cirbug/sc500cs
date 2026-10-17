@@ -15,6 +15,10 @@ cd $out
 open_project [file join $root td_project camera_to_dsi_display.al] -single_run -noanalyze
 import_db [file normalize $::env(SC500_MOTOROLA_GATE_DB)]
 cd $out
+} elseif {[info exists ::env(SC500_MOTOROLA_PLACE_DB)]} {
+open_project [file join $root td_project camera_to_dsi_display.al] -single_run -noanalyze
+import_db [file normalize $::env(SC500_MOTOROLA_PLACE_DB)]
+cd $out
 } else {
 open_project [file join $root td_project camera_to_dsi_display.al] -single_run
 load_run_param -run syn_1
@@ -33,14 +37,23 @@ legalize_phy_inst
 update_timing
 export_db optimized_gate.db
 }
+if {[info exists ::env(SC500_MOTOROLA_EXTRA_SDC)]} {
+    read_sdc [file normalize $::env(SC500_MOTOROLA_EXTRA_SDC)]
+}
+if {[info exists ::env(SC500_MOTOROLA_PREFLIGHT_TCL)]} {
+    source [file normalize $::env(SC500_MOTOROLA_PREFLIGHT_TCL)]
+}
 load_run_param -run phy_1
 # Use the regular packed placement flow; direct legalization stalls for this netlist.
 set_param place direct_legalization off
 set_param place seed 3
 if {[info exists ::env(SC500_MOTOROLA_SEED)]} {set_param place seed $::env(SC500_MOTOROLA_SEED)}
 if {![info exists ::env(SC500_MOTOROLA_ROUTE_DB)]} {
-    place
-    report_area -io_info -file place.area
+    if {![info exists ::env(SC500_MOTOROLA_PLACE_DB)]} {
+        place
+        report_area -io_info -file place.area
+        export_db placed.db
+    }
     route
 }
 # Run a separate high-effort hold repair after the regular routing flow.

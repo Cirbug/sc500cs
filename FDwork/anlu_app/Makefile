@@ -103,9 +103,9 @@ LINKER_SCRIPT := ./lds/gcc_$(CHIP)_$(DOWNLOAD).ld
 # include rules.mk
 include $(SDK_ROOT)/tools/make/rules.mk
 
-# Keep startup stack-address loads intact. This toolchain can incorrectly
-# relax _sp to a GP-relative load as the TCM image grows.
-LDFLAGS += -Wl,--no-relax
+# Startup GP/TP/SP loads are protected by .option norelax in al_rv32_start.S.
+# Allow ordinary call/address relaxation to fit MCU-generated menu content.
+LDFLAGS += -Wl,--relax
 LDFLAGS += -flto
 
 # vim: syntax=make

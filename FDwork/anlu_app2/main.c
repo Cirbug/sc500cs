@@ -99,6 +99,8 @@ static inline void ui_write(uint32_t offset, uint32_t value)
     *ui_reg(offset) = value;
 }
 
+#include "../shared/mcu_menu.h"
+
 static void ui_ctrl(uint32_t menu, uint32_t edit, uint32_t info, uint32_t picture_page)
 {
     ui_write(UI_CTRL, (menu ? 1u : 0u) | (edit ? 2u : 0u) |
@@ -433,6 +435,7 @@ static void recorder_service(void) {
     max3421e_touch_poll();
     if(record_ui) {
         touchscreen_handle(record_ui);
+        mcu_menu_poll(record_ui);
         unsigned keys=ui_read(UI_KEY)&15u;
         if(keys) {focus_gesture=(TouchFocus){0};MenuState old=*record_ui;ui_write(UI_KEY,keys);menu_commit(record_ui,&old,menu_key(record_ui,keys));}
     }
@@ -517,6 +520,9 @@ AL_S32 main(void)
     /* APB 检查通过后自动显示菜单，便于直接确认 CPU 到 OSD 的链路。 */
     ui_write(UI_INDEX, ui.index);
     ui_ctrl(ui.menu, ui.edit, ui.info, ui.picture_page);
+    /* Publish before USB/Wi-Fi probing so the menu is visible during startup. */
+    mcu_menu_available=(ui_read(MCU_MENU_BASE)==MCU_MENU_ID);
+    mcu_menu_poll(&ui);
     g_ui_debug_stage = 4;
     /* USB diagnostics are bounded; the existing menu continues on failure. */
     max3421e_diag_init((uint32_t)UI_APB_BASE);
@@ -587,6 +593,7 @@ AL_S32 main(void)
         video_diag_poll((uint32_t)UI_APB_BASE);
         recorder_poll();
         wifi_mcu_poll(0);
+        mcu_menu_poll(&ui);
         g_ui_debug_stage = 6;
         AlSys_MDelay(1);
     }

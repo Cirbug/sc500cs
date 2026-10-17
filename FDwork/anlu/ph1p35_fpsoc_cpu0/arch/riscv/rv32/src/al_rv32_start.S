@@ -148,9 +148,12 @@ config_copy_done:
     /* Set correct sp for each cpu
      * each stack size is __STACK_SIZE
      * defined in linker script */
+    .option push
+    .option norelax
     la t0, _sp
     la t1, __STACK_SIZE
     la sp, _sp
+    .option pop
 #if defined(SMP_CPU_CNT) && SMP_CPU_CNT>1
     csrr a0, CSR_MHARTID
     li a1, 0

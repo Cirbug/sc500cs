@@ -1117,12 +1117,14 @@ module design_top_wrapper (
     wire [31:0] rec_rdata, legacy_rdata, rec_ui_status;
     wire legacy_ready, legacy_error;
     wire rec_select=(S_mcu_paddr[19:12]==8'h01);
+    wire menu_select=(S_mcu_paddr[19:12]==8'h02);
+    wire [31:0] menu_rdata;
     wire rec_block, rec_wr, rec_rd, video_read_valid;
     wire [24:0] rec_addr;
     wire [127:0] rec_data;
-    assign S_mcu_prdata=rec_select?rec_rdata:legacy_rdata;
-    assign S_mcu_pready=rec_select?1'b1:legacy_ready;
-    assign S_mcu_pslverr=rec_select?1'b0:legacy_error;
+    assign S_mcu_prdata=menu_select?menu_rdata:rec_select?rec_rdata:legacy_rdata;
+    assign S_mcu_pready=(rec_select || menu_select)?1'b1:legacy_ready;
+    assign S_mcu_pslverr=(rec_select || menu_select)?1'b0:legacy_error;
     sd_recorder u_recorder (
         .rst_n(S_rst_n), .apb_clk(S_mcu_apb_clk),
         .pixel_clk(S_hdmi_pixel_clk), .ddr_clk(S_ddr_clk),
@@ -1146,7 +1148,7 @@ module design_top_wrapper (
         .O_usb_res_n   ( S_apb_usb_res_n ),
         .O_usb_spi_enable ( S_apb_usb_spi_enable ),
         .I_paddr       ( S_mcu_paddr ),
-        .I_psel        ( S_mcu_psel && !rec_select ),
+        .I_psel        ( S_mcu_psel && !rec_select && !menu_select ),
         .I_penable     ( S_mcu_penable ),
         .I_pwrite      ( S_mcu_pwrite ),
         .I_pwdata      ( S_mcu_pwdata ),
@@ -1880,8 +1882,13 @@ isp_top u_isp_top (
         .H_ACTIVE(`HDMI_H_ACTIVE),
         .V_ACTIVE(`HDMI_V_ACTIVE),
         .RESULT_CHINESE(1),
+        .MCU_MENU(1),
         .PIXEL_CLOCK_HZ(`HDMI_PIXEL_CLOCK_HZ)
     ) u_ui_osd (
+        .I_apb_clk(S_mcu_apb_clk),.I_apb_rst_n(S_rst_n && S_hdmi_rst_n),
+        .I_menu_sel(S_mcu_psel && menu_select),.I_menu_penable(S_mcu_penable),
+        .I_menu_pwrite(S_mcu_pwrite),.I_menu_paddr(S_mcu_paddr[7:0]),
+        .I_menu_pstrobe(S_mcu_pstrobe),.I_menu_pwdata(S_mcu_pwdata),.O_menu_prdata(menu_rdata),
         .I_record_status (rec_ui_status),
         .I_mipi_clk(S_csi_rx_clk), .I_mipi_frame_start(S_csi_frame_start),
         .I_camera_display(S_camera_display_pixel),

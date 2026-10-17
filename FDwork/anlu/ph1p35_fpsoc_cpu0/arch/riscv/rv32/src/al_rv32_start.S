@@ -18,12 +18,6 @@
 
 #include "al_rv_sysregs.h"
 
-#ifdef AL_CAMERA_RELAX_BODY
-/* Camera TCM: retain exact vector layout and all boot address loads, notably
- * _sp. Only ordinary application code may use linker relaxation. */
-    .option norelax
-#endif
-
 
 /* Select instructions of different lengths depending
    on the riscv architecture */

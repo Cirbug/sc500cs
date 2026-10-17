@@ -14,7 +14,6 @@
 static uint32_t ms,regs[64],lens_diag_available=3;
 static uint32_t servo_writes,lens_moves,bus_started,bus_duration;
 static unsigned bus_pending,retry_fails;
-static unsigned metric_peak=7000,metric_divisor=1,metric_zero,freeze_frames;
 volatile RedTrackConfig g_track_config=RED_TRACK_DEFAULT_CONFIG;
 RedTrackControl g_track_control;
 volatile uint32_t g_track_capability=RED_TRACK_ID;
@@ -27,10 +26,9 @@ static uint32_t ui_read(uint32_t off)
         bus_pending=0;
     }
     if(off==UI_FOCUS_METRIC) {
-        unsigned p=regs[UI_LENS_POS/4],e=p>metric_peak?p-metric_peak:metric_peak-p;
-        return metric_zero ? 0 : (100000-e*5)/metric_divisor;
+        unsigned p=regs[UI_LENS_POS/4],e=p>7000?p-7000:7000-p;
+        return 100000-e*5;
     }
-    if(off==0xb8u) return freeze_frames ? 0u : ms/33u;
     return regs[off/4];
 }
 static void ui_write(uint32_t off,uint32_t value);
@@ -65,9 +63,6 @@ static void reset(void)
     ui=(MenuState){.servo_pan_us=1500,.servo_tilt_us=1500,.servo_menu_available=1,.image_step=5};
     ms=servo_writes=lens_moves=bus_pending=retry_fails=0;
     af_state=AF_IDLE;af_retried=af_move_pending=0;
-    af_automatic=af_local=0;af_manual_serial=0;g_target_focus_capability=0;
-    memset(&target_focus,0,sizeof target_focus);
-    metric_peak=7000;metric_divisor=1;metric_zero=freeze_frames=0;
     g_af_debug.requests=g_af_debug.reason=g_af_debug.diag=0;
     g_track_capability=RED_TRACK_ID;g_track_config.enabled=1;
     regs[UI_LENS_STAT/4]=2;regs[UI_LENS_POS/4]=8192;

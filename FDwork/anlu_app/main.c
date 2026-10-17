@@ -195,12 +195,8 @@ static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
     if(autofocus_active() && (s->servo_pan_us!=old->servo_pan_us ||
                              s->servo_tilt_us!=old->servo_tilt_us))
         autofocus_stop(AF_REASON_MANUAL);
-    if(s->image_step!=old->image_step || (actions & MENU_REACQUIRE)) {
+    if(s->image_step!=old->image_step || (actions & MENU_REACQUIRE))
         g_track_control.primed=0;
-        target_focus.have=target_focus.focused=0;
-        target_focus.stable_ms=ui_now_ms();
-        autofocus_cancel_auto();
-    }
     if(s->picture_available && picture_effective(s)!=picture_effective(old)) {
         ui_write(0x70, picture_effective(s));
         /* Read back hardware fields without saving Sobel's forced gamma as
@@ -358,7 +354,6 @@ AL_S32 main(void)
     ui.servo_menu_available = (ui.servo_pan_us >= 500u && ui.servo_pan_us <= 2500u &&
                             ui.servo_tilt_us >= 500u && ui.servo_tilt_us <= 2500u);
     g_track_capability=ui_read(UI_TRACK_ID);
-    g_target_focus_capability=ui_read(UI_TARGET_FOCUS_ID);
     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
     ui.picture_available=(ui_read(0x74)==0x50494331u);
     ui.picture=PICTURE_DEFAULT;

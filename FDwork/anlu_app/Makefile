@@ -58,7 +58,6 @@ ASM_SRCS :=
 # Share the existing integer formatter between UI/SD and exception/Wi-Fi logs.
 # This recovers TCM for tracking without reducing heap, stack or USB buffers.
 CFLAGS := -Os -g -flto -msave-restore -DAL_CAMERA_COMPACT_DIAG -DAL_CAMERA_SHARED_PRINTF
-CFLAGS += -DAL_CAMERA_RELAX_BODY
 # This application only formats integer diagnostics.  The SDK default pulls
 # in the floating-point printf formatter and wastes several KiB of the 48 KiB
 # TCM image.
@@ -104,9 +103,9 @@ LINKER_SCRIPT := ./lds/gcc_$(CHIP)_$(DOWNLOAD).ld
 # include rules.mk
 include $(SDK_ROOT)/tools/make/rules.mk
 
-# Startup assembly disables relaxation explicitly, preserving vector layout,
-# GP and _sp loads. Relax normal function calls to fit target AF in TCM.
-LDFLAGS += -Wl,--relax
+# Keep startup stack-address loads intact. This toolchain can incorrectly
+# relax _sp to a GP-relative load as the TCM image grows.
+LDFLAGS += -Wl,--no-relax
 LDFLAGS += -flto
 
 # vim: syntax=make

@@ -10,7 +10,7 @@ def main():
     root=Path(__file__).resolve().parent.parent
     out=(args.out or root/'build/autofocus_sim').resolve();out.mkdir(parents=True,exist_ok=True)
     env=os.environ.copy();env['PATH']=str(Path(args.gcc).parent)+os.pathsep+env['PATH']
-    for name in ['autofocus','focus_tracking','target_focus','touch_focus','red_track_control','picture_menu','record_menu','vts_menu']:
+    for name in ['autofocus','focus_tracking','touch_focus','red_track_control','picture_menu','record_menu','vts_menu']:
         exe=out/(name+'.exe')
         subprocess.run([args.gcc,'-std=c99','-O2','-Wall','-Wextra',str(root/'tests'/('test_'+name+'.c')),'-o',str(exe)],env=env,check=True)
         r=subprocess.run([str(exe)],env=env,capture_output=True,text=True)

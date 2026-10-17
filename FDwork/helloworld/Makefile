@@ -4,7 +4,7 @@ CHIP := ph1p35
 DOWNLOAD := tcm
 OUTPUT_DEV := USART1
 
-COMPILE_PREFIX := F:/AnlogicFpga/FD_2026.1/toolchain/gcc/riscv/ph1p35/bin/riscv64-unknown-elf-
+COMPILE_PREFIX := riscv64-unknown-elf-
 PLAT_DIR := $(SDK_ROOT)/solutions/boards/board_ph1p35_emulation
 TARGET_PATH := $(CURDIR)
 

@@ -24,7 +24,7 @@ APP_TAR_DIR ?= $(abspath .)/build
 APP_OBJ_DIR ?= $(APP_TAR_DIR)/obj
 
 
-COMPILE_PREFIX ?=
+export COMPILE_PREFIX ?= riscv64-unknown-elf-
 
 
 

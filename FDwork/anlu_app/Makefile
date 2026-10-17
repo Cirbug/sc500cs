@@ -24,7 +24,13 @@ APP_TAR_DIR ?= $(abspath .)/build
 APP_OBJ_DIR ?= $(APP_TAR_DIR)/obj
 
 
-COMPILE_PREFIX ?=
+export COMPILE_PREFIX ?= riscv64-unknown-elf-
+
+# Force the Anlogic Unix build tools (sh.exe + GNU find/grep/sed/tr).
+# Without this, make falls back to cmd.exe and the Windows `find` breaks the
+# linker's library enumeration in rules.mk, failing with "Error 2".
+override SHELL := D:/fang/toolchain/build-tools/bin/sh.exe
+override export PATH := D:/fang/toolchain/build-tools/bin;$(PATH)
 
 
 
@@ -105,6 +111,7 @@ include $(SDK_ROOT)/tools/make/rules.mk
 # relax _sp to a GP-relative load as the TCM image grows.
 LDFLAGS += -Wl,--no-relax
 LDFLAGS += -flto
+LDFLAGS += -Wl,--no-warn-rwx-segments
 
 # vim: syntax=make
 

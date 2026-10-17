@@ -1,0 +1,12 @@
+{
+    "MSS_FILE": "system.mss",
+    "arch": "rv32",
+    "chip": "ph1p35",
+    "hpfFile": "camera_to_dsi_display.hpf",
+    "location": "C:/Users/21397/Desktop/fpga1/sc500cs/FDwork/anlu",
+    "name": "anlu",
+    "os": "standalone",
+    "processor": "rpu",
+    "toolVersion": "2026.1",
+    "type": "platform"
+}

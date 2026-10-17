@@ -1,6 +1,8 @@
+param([string]$FdRoot = "D:\fang")
 $ErrorActionPreference = "Stop"
-$buildTools = "F:\AnlogicFpga\FD_2026.1\toolchain\build-tools\bin"
-$toolchain = "F:\AnlogicFpga\FD_2026.1\toolchain\gcc\riscv\ph1p35\bin"
+$PSNativeCommandUseErrorActionPreference = $false
+$buildTools = "$FdRoot\toolchain\build-tools\bin"
+$toolchain = "$FdRoot\toolchain\gcc\riscv\ph1p35\bin"
 $previousPath = $env:Path
 Push-Location $PSScriptRoot
 try {

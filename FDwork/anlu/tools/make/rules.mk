@@ -1,3 +1,9 @@
+# Ensure GNU build tools (sh.exe + GNU find/grep/sed/tr) are used on Windows.
+# Otherwise make falls back to cmd.exe and the Windows `find` breaks the
+# library enumeration in the ELF link step (Error 2 at this file's line ~380).
+override SHELL := D:/fang/toolchain/build-tools/bin/sh.exe
+override export PATH := D:/fang/toolchain/gcc/riscv/ph1p35/bin;D:/fang/toolchain/build-tools/bin;$(PATH)
+
 SDK_VERSION = 20260206
 AL_CFLAGS += -DSDK_VERSION=$(SDK_VERSION)
 #########################################################################

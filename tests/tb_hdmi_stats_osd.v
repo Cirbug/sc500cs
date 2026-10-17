@@ -10,14 +10,20 @@ module tb_hdmi_stats_osd;
         .I_picture_page(1'b0),.I_picture_ctrl(16'h1050),.I_record_status(32'd0),
         .I_exposure(16'd5990),.I_gain(16'd80),.I_servo_pan_us(16'd1500),.I_servo_tilt_us(16'd1500),
         .I_rtc_hours(8'h12),.I_rtc_minutes(8'h34),.I_rtc_seconds(8'h56),
-        .I_rtc_valid(1'b1),.I_rtc_error(1'b0),.I_rtc_osf(1'b0),.O_data(a),.O_vsync(av),.O_de(ad));
+        .I_rtc_valid(1'b1),.I_rtc_error(1'b0),.I_rtc_osf(1'b0),
+        .I_latency_bcd(12'h667),.I_camera_period_bcd(12'h333),.I_repeat_bcd(16'h0007),
+        .I_latency_valid(1'b1),.I_camera_period_valid(1'b1),
+        .O_data(a),.O_vsync(av),.O_de(ad));
     ui_osd #(.MENU_CHINESE(1),.PIXEL_CLOCK_HZ(1000)) chinese_osd(
         .I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),.I_de(de),.I_data(24'h526879),
         .I_menu_enable(1'b0),.I_edit_enable(1'b0),.I_info_enable(1'b0),.I_menu_index(3'd0),
         .I_picture_page(1'b0),.I_picture_ctrl(16'h1050),.I_record_status(32'd0),
         .I_exposure(16'd5990),.I_gain(16'd80),.I_servo_pan_us(16'd1500),.I_servo_tilt_us(16'd1500),
         .I_rtc_hours(8'h12),.I_rtc_minutes(8'h34),.I_rtc_seconds(8'h56),
-        .I_rtc_valid(1'b1),.I_rtc_error(1'b0),.I_rtc_osf(1'b0),.O_data(b),.O_vsync(bv),.O_de(bd));
+        .I_rtc_valid(1'b1),.I_rtc_error(1'b0),.I_rtc_osf(1'b0),
+        .I_latency_bcd(12'h667),.I_camera_period_bcd(12'h333),.I_repeat_bcd(16'h0007),
+        .I_latency_valid(1'b1),.I_camera_period_valid(1'b1),
+        .O_data(b),.O_vsync(bv),.O_de(bd));
     reg [23:0] old_pixel=0;
     reg old_de=0,old_vs=0;
     task tick;
@@ -54,14 +60,14 @@ module tb_hdmi_stats_osd;
         for(i=0;i<1000;i=i+1) begin vs=(i==99 || i==199 || i==299);tick();end
         vs=1;tick();vs=0;tick(); // fourth frame, displays prior window = 3 FPS
         fd=$fopen("build/hdmi_stats_preview.ppm","w");
-        $fwrite(fd,"P3\n1920 112\n255\n");
-        for(py=0;py<112;py=py+1) begin
+        $fwrite(fd,"P3\n1920 200\n255\n");
+        for(py=0;py<200;py=py+1) begin
             de=1;
             for(px=0;px<1920;px=px+1) begin
                 tick();
                 $fwrite(fd,"%d %d %d\n",a[23:16],a[15:8],a[7:0]);
                 if(!((px>=818 && px<1102 && py>=16 && py<60) ||
-                     (px>=1440 && px<1904 && py>=16 && py<96)) && a!==24'h526879)
+                     (px>=1440 && px<1904 && py>=16 && py<200)) && a!==24'h526879)
                     $fatal(1,"Overlay outside panels");
                 if((py==24 || py==60) && px>=1448 && px<1896) begin
                     line=py==24 ? "HDMI FPS 003  " : "FRAME 00000004";

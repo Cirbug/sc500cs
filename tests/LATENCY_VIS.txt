@@ -1,0 +1,52 @@
+采集到显示 处理延迟可视化方案 / 2026-10-17
+
+一、目的
+  在 HDMI OSD 右上角统计面板新增三行，直观体现系统实时性：
+    LAT xx.xms   采集 -> 显示 处理延迟（glass-to-glass）
+    CAM xx.xms   摄像头实际帧周期（验证 ~33.3ms / 30fps）
+    REP xxxx     显示重复帧计数（同一 DDR 缓冲被连续扫出的次数）
+
+二、测量口径（glass-to-glass）
+  数据流：SC500 传感器 -> MIPI RX -> CSI 解包 -> RAW10 -> ISP -> video_in
+          -> DDR -> video_out -> HDMI。
+  双缓冲架构：第 N 帧在第 N+1 次摄像头帧起始(S_csi_frame_start)时发布读指针，
+  并于其后第一个 HDMI VSYNC 开始扫出。因此任一 VSYNC 正在显示的帧，采集于
+  “倒数第二次”帧起始：
+        latency = T_disp(VSYNC) - T_cap(倒数第二次帧起始)。
+  该口径已包含：曝光/传输、ISP、DDR 写入、等待下一个显示场、DDR 读出。
+
+三、实现
+  新文件 user_source/hdl_source/capture_display_latency.v（自包含，无 IP）：
+    - 时间基准：像素时钟每 PIXEL_CLOCK_HZ/10000 周期计 0.1ms，自由运行二进制
+      计数器相减，像素/OSD 路径不引入除法器。
+    - 跨时钟域：cam_frame_start 用 toggle 同步器（脉冲->翻转->同步->边沿检测）
+      从 S_csi_rx_clk 跨到 S_hdmi_pixel_clk，对多周期脉冲也安全。
+    - 输出 BCD：延迟/周期用“串行（逐位）double-dabble”转 3 位 BCD（0.1ms 单位，
+      "xx.x"），每时钟一位，避免 ~30 级组合深路径在 75MHz 下违例；重复帧计数
+      用 4 位 BCD 自增。
+    - 慢速平均：LAT/CAM 每 AVG_WINDOW 个样本（默认 16，≈0.5 秒）累加求一次平均，
+      屏幕数字约每半秒跳一次，肉眼可读（不再每帧 30Hz 抖动）。
+  顶层 design_top_wrapper.v：
+    - 实例化 u_latency，采集起始接 S_csi_frame_start（cam_clk=S_csi_rx_clk），
+      显示场起始接 S_hdmi_vsync（clk=S_hdmi_pixel_clk）。
+    - 输出经 S_latency_bcd / S_cam_period_bcd / S_repeat_bcd 等接入 ui_osd。
+  ui_osd.v：
+    - 新增 5 个输入端口，帧起始锁存后绘制；统计面板从 2 行扩到 5 行。
+
+四、验证
+  仿真 tests/tb_capture_display_latency.v（Icarus，无 IP）：
+    PIXEL_CLOCK_HZ=1000 时 1 时钟 = 0.1ms，AVG_WINDOW=4 快速验证平均逻辑。检查：
+    - 延迟/周期平均正确、有效性门控（0/1/2 帧）；
+    - 周期平均精确 330（=33.0ms，CDC 固定延迟在差值中抵消）；
+    - 重复帧计数、异步 CDC、复位清零。
+  运行：iverilog -o build/tb_capture_display_latency.vvp \
+        user_source/hdl_source/capture_display_latency.v \
+        tests/tb_capture_display_latency.v && vvp build/tb_capture_display_latency.vvp
+
+五、实板验证（需下载 bit 后）
+  - LAT 应约 40~67ms（约 1 个采集帧周期 + 显示相位），CAM 约 33.3ms；
+    二者为约 0.5 秒的平均值，数字每半秒跳一次，肉眼可读；
+  - 30fps 采集对 30.303Hz 显示存在偶发重复，REP 会缓慢累加，体现 CAMERA30.txt
+    所述的独立时序差异；该指标不承诺零重复。
+  - 全 TD 构建：tests/build_camera30.tcl（或复用现有 build_*.tcl 流程），
+    确认新增逻辑的建立/保持时序与资源占用。

@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$buildTools = "F:\AnlogicFpga\FD_2026.1\toolchain\build-tools\bin"
-$toolchain = "F:\AnlogicFpga\FD_2026.1\toolchain\gcc\riscv\ph1p35\bin"
+$buildTools = "D:\fang\toolchain\build-tools\bin"
+$toolchain = "D:\fang\toolchain\gcc\riscv\ph1p35\bin"
 $make = Join-Path $buildTools "make.exe"
 
 if (-not (Test-Path -LiteralPath $make)) {

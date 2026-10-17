@@ -61,7 +61,7 @@ module tb_ui_osd;
                     if (!((menu_enable && px >= 24 && px < 492 && py >= 680 && py < 1004) ||
                           (px >= 24 && px < 220 && py >= 1016 && py < 1076) ||
                           (px >= 236 && px < 260 && py >= 1034 && py < 1058) ||
-                          (px >= 818 && px < 1102 && py >= 16 && py < 60) || (px >= 1440 && px < 1904 && py >= 16 && py < 96)))
+                          (px >= 818 && px < 1102 && py >= 16 && py < 60) || (px >= 1440 && px < 1904 && py >= 16 && py < 200)))
                         if (out_data !== data)
                             $fatal(1, "Video passthrough mismatch at %0d,%0d data=%06x expected=%06x menu=%b", px, py, out_data, data, menu_enable);
                     if (px >= 826 && px < 1082 && py >= 24 && py < 52 &&

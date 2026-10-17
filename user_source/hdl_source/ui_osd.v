@@ -34,6 +34,11 @@ module ui_osd #(
     input  wire        I_rtc_valid,
     input  wire        I_rtc_error,
     input  wire        I_rtc_osf,
+    input  wire [11:0] I_latency_bcd,
+    input  wire [11:0] I_camera_period_bcd,
+    input  wire [15:0] I_repeat_bcd,
+    input  wire        I_latency_valid,
+    input  wire        I_camera_period_valid,
     output reg         O_vsync,
     output reg         O_hsync,
     output reg         O_de,
@@ -72,6 +77,9 @@ module ui_osd #(
     wire hdmi_fps_valid;
     reg [11:0] fps_frame;
     reg fps_valid_frame;
+    reg [11:0] latency_frame, period_frame;
+    reg [15:0] repeat_frame;
+    reg latency_valid_frame, period_valid_frame;
     hdmi_frame_stats #(.PIXEL_CLOCK_HZ(PIXEL_CLOCK_HZ)) frame_stats(
         .clk(I_clk), .rst_n(I_rst_n), .vsync(I_vsync),
         .frames_bcd(hdmi_frames), .fps_bcd(hdmi_fps), .fps_valid(hdmi_fps_valid));
@@ -712,19 +720,19 @@ module ui_osd #(
                             24'hffffff : 24'hffb080;
             end
         end
-        // Right-aligned output statistics. Values change only in vertical
-        // blanking, keeping all digits of an active frame consistent.
-        if(x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<96) begin
+        // Right-aligned output statistics + capture->display latency. Values
+        // change only in vertical blanking, keeping all digits of an active
+        // frame consistent.
+        if(x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<200) begin
             pixel=24'h101820;
-            if(x<STATS_X0+4 || x>=STATS_X0+460 || y<20 || y>=92)
+            if(x<STATS_X0+4 || x>=STATS_X0+460 || y<20 || y>=196)
                 pixel=24'h306080;
-            if(x>=STATS_X0+8 && x<STATS_X0+456 &&
-               ((y>=24 && y<52) || (y>=60 && y<88))) begin
+            if(x>=STATS_X0+8 && x<STATS_X0+456) begin
                 text_x=x-(STATS_X0+8);
                 char_no=text_x[8:5]; col=text_x[4:2];
-                row=(y<60 ? y-24 : y-60)>>2;
                 ch=" ";
-                if(y<60) begin
+                if(y>=24 && y<52) begin
+                    row=(y-24)>>2;
                     case(char_no)
                         0:ch="H"; 1:ch="D"; 2:ch="M"; 3:ch="I";
                         5:ch="F"; 6:ch="P"; 7:ch="S";
@@ -733,7 +741,8 @@ module ui_osd #(
                         11:ch=fps_valid_frame ? "0"+fps_frame[3:0] : "-";
                         default:ch=" ";
                     endcase
-                end else begin
+                end else if(y>=60 && y<88) begin
+                    row=(y-60)>>2;
                     case(char_no)
                         0:ch="F"; 1:ch="R"; 2:ch="A"; 3:ch="M"; 4:ch="E";
                         6:ch="0"+hdmi_frames[31:28]; 7:ch="0"+hdmi_frames[27:24];
@@ -742,6 +751,38 @@ module ui_osd #(
                         12:ch="0"+hdmi_frames[7:4]; 13:ch="0"+hdmi_frames[3:0];
                         default:ch=" ";
                     endcase
+                end else if(y>=96 && y<124) begin
+                    row=(y-96)>>2;
+                    case(char_no)
+                        0:ch="L"; 1:ch="A"; 2:ch="T";
+                        4:ch=latency_valid_frame ? "0"+latency_frame[11:8] : "-";
+                        5:ch=latency_valid_frame ? "0"+latency_frame[7:4]  : "-";
+                        6:ch=".";
+                        7:ch=latency_valid_frame ? "0"+latency_frame[3:0]  : "-";
+                        9:ch="M"; 10:ch="S";
+                        default:ch=" ";
+                    endcase
+                end else if(y>=132 && y<160) begin
+                    row=(y-132)>>2;
+                    case(char_no)
+                        0:ch="C"; 1:ch="A"; 2:ch="M";
+                        4:ch=period_valid_frame ? "0"+period_frame[11:8] : "-";
+                        5:ch=period_valid_frame ? "0"+period_frame[7:4]  : "-";
+                        6:ch=".";
+                        7:ch=period_valid_frame ? "0"+period_frame[3:0]  : "-";
+                        9:ch="M"; 10:ch="S";
+                        default:ch=" ";
+                    endcase
+                end else if(y>=168 && y<196) begin
+                    row=(y-168)>>2;
+                    case(char_no)
+                        0:ch="R"; 1:ch="E"; 2:ch="P";
+                        4:ch="0"+repeat_frame[15:12]; 5:ch="0"+repeat_frame[11:8];
+                        6:ch="0"+repeat_frame[7:4];  7:ch="0"+repeat_frame[3:0];
+                        default:ch=" ";
+                    endcase
+                end else begin
+                    row=3'd0;
                 end
                 glyph=glyph_bits(ch,row);
                 if(col<5 && ((glyph & (5'b10000 >> col))!=0)) pixel=24'h80e0ff;
@@ -756,6 +797,8 @@ module ui_osd #(
             rtc_hours_frame <= 0; rtc_minutes_frame <= 0; rtc_seconds_frame <= 0;
             rtc_valid_frame <= 0;
             fps_frame<=0; fps_valid_frame<=0;
+            latency_frame<=0; period_frame<=0; repeat_frame<=0;
+            latency_valid_frame<=0; period_valid_frame<=0;
             picture_frame <= 16'h1050; black_tens<="1"; black_ones<="6";
             exposure_bar_width <= 8'd48;
             gain_bar_width <= 8'd64;
@@ -784,6 +827,10 @@ module ui_osd #(
             if(I_vsync && !vs_d) begin
                 focus_roi_frame<=I_focus_roi;
                 fps_frame<=hdmi_fps; fps_valid_frame<=hdmi_fps_valid;
+                latency_frame<=I_latency_bcd; period_frame<=I_camera_period_bcd;
+                repeat_frame<=I_repeat_bcd;
+                latency_valid_frame<=I_latency_valid;
+                period_valid_frame<=I_camera_period_valid;
                 picture_frame<=I_picture_ctrl;
                 black_tens<="0"+I_picture_ctrl[5:0]/10;
                 black_ones<="0"+I_picture_ctrl[5:0]%10;

@@ -11,6 +11,10 @@ module ui_osd #(
     input  wire        I_clk,
     input  wire        I_rst_n,
     input  wire        I_vsync,
+    // BCD measurements already synchronized into I_clk by mipi_frame_stats.
+    input  wire [31:0] I_mipi_frames,
+    input  wire [11:0] I_mipi_fps,
+    input  wire        I_mipi_fps_valid,
     input  wire        I_hsync,
     input  wire        I_de,
     input  wire [23:0] I_data,
@@ -72,6 +76,13 @@ module ui_osd #(
     wire hdmi_fps_valid;
     reg [11:0] fps_frame;
     reg fps_valid_frame;
+    reg [31:0] mipi_frames_frame;
+    reg [11:0] mipi_fps_frame;
+    reg mipi_fps_valid_frame;
+    wire stats_mipi = (y>=96);
+    wire [31:0] stats_frames = stats_mipi ? mipi_frames_frame : hdmi_frames;
+    wire [11:0] stats_fps = stats_mipi ? mipi_fps_frame : fps_frame;
+    wire stats_valid = stats_mipi ? mipi_fps_valid_frame : fps_valid_frame;
     hdmi_frame_stats #(.PIXEL_CLOCK_HZ(PIXEL_CLOCK_HZ)) frame_stats(
         .clk(I_clk), .rst_n(I_rst_n), .vsync(I_vsync),
         .frames_bcd(hdmi_frames), .fps_bcd(hdmi_fps), .fps_valid(hdmi_fps_valid));
@@ -714,37 +725,40 @@ module ui_osd #(
         end
         // Right-aligned output statistics. Values change only in vertical
         // blanking, keeping all digits of an active frame consistent.
-        if(x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<96) begin
+        if(x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<168) begin
             pixel=24'h101820;
-            if(x<STATS_X0+4 || x>=STATS_X0+460 || y<20 || y>=92)
+            if(x<STATS_X0+4 || x>=STATS_X0+460 || y<20 || y>=164)
                 pixel=24'h306080;
             if(x>=STATS_X0+8 && x<STATS_X0+456 &&
-               ((y>=24 && y<52) || (y>=60 && y<88))) begin
+               ((y>=24 && y<52) || (y>=60 && y<88) ||
+                (y>=96 && y<124) || (y>=132 && y<160))) begin
                 text_x=x-(STATS_X0+8);
                 char_no=text_x[8:5]; col=text_x[4:2];
-                row=(y<60 ? y-24 : y-60)>>2;
+                row=(y<60 ? y-24 : y<96 ? y-60 : y<132 ? y-96 : y-132)>>2;
                 ch=" ";
-                if(y<60) begin
+                if(y<60 || (y>=96 && y<132)) begin
                     case(char_no)
-                        0:ch="H"; 1:ch="D"; 2:ch="M"; 3:ch="I";
+                        0:ch=stats_mipi ? "M" : "H"; 1:ch=stats_mipi ? "I" : "D";
+                        2:ch=stats_mipi ? "P" : "M"; 3:ch="I";
                         5:ch="F"; 6:ch="P"; 7:ch="S";
-                        9:ch=fps_valid_frame ? "0"+fps_frame[11:8] : "-";
-                        10:ch=fps_valid_frame ? "0"+fps_frame[7:4] : "-";
-                        11:ch=fps_valid_frame ? "0"+fps_frame[3:0] : "-";
+                        9:ch=stats_valid ? "0"+stats_fps[11:8] : "-";
+                        10:ch=stats_valid ? "0"+stats_fps[7:4] : "-";
+                        11:ch=stats_valid ? "0"+stats_fps[3:0] : "-";
                         default:ch=" ";
                     endcase
                 end else begin
                     case(char_no)
                         0:ch="F"; 1:ch="R"; 2:ch="A"; 3:ch="M"; 4:ch="E";
-                        6:ch="0"+hdmi_frames[31:28]; 7:ch="0"+hdmi_frames[27:24];
-                        8:ch="0"+hdmi_frames[23:20]; 9:ch="0"+hdmi_frames[19:16];
-                        10:ch="0"+hdmi_frames[15:12]; 11:ch="0"+hdmi_frames[11:8];
-                        12:ch="0"+hdmi_frames[7:4]; 13:ch="0"+hdmi_frames[3:0];
+                        6:ch="0"+stats_frames[31:28]; 7:ch="0"+stats_frames[27:24];
+                        8:ch="0"+stats_frames[23:20]; 9:ch="0"+stats_frames[19:16];
+                        10:ch="0"+stats_frames[15:12]; 11:ch="0"+stats_frames[11:8];
+                        12:ch="0"+stats_frames[7:4]; 13:ch="0"+stats_frames[3:0];
                         default:ch=" ";
                     endcase
                 end
                 glyph=glyph_bits(ch,row);
-                if(col<5 && ((glyph & (5'b10000 >> col))!=0)) pixel=24'h80e0ff;
+                if(col<5 && ((glyph & (5'b10000 >> col))!=0))
+                    pixel=stats_mipi ? 24'h80ffb0 : 24'h80e0ff;
             end
         end
     end
@@ -756,6 +770,7 @@ module ui_osd #(
             rtc_hours_frame <= 0; rtc_minutes_frame <= 0; rtc_seconds_frame <= 0;
             rtc_valid_frame <= 0;
             fps_frame<=0; fps_valid_frame<=0;
+            mipi_frames_frame<=0; mipi_fps_frame<=0; mipi_fps_valid_frame<=0;
             picture_frame <= 16'h1050; black_tens<="1"; black_ones<="6";
             exposure_bar_width <= 8'd48;
             gain_bar_width <= 8'd64;
@@ -784,6 +799,9 @@ module ui_osd #(
             if(I_vsync && !vs_d) begin
                 focus_roi_frame<=I_focus_roi;
                 fps_frame<=hdmi_fps; fps_valid_frame<=hdmi_fps_valid;
+                mipi_frames_frame<=I_mipi_frames;
+                mipi_fps_frame<=I_mipi_fps;
+                mipi_fps_valid_frame<=I_mipi_fps_valid;
                 picture_frame<=I_picture_ctrl;
                 black_tens<="0"+I_picture_ctrl[5:0]/10;
                 black_ones<="0"+I_picture_ctrl[5:0]%10;

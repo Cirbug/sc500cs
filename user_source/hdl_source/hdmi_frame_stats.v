@@ -46,4 +46,41 @@ module hdmi_frame_stats #(
         end
     end
 endmodule
+
+// Count received CSI frame-start packets, independently of HDMI refreshes.
+// rst_n is a common measurement reset for both domains. Frame events must be
+// separated by at least four destination clocks (camera frames are ~33 ms apart).
+module mipi_frame_stats #(
+    parameter integer PIXEL_CLOCK_HZ = 75000000
+)(
+    input wire rx_clk, rx_frame_start,
+    input wire clk, rst_n,
+    output wire [31:0] frames_bcd,
+    output wire [11:0] fps_bcd,
+    output wire fps_valid
+);
+    reg rx_toggle;
+    reg rx_frame_d;
+    always @(posedge rx_clk or negedge rst_n) begin
+        if(!rst_n) begin rx_toggle<=0; rx_frame_d<=0; end
+        else begin
+            rx_frame_d<=rx_frame_start;
+            if(rx_frame_start && !rx_frame_d) rx_toggle<=~rx_toggle;
+        end
+    end
+    (* ASYNC_REG="TRUE" *) reg [1:0] toggle_sync;
+    reg toggle_seen;
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin toggle_sync<=0; toggle_seen<=0; end
+        else begin
+            toggle_sync<={toggle_sync[0],rx_toggle};
+            toggle_seen<=toggle_sync[1];
+        end
+    end
+    // Only the fully synchronized stage reaches the event detector.
+    wire received_frame = toggle_sync[1] ^ toggle_seen;
+    hdmi_frame_stats #(.PIXEL_CLOCK_HZ(PIXEL_CLOCK_HZ)) counter(
+        .clk(clk), .rst_n(rst_n), .vsync(received_frame),
+        .frames_bcd(frames_bcd), .fps_bcd(fps_bcd), .fps_valid(fps_valid));
+endmodule
 `endif

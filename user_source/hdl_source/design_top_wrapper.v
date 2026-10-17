@@ -1809,6 +1809,16 @@ isp_top u_isp_top (
         .O_frame_toggle ( S_focus_frame_toggle )
     );
 
+    wire [31:0] S_mipi_frames_bcd;
+    wire [11:0] S_mipi_fps_bcd;
+    wire S_mipi_fps_valid;
+    mipi_frame_stats #(.PIXEL_CLOCK_HZ(`HDMI_PIXEL_CLOCK_HZ)) u_mipi_frame_stats (
+        .rx_clk(S_csi_rx_clk), .rx_frame_start(S_csi_frame_start),
+        .clk(S_hdmi_pixel_clk), .rst_n(S_rst_n && S_hdmi_rst_n),
+        .frames_bcd(S_mipi_frames_bcd), .fps_bcd(S_mipi_fps_bcd),
+        .fps_valid(S_mipi_fps_valid)
+    );
+
     ui_osd #(
         .H_ACTIVE(`HDMI_H_ACTIVE),
         .V_ACTIVE(`HDMI_V_ACTIVE),
@@ -1818,6 +1828,9 @@ isp_top u_isp_top (
         .I_clk          ( S_hdmi_pixel_clk ),
         .I_rst_n        ( S_hdmi_rst_n ),
         .I_vsync        ( S_final_vsync ),
+        .I_mipi_frames  ( S_mipi_frames_bcd ),
+        .I_mipi_fps     ( S_mipi_fps_bcd ),
+        .I_mipi_fps_valid ( S_mipi_fps_valid ),
         .I_hsync        ( S_final_hsync ),
         .I_de           ( S_final_de ),
         .I_data         ( S_final_data ),

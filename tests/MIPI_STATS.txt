@@ -1,0 +1,71 @@
+MIPI input frame telemetry
+
+Measurement point
+  design_top_wrapper.S_csi_frame_start is emitted by csi_unpacket_2lane for
+  received CSI frame-start packets in S_csi_rx_clk. This counts input frame
+  starts, not HDMI refreshes, complete/error-free frames, or unique DDR images.
+  It does not measure end-to-end latency or packet integrity.
+
+Implementation
+  mipi_frame_stats in hdmi_frame_stats.v converts each source rising edge to
+  a toggle. Two destination synchronizer stages plus a delayed synchronized
+  value recover events in the HDMI pixel clock domain. The first metastable
+  stage is never used directly in event detection. Frame separation must be
+  at least four destination clock periods; camera intervals are much longer.
+  Both domains share S_rst_n AND S_hdmi_rst_n as the measurement reset.
+  Counters start from zero when that reset is released; this is not necessarily
+  the first sensor frame since physical power-on. The source reset is
+  asynchronous so stopping the MIPI clock does not prevent clearing parity.
+  Existing asynchronous MIPI/HDMI clock-group constraints remain in use.
+
+  FPS counts received events per 75,000,000 HDMI pixel clocks, nominally 1 s.
+  The time reference is the configured 75 MHz clock, not an external frequency
+  standard. Boundary quantization can produce neighboring integer FPS values.
+  No input events for a whole window produces 000 FPS; total count holds.
+  The eight-digit BCD total saturates at 99,999,999. Reset clears it.
+
+Display
+  Right panel retains HDMI FPS and FRAME, then adds MIPI FPS and FRAME below.
+  HDMI uses cyan; MIPI uses green. The panel is x=1440..1903, y=16..167 at
+  1920x1080. The centered clock and lower-left touch menu are retained.
+  MIPI FPS is --- until the first window completes. MIPI digits are latched
+  together at output VSYNC to prevent tearing while camera events arrive.
+  HDMI total and MIPI total are independent: their difference is NOT latency.
+
+Validation commands (from project root, Icarus Verilog on PATH)
+  iverilog -g2012 -s tb_mipi_frame_stats -o build/mipi_stats.vvp tests/tb_mipi_frame_stats.v user_source/hdl_source/hdmi_frame_stats.v
+  vvp build/mipi_stats.vvp
+  iverilog -g2012 -s tb_hdmi_frame_stats -o build/hdmi_stats.vvp tests/tb_hdmi_frame_stats.v user_source/hdl_source/hdmi_frame_stats.v
+  vvp build/hdmi_stats.vvp
+  iverilog -g2012 -I user_source/hdl_source -s tb_hdmi_stats_osd -o build/mipi_osd.vvp tests/tb_hdmi_stats_osd.v user_source/hdl_source/ui_osd.v
+  vvp build/mipi_osd.vvp
+  Tests cover unrelated clock phases, short/wide source pulses, window
+  boundaries, idle/stopped clock, resume, reset, decimal carry/saturation,
+  independent rendered numbers, panel bounds and Chinese video alignment.
+
+FPGA build
+  Run tests/build_mipi_stats.tcl with the same TD 6.2.168.116 installation as
+  the camera30 baseline. MCU PAD JTAG/boot settings are checked before build.
+  Outputs go outside the project to ../bank/mipi_stats_20261015/.
+  Firmware and sensor exposure/VTS settings are unchanged.
+
+Completed build / 2026-10-16
+  Output: ../bank/mipi_stats_20261015/camera_to_dsi_display_mipi_stats.bit
+  The initial run was interrupted. Resume imported the unchanged gate
+  checkpoint, then completed placement, routing and bitgen (resume4.log).
+  Source HDL/IP/project hashes still match the pre-build snapshot.
+  Setup WNS +0.041 ns, setup TNS 0; hold WNS +0.020 ns, hold TNS 0.
+  These are results under the existing project constraints, not a board test.
+  Slice 19844/21216 (93.53%), LUT 19319, registers 16634, ERAM 69, DSP 14.
+  Compared with camera30: +168 Slice, +175 LUT, +108 registers; RAM/DSP unchanged.
+  SHA256: 10884d621be943125b5fb1272d535873f4eb77b57ee3ed2d5f98937a9ab4eba0
+  No FPGA flashing or MCU firmware update was performed.
+
+Board check (not performed by simulation)
+  Load the new FPGA bit, then restart/load the matching existing MCU program
+  if needed. No MCU firmware source update is required by this telemetry.
+  After a few seconds photograph the four right-hand rows twice, 10 s apart.
+  The MIPI total delta is the received input frame count in that interval;
+  the camera30 configuration is nominally 30 fps, so expect about 300 new
+  input starts per 10 s. Use the displayed measurement as the actual result.
+  HDMI still refreshes at about 30.303 Hz, so the two totals need not match.

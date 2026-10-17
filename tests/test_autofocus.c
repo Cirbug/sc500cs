@@ -51,6 +51,14 @@ static void reset(void)
     af_state=AF_IDLE;af_retried=af_move_pending=0;
 }
 static void poll_at(uint32_t now) {ms=now;autofocus_task();}
+static void start_scan(void)
+{
+    unsigned before=moves;
+    autofocus_restart();autofocus_task();
+    assert(autofocus_active() && moves==before);
+    poll_at(ms+AF_GIMBAL_SETTLE_MS);
+    assert(af_state==AF_COARSE && moves==before+1);
+}
 static void finish(unsigned cadence)
 {
     for(unsigned i=0;i<20000 && af_state!=AF_IDLE;i++) poll_at(ms+cadence);
@@ -63,17 +71,22 @@ int main(void)
     autofocus_restart();autofocus_task();
     assert(moves==0 && af_state==AF_START && g_af_debug.requests==1);
     regs[UI_LENS_STAT/4]=2;poll_at(25);
+    assert(moves==0 && g_af_debug.reason==AF_REASON_WAIT_GIMBAL);
+    poll_at(199);assert(moves==0);
+    poll_at(200);
     assert(moves==1 && af_state==AF_COARSE);
     puts("PASS AF during startup busy stays queued and scans when ready");
 
     reset();regs[UI_LENS_STAT/4]=3;
     autofocus_restart();autofocus_task();assert(moves==0);
-    regs[UI_LENS_STAT/4]=2;poll_at(10);assert(moves==1);
+    regs[UI_LENS_STAT/4]=2;poll_at(10);assert(moves==0);
+    poll_at(200);assert(moves==1);
     puts("PASS healthy background busy never receives an overlapping command");
 
     reset();regs[UI_LENS_STAT/4]=6;
     autofocus_restart();autofocus_task();assert(retries==1 && moves==0);
-    poll_at(23);assert(moves==1 && af_state==AF_COARSE && g_af_debug.diag!=0);
+    poll_at(23);assert(moves==0 && af_state==AF_RECOVER);
+    poll_at(200);assert(moves==1 && af_state==AF_COARSE && g_af_debug.diag!=0);
     finish(5);assert(retries==1);
     puts("PASS error -> one retry -> successful init -> complete coarse/fine scan without second tap");
 
@@ -84,17 +97,19 @@ int main(void)
     assert(retries==1 && moves==0);
     puts("PASS permanent I2C fault stops after one retry; idle does not move lens");
 
-    reset();autofocus_restart();autofocus_task();poll_at(3);
+    reset();start_scan();poll_at(ms+3);
     regs[UI_LENS_STAT/4]=6;autofocus_task();
     assert(retries==1 && af_state==AF_RECOVER);
-    poll_at(ms+23);assert(af_state==AF_COARSE && regs[UI_LENS_POS/4]==0);
+    poll_at(ms+23);assert(af_state==AF_RECOVER);
+    poll_at(ms+177);assert(af_state==AF_COARSE && regs[UI_LENS_POS/4]==0);
     move_fails=1;poll_at(ms+3);
     assert(af_state==AF_IDLE && g_af_debug.reason==AF_REASON_I2C_ERROR && retries==1);
     puts("PASS mid-scan I2C failure restarts from a known position; retry budget covers the whole request");
 
-    reset();autofocus_restart();autofocus_task();
+    reset();start_scan();
     autofocus_restart();autofocus_task();assert(moves==1);
-    poll_at(3);assert(moves==2 && g_af_debug.requests==2);
+    poll_at(ms+3);assert(moves==1);
+    poll_at(ms+197);assert(moves==2 && g_af_debug.requests==2);
     puts("PASS new AF request during a position write waits for completion before restarting");
 
     reset();regs[UI_LENS_STAT/4]=1;
@@ -105,30 +120,30 @@ int main(void)
     poll_at(1000);assert(af_state==AF_IDLE && g_af_debug.reason==AF_REASON_TIMEOUT);
     puts("PASS stuck busy and never-initialized lens time out instead of hanging");
 
-    reset();autofocus_restart();autofocus_task();poll_at(3);
+    reset();start_scan();poll_at(203);
     for(unsigned i=0;i<10000;i++) autofocus_task();
     assert(reads==0);
-    poll_at(82);assert(reads==0);
-    poll_at(83);assert(reads==1 && last_read_ms==83);
-    poll_at(122);assert(reads==1);
-    poll_at(123);assert(reads==2);
-    poll_at(163);assert(reads==3 && moves==2);
+    poll_at(282);assert(reads==0);
+    poll_at(283);assert(reads==1 && last_read_ms==283);
+    poll_at(322);assert(reads==1);
+    poll_at(323);assert(reads==2);
+    poll_at(363);assert(reads==3 && moves==2);
     puts("PASS 80 ms after bus idle then 40 ms spacing; rapid SD callbacks cannot accelerate AF");
 
-    reset();ms=0xfffffff0u;autofocus_restart();autofocus_task();
+    reset();ms=0xfffffff0u;start_scan();
     poll_at(ms+3);poll_at(ms+79);assert(reads==0);
     poll_at(ms+1);assert(reads==1);
     finish(5);
     puts("PASS unsigned hardware-timer wrap and cooperative 5 ms service");
 
-    reset();autofocus_restart();autofocus_task();
+    reset();start_scan();
     for(unsigned i=0;i<20000 && af_state!=AF_RETURN;i++) poll_at(ms+1);
     assert(af_state==AF_RETURN && g_af_debug.reason!=AF_REASON_DONE);
     move_fails=1;lens_diag_available=0;poll_at(ms+3);
     assert(af_state==AF_IDLE && g_af_debug.reason==AF_REASON_I2C_ERROR);
     puts("PASS final best-position write failure is not reported as focus completion");
 
-    reset();autofocus_restart();autofocus_task();poll_at(3);
+    reset();start_scan();poll_at(ms+3);
     manual_focus_step(1);assert(af_state==AF_IDLE && g_af_debug.reason==AF_REASON_MANUAL);
     assert(regs[UI_LENS_POS/4]==64u);
     poll_at(ms+3);assert(moves==2);

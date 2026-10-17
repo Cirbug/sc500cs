@@ -6,7 +6,7 @@
 #define UI_TRACK_STATUS 0xacu
 #define UI_TRACK_ERRORS 0xb0u
 #define RED_TRACK_ID 0x54524b31u
-enum { TRACK_OFF, TRACK_WAIT, TRACK_SEARCH, TRACK_LOCKED, TRACK_MANUAL, TRACK_STALE };
+enum { TRACK_OFF, TRACK_WAIT, TRACK_SEARCH, TRACK_LOCKED, TRACK_MANUAL, TRACK_STALE, TRACK_FOCUS };
 typedef struct {
     uint32_t sample, seen_ms, move_ms;
     uint8_t primed, settling, reason;

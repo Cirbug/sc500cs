@@ -109,16 +109,6 @@ static uint32_t ui_now_ms(void)
 volatile RedTrackConfig g_track_config = RED_TRACK_DEFAULT_CONFIG;
 RedTrackControl g_track_control;
 volatile uint32_t g_track_capability;
-static void tracking_service(MenuState *s)
-{
-    uint32_t word=g_track_capability==RED_TRACK_ID ? ui_read(UI_TRACK_STATUS) : 0;
-    unsigned changed=red_track_update(&g_track_control,word,
-        ui_now_ms(),
-        g_track_capability==RED_TRACK_ID && s->servo_menu_available && s->image_step==5u,
-        s->servo_touch_active!=0, &g_track_config, &s->servo_pan_us, &s->servo_tilt_us);
-    if(changed&1u) ui_write(UI_SERVO_PAN_US,s->servo_pan_us);
-    if(changed&2u) ui_write(UI_SERVO_TILT_US,s->servo_tilt_us);
-}
 
 static void ui_ctrl(uint32_t menu, uint32_t edit, uint32_t info, uint32_t picture_page)
 {
@@ -195,12 +185,22 @@ static void lens_diag_report(void)
 }
 
 #include "../shared/autofocus_control.h"
+#include "../shared/tracking_service.h"
 
 /* All inputs commit through this one hardware boundary. */
 static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
 {
-    if(s->image_step!=old->image_step || (actions & MENU_REACQUIRE))
+    /* An explicit manual pan/tilt movement cancels a scan instead of mixing
+     * focus samples from different scenes. Automatic tracking never gets here. */
+    if(autofocus_active() && (s->servo_pan_us!=old->servo_pan_us ||
+                             s->servo_tilt_us!=old->servo_tilt_us))
+        autofocus_stop(AF_REASON_MANUAL);
+    if(s->image_step!=old->image_step || (actions & MENU_REACQUIRE)) {
         g_track_control.primed=0;
+        target_focus.have=target_focus.focused=0;
+        target_focus.stable_ms=ui_now_ms();
+        autofocus_cancel_auto();
+    }
     if(s->picture_available && picture_effective(s)!=picture_effective(old)) {
         ui_write(0x70, picture_effective(s));
         /* Read back hardware fields without saving Sobel's forced gamma as
@@ -358,6 +358,7 @@ AL_S32 main(void)
     ui.servo_menu_available = (ui.servo_pan_us >= 500u && ui.servo_pan_us <= 2500u &&
                             ui.servo_tilt_us >= 500u && ui.servo_tilt_us <= 2500u);
     g_track_capability=ui_read(UI_TRACK_ID);
+    g_target_focus_capability=ui_read(UI_TARGET_FOCUS_ID);
     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
     ui.picture_available=(ui_read(0x74)==0x50494331u);
     ui.picture=PICTURE_DEFAULT;

@@ -1,3 +1,4 @@
+`include "focus_result_mailbox.v"
 `include "video_params.vh"
 // Keep the mailbox reachable from existing TD GUI/generated source lists.
 `include "red_track_mailbox.v"
@@ -316,8 +317,8 @@ module design_top_wrapper (
     wire [15:0] S_servo_pan_us;
     wire [15:0] S_servo_tilt_us;
     wire        S_focus_frame_toggle;
-    reg [31:0]  S_focus_metric_sync1;
-    reg [31:0]  S_focus_metric_sync2;
+    wire [31:0] S_focus_sequence_apb;
+    
     reg         S_cam_cfg_done_apb1;
     reg         S_cam_cfg_done_apb2;
     // MAX3421E is driven by MCU QSPI1 in single-SPI mode.
@@ -459,19 +460,20 @@ module design_top_wrapper (
     assign S_motion_target  = S_image_target_p2;
     assign S_logo_enable    = S_image_logo_p2;
 
-    assign S_focus_metric_apb = S_focus_metric_sync2;
+    focus_result_mailbox u_focus_result_mailbox (
+        .pixel_clk(S_hdmi_pixel_clk), .apb_clk(S_mcu_apb_clk),
+        .rst_n(S_hdmi_rst_n && S_rst_n), .frame_toggle(S_focus_frame_toggle),
+        .metric(S_focus_metric_pix), .apb_metric(S_focus_metric_apb),
+        .apb_sequence(S_focus_sequence_apb)
+    );
 
     // Synchronize the frame metric and camera-config completion into the MCU
     // APB clock domain.  The metric remains stable for a complete frame.
     always @(posedge S_mcu_apb_clk or negedge S_rst_n) begin
         if(!S_rst_n) begin
-            S_focus_metric_sync1 <= 32'd0;
-            S_focus_metric_sync2 <= 32'd0;
             S_cam_cfg_done_apb1  <= 1'b0;
             S_cam_cfg_done_apb2  <= 1'b0;
         end else begin
-            S_focus_metric_sync1 <= S_focus_metric_pix;
-            S_focus_metric_sync2 <= S_focus_metric_sync1;
             S_cam_cfg_done_apb1  <= S_cam_cfg_done;
             S_cam_cfg_done_apb2  <= S_cam_cfg_done_apb1;
         end
@@ -1166,6 +1168,7 @@ module design_top_wrapper (
         .I_lens_adc_count( S_lens_adc_count ),
         .I_lens_bus_state( S_lens_bus_state ),
         .I_focus_metric( S_focus_metric_apb ),
+        .I_focus_sequence(S_focus_sequence_apb),
         .O_focus_roi   ( S_focus_roi_apb ),
         .I_rtc_time0   ( S_rtc_time0 ),
         .I_rtc_time1   ( S_rtc_time1 ),

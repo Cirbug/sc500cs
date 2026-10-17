@@ -66,6 +66,7 @@ module mcu_ui_apb_regs #(
     output reg [1:0] O_wifi_ctrl,
     input wire [1:0] I_wifi_pads,
     input wire [31:0] I_track_status, I_track_errors,
+    input wire [31:0] I_focus_sequence,
     output reg         O_lens_cmd,
     output reg         O_lens_retry, O_lens_read_adc,
     output reg  [13:0] O_lens_position,
@@ -239,6 +240,8 @@ module mcu_ui_apb_regs #(
                 8'ha8: O_prdata = 32'h54524b31; // TRK1: coherent tracking result mailbox
                 8'hac: O_prdata = I_track_status;
                 8'hb0: O_prdata = I_track_errors;
+                8'hb4: O_prdata = 32'h41465431; // AFT1: red target AF + coherent focus frames
+                8'hb8: O_prdata = I_focus_sequence;
                 8'h14: O_prdata = {16'd0, O_gain};
                 8'h18: O_prdata = 32'h0001081e; // Full sensor input, HDMI 1080p30
                 8'h1c: O_prdata = 32'h4d415831; // "MAX1": USB extension present

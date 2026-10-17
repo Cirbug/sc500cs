@@ -18,6 +18,8 @@ LABELS = [
     ["显示模式", "普通画面", "图形识别", "运动检测", "红色目标跟踪", "", "", ""],
 ]
 VALUES = ["返回", "关闭", "开启", "自动", "平滑", "近灰", "低", "中", "高", "恢复", "空闲", "写入", "错误", "录制"]
+EFFECTS = ["", "灰度", "反色", "二值化", "复古色", "边缘检测"]
+SHAPES = ["", "矩形", "梯形", "圆形", "三角形", "菱形"]
 
 
 def generate(font_path, extend_existing=False):
@@ -27,7 +29,7 @@ def generate(font_path, extend_existing=False):
     prior=None
     if extend_existing:
         prior=json.loads((ROOT/'assets/menu_font/manifest.json').read_text(encoding='utf8'))
-    chars = list(dict.fromkeys("".join(sum(LABELS, []) + VALUES)))
+    chars = list(dict.fromkeys("".join(sum(LABELS, []) + VALUES + EFFECTS + SHAPES)))
     old_chars=list(prior['glyph_ids']) if prior else []
     if prior: chars=old_chars+[ch for ch in chars if ch not in old_chars]
     old_words=[int(v,16) for v in (ROOT/'assets/menu_font/rows.hex').read_text().split()] if prior else []
@@ -82,6 +84,14 @@ def generate(font_path, extend_existing=False):
         for cell, c in enumerate(label):
             mapping.append(f"            6'd{kind*4+cell}: cn_value_id=7'd{ids[c]};")
     mapping += ["        endcase", "    end", "endfunction", ""]
+    for name, labels in [('cn_effect_id', EFFECTS), ('cn_shape_id', SHAPES)]:
+        mapping += [f"function [6:0] {name};",
+                    "    input [2:0] kind; input [1:0] cell_id;",
+                    "    begin", f"        {name}=0;", "        case({kind,cell_id})"]
+        for kind, label in enumerate(labels):
+            for cell, c in enumerate(label):
+                mapping.append(f"            5'd{kind*4+cell}: {name}=7'd{ids[c]};")
+        mapping += ["        endcase", "    end", "endfunction", ""]
     (hdl / "ui_font_cn_map.vh").write_text("\n".join(mapping), encoding="ascii")
     out = ROOT / "assets/menu_font"
     out.mkdir(parents=True, exist_ok=True)
@@ -91,7 +101,7 @@ def generate(font_path, extend_existing=False):
         "font": font.getname(), "font_sha256": hashlib.sha256(font_path.read_bytes()).hexdigest(),
         "size": 32, "raster_size": 28, "threshold": 128,
         "layout": "32 rows per glyph, bit31 leftmost, ID0 blank",
-        "labels": LABELS, "values": VALUES, "glyph_ids": ids,
+        "labels": LABELS, "values": VALUES, "effects": EFFECTS, "shapes": SHAPES, "glyph_ids": ids,
     }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (out / "rows.hex").write_text("".join(f"{w:08x}\n" for w in words), encoding="ascii")
     (out / "labels.hex").write_text("".join(
@@ -100,6 +110,10 @@ def generate(font_path, extend_existing=False):
     (out / "values.hex").write_text("".join(
         f"{ids[label[cell]] if cell < len(label) else 0:02x}\n"
         for label in VALUES for cell in range(4)), encoding="ascii")
+    for name, labels in [('effects', EFFECTS), ('shapes', SHAPES)]:
+        (out / (name+'.hex')).write_text(''.join(
+            f'{ids[label[cell]] if cell < len(label) else 0:02x}\n'
+            for label in labels+['']*(8-len(labels)) for cell in range(4)), encoding='ascii')
     sheet = Image.new("RGB", (8*64, ((len(images)+7)//8)*64), "#101820")
     for i, im in enumerate(images):
         sheet.paste("white", ((i%8)*64+16, (i//8)*64+16), im)

@@ -7,10 +7,13 @@
   录制页：单张拍照、开始录制、停止录制、保存间隔、已保存、状态、返回。
   新增状态：空闲、写入、错误、录制。
   显示模式页：普通画面、图形识别、运动检测、红色目标跟踪，按 1..4 排序。
+  画面特效说明：灰度、反色、二值化、复古色、边缘检测。
+  形状类别说明：矩形、梯形、圆形、三角形、菱形；梯形仅保留类型接口兼容。
   数字、倍率和时间沿用现有 ASCII 字体。“安路”标志使用原有显示逻辑。
 
 字模
-  89 个去重汉字，每字 32x32 单色；0 号字形留空。
+  102 个去重汉字，每字 32x32 单色；0 号字形留空。
+  画面说明扩展保留原 89 字的编号和像素，追加 13 字，共用现有菜单 ROM 端口。
   2026-10-16 保留原 87 字的编号与全部像素，追加“帧”“长”两个字。
   新增两字使用本机 NotoSansSC-VF.ttf 的 Bold 实例，来源及 SHA256 见 manifest.json。
   Noto Sans SC Bold，28 像素栅格化并居中到 32x32，二值阈值 128。
@@ -18,6 +21,7 @@
   ROM 填充到 128 字：4096x32 位，共 16384 字节。
   manifest.json 保存字编号、菜单文本、字体文件 SHA256 和生成参数。
   rows.hex 是独立仿真参考；RTL 内嵌相同常量，不依赖 readmemh 路径。
+  effects.hex / shapes.hex：按特效或类别编号索引的四字映射，供逐像素仿真参考。
   源字体采用 SIL OFL 1.1，许可证见 OFL.txt。
   来源：https://github.com/google/fonts/tree/main/ofl/notosanssc
 
@@ -25,6 +29,8 @@
   user_source/hdl_source/ui_font_cn.v：同步字库 ROM。
   user_source/hdl_source/ui_font_cn_map.vh：固定菜单字编号映射。
   user_source/hdl_source/ui_osd.v：默认中文渲染，参数 MENU_CHINESE=0 可编译英文版。
+  主工程打开 RESULT_CHINESE=1，共享字库显示特效名称和形状结果。
+  hdmi_mixer 的 SHAPE_LABEL_ENABLE=0 关闭原英文形状标签，保留原有框线。
   中文模式下视频、DE、HSYNC、VSYNC 全部统一增加一拍延迟。
   黑色字模背景透明，菜单底色与选中条透出。
   八行主菜单顶部为 y=644，底部仍为 y=1004；匹配 MCU 已同步更新触屏区域。
@@ -36,7 +42,7 @@
   安装 Python Pillow，执行：
   python tools/generate_menu_font.py --font "字体路径/Noto Sans SC Bold (TrueType).otf"
   如需保留现有字模，仅追加新汉字，使用 --extend-existing。
-  修改脚本中的 LABELS/VALUES 可替换菜单用字；超出 127 个字需扩大编号和 ROM。
+  修改脚本中的 LABELS/VALUES/EFFECTS/SHAPES 可替换用字；超出 127 个字需扩大编号和 ROM。
   同时检查文字数量、菜单行距与点击区域，重新仿真及编译 FPGA。
 
 验证和构建

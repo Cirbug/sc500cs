@@ -140,3 +140,46 @@ function [6:0] cn_value_id;
         endcase
     end
 endfunction
+
+function [6:0] cn_effect_id;
+    input [2:0] kind; input [1:0] cell_id;
+    begin
+        cn_effect_id=0;
+        case({kind,cell_id})
+            5'd4: cn_effect_id=7'd78;
+            5'd5: cn_effect_id=7'd29;
+            5'd8: cn_effect_id=7'd90;
+            5'd9: cn_effect_id=7'd68;
+            5'd12: cn_effect_id=7'd91;
+            5'd13: cn_effect_id=7'd92;
+            5'd14: cn_effect_id=7'd93;
+            5'd16: cn_effect_id=7'd37;
+            5'd17: cn_effect_id=7'd94;
+            5'd18: cn_effect_id=7'd68;
+            5'd20: cn_effect_id=7'd95;
+            5'd21: cn_effect_id=7'd96;
+            5'd22: cn_effect_id=7'd65;
+            5'd23: cn_effect_id=7'd66;
+        endcase
+    end
+endfunction
+
+function [6:0] cn_shape_id;
+    input [2:0] kind; input [1:0] cell_id;
+    begin
+        cn_shape_id=0;
+        case({kind,cell_id})
+            5'd4: cn_shape_id=7'd97;
+            5'd5: cn_shape_id=7'd60;
+            5'd8: cn_shape_id=7'd98;
+            5'd9: cn_shape_id=7'd60;
+            5'd12: cn_shape_id=7'd99;
+            5'd13: cn_shape_id=7'd60;
+            5'd16: cn_shape_id=7'd100;
+            5'd17: cn_shape_id=7'd101;
+            5'd18: cn_shape_id=7'd60;
+            5'd20: cn_shape_id=7'd102;
+            5'd21: cn_shape_id=7'd60;
+        endcase
+    end
+endfunction

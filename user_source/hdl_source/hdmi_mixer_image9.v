@@ -19,6 +19,7 @@ module hdmi_mixer_image9 #(
     parameter IMG_HEIGHT = `DISPLAY_HEIGHT,
     parameter integer DEBUG_MODE = 0,
     parameter SPRITE_ENABLE = 1'b0, // Compile-time: rebuild bitstream to restore sprite.
+    parameter SHAPE_LABEL_ENABLE = 1'b1, // Chinese labels may be drawn by the final UI stage.
     parameter DBG_UI_EN = 1'b1          // 0 = 关掉右上角 AWB 状态指示灯（做正式版本时用）
 )(
     input wire        I_clk,
@@ -544,7 +545,7 @@ module hdmi_mixer_image9 #(
         end
     endfunction
 
-    shape_osd_renderer u_shape_osd_renderer(
+    shape_osd_renderer #(.LABEL_ENABLE(SHAPE_LABEL_ENABLE)) u_shape_osd_renderer(
         .I_de       (S_video_de_2d),
         .I_x        (S_x),
         .I_y        (S_y_pix),
@@ -1106,7 +1107,7 @@ endmodule
 //   方框颜色：矩形红、梯形橙、圆形青、三角形绿、菱形品红；
 //   标签使用 5x7 英文点阵，显示 RECT/TRAP/CIRC/TRI/DIAM。
 // ===========================================================================
-module shape_osd_renderer (
+module shape_osd_renderer #(parameter LABEL_ENABLE=1'b1) (
     input  wire        I_de,
     input  wire [11:0] I_x,
     input  wire [11:0] I_y,
@@ -1220,7 +1221,7 @@ module shape_osd_renderer (
                 default: O_color = 24'hffffff;
             endcase
 
-            if((I_x >= label_x) && (I_x < (label_x + 12'd60)) &&
+            if(LABEL_ENABLE && (I_x >= label_x) && (I_x < (label_x + 12'd60)) &&
                (I_y >= label_y) && (I_y < (label_y + 12'd16))) begin
                 lx = I_x - label_x;
                 ly = I_y - label_y;

@@ -1,0 +1,49 @@
+画面特效说明及形状标签汉化（2026-10-16）
+
+显示行为
+  普通画面中的特效 1..5：灰度、反色、二值化、复古色、边缘检测。
+  文字在左上方 x=204、y=28，32x32 汉字，白字深色底，与安路图标、时钟错开。
+  原图特效 0 不增加标签；识别模式不显示残留特效名称。
+  图形识别把 RECT/CIRC/TRI/DIAM 改为矩形/圆形/三角形/菱形。
+  兼容类型 2 的 TRAP→梯形映射，但本次没有新增梯形检测算法。
+  形状标签默认位于框下方 6 像素，黄字深色底，高度 40 像素。
+  靠右时向左收回，底部空间不足时放到框上方；框覆盖全高时收回顶部。
+  目标失效或退出图形识别模式后隐藏类别文字。菜单、按钮及 RTC 优先显示。
+
+实现
+  ui_osd 共用现有菜单 ROM 读取端口，不新增独立结果字库或视频延迟级。
+  原 89 字的字编号及逐像素内容保留，追加 13 字，ROM 仍为 4096x32。
+  形状框保留在原 HDMI mixer 中；主工程禁用其英文标签，中文在最终 OSD 叠加。
+  五种图像算法和形状分类算法、USB/触屏、镜头 I2C、舵机、MCU 寄存器均不修改。
+  字符发生器仍为固定字库，不增加 MCU 字符串发送接口。
+
+验证入口
+  D:/python/python.exe tests/run_result_chinese.py --out <独立工作目录>
+  18 个 1920x1080 场景：五特效、全部类别映射、原图无字、失效/非法类别、
+  模式切换、底部/右侧/顶部边界、菜单遮挡及菜单行外侧标签、原英文标签关闭、
+  视频透传、DE/HSYNC/VSYNC/消隐；逐像素比对 37324800 个有效像素。
+  同时运行原 tb_menu_chinese 的 9 场景回归，检查 712192 个菜单参考像素。
+  字库生成：tools/generate_menu_font.py --font <NotoSansSC-VF.ttf> --extend-existing。
+
+完整构建
+  D:/TD/bin/td_commands_prompt.exe <工程绝对路径>/tests/build_result_chinese.tcl
+  Tcl 路径使用正斜杠。默认输出 build/chinese_results_20261016；
+  可用 CHINESE_RESULT_BUILD_DIR 指定独立构建目录。
+  采用常规打包布局（direct_legalization=off），避开本版网表的直接合法化长耗时。
+  默认 place seed=3；CHINESE_RESULT_SEED 可覆盖，CHINESE_RESULT_GATE_DB 可复用本次综合数据库。
+  布线后追加高强度保持时间修复；CHINESE_RESULT_ROUTE_DB 可从布线数据库续跑。
+  脚本保留 MCU PAD JTAG、复位向量和调试基线检查，不下载到开发板。
+  最终建立/保持时间不通过时停止位流生成。TD 错误可能仍返回 0，必须检查完成标记与时序报告。
+
+已完成的验证（2026-10-17）
+  ModelSim：18 个结果叠加场景及 9 个原菜单场景通过；新结果测试无错误、无警告。
+  TD 6.2.168116：完整综合、布局布线、最终 STA 和位流生成通过。
+  Slice 18116/21216（85.39%）；ERAM 81/108；DSP 14/40。
+  Setup WNS +0.118 ns，Hold WNS +0.020 ns；Setup/Hold TNS 均为 0。
+  保留原时钟频率、引脚和 SDC 约束，未下载到开发板。
+
+使用
+  此功能只需更新 FPGA bit，FDwork/anlu_app 的现有 MCU TCM/RAM 固件继续使用。
+  沿用现有板载 JTAG/OpenOCD 调试方式，不使用 anlu_app2 的 Flash 烧写流程。
+  FPGA 重新配置后，按原流程通过 FD 重新运行 MCU，再选择相应特效或图形识别。
+  仿真预览是测试画面而非摄像头实拍；实板显示待下载后确认。

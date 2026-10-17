@@ -6,6 +6,7 @@ module ui_osd #(
     parameter integer H_ACTIVE = 1920,
     parameter integer V_ACTIVE = 1080,
     parameter integer MENU_CHINESE = 1,
+    parameter integer RESULT_CHINESE = 0,
     parameter integer PIXEL_CLOCK_HZ = 75000000
 )(
     // Legacy diagnostic ports are kept for source compatibility; no FPS counters.
@@ -26,6 +27,10 @@ module ui_osd #(
     input  wire        I_mode_page,
     input  wire [31:0] I_focus_roi,
     input  wire [2:0]  I_image_step,
+    input  wire [2:0]  I_image_effect,
+    input  wire        I_shape_valid,
+    input  wire [2:0]  I_shape_type,
+    input  wire [11:0] I_shape_x0, I_shape_y0, I_shape_y1,
     input  wire [15:0] I_picture_ctrl,
     input  wire [15:0] I_exposure,
     input  wire [15:0] I_gain,
@@ -93,6 +98,54 @@ module ui_osd #(
     reg vs_pipe, hs_pipe, de_pipe;
 
     `include "ui_font_cn_map.vh"
+    // Reuse the menu ROM port at pixels outside the controls. Result strings
+    // are decoded before raster addressing; no additional glyph ROM or video
+    // latency is needed. Frame-level detector outputs are in this clock domain.
+    reg result_enable;
+    reg [11:0] result_x, result_y, result_right, result_bottom;
+    reg [27:0] result_chars;
+    reg [23:0] result_color;
+    reg result_hit;
+    reg [11:0] result_dx, result_dy;
+    reg [11:0] anchor_x, anchor_y, label_width;
+    wire controls_hit = (I_menu_enable && x>=24 && x<492 && y>=644 && y<1004) ||
+                        (x>=24 && x<220 && y>=1016 && y<1076) ||
+                        (x>=236 && x<260 && y>=1034 && y<1058) ||
+                        (x>=CLOCK_X0 && x<CLOCK_X0+284 && y>=CLOCK_Y0 && y<CLOCK_Y0+44);
+    always @* begin
+        label_width=(I_shape_type==4)?12'd104:12'd72;
+        anchor_x=(I_shape_x0>H_ACTIVE-label_width)?H_ACTIVE-label_width:I_shape_x0;
+        // Prefer below the box. Keep the entire 40-pixel label inside video.
+        anchor_y=(I_shape_y1<=V_ACTIVE-46)?I_shape_y1+12'd6:
+                 (I_shape_y0>=12'd44)?I_shape_y0-12'd44:12'd0;
+    end
+    always @(posedge I_clk or negedge I_rst_n) begin
+        if(!I_rst_n) begin
+            result_enable<=0;result_x<=0;result_y<=0;result_right<=0;result_bottom<=0;
+            result_chars<=0;result_color<=24'hffffff;
+        end else begin
+            result_enable<=0;
+            if(RESULT_CHINESE && MENU_CHINESE) begin
+                if(I_image_step==2 && I_image_effect>=1 && I_image_effect<=5) begin
+                    result_enable<=1;result_x<=200;result_y<=24;result_bottom<=64;
+                    case(I_image_effect)
+                        1,2:result_right<=272;
+                        3,4:result_right<=304;
+                        default:result_right<=336;
+                    endcase
+                    result_chars<={cn_effect_id(I_image_effect,3),cn_effect_id(I_image_effect,2),
+                                   cn_effect_id(I_image_effect,1),cn_effect_id(I_image_effect,0)};
+                    result_color<=24'hffffff;
+                end else if(I_image_step==3 && I_shape_valid && I_shape_type>=1 && I_shape_type<=5) begin
+                    result_enable<=1;result_x<=anchor_x;result_y<=anchor_y;
+                    result_right<=anchor_x+label_width;result_bottom<=anchor_y+12'd40;
+                    result_chars<={cn_shape_id(I_shape_type,3),cn_shape_id(I_shape_type,2),
+                                   cn_shape_id(I_shape_type,1),cn_shape_id(I_shape_type,0)};
+                    result_color<=24'hfff200;
+                end
+            end
+        end
+    end
     generate if(MENU_CHINESE) begin: chinese_font
         ui_font_cn font(.clk(I_clk), .address({cn_id,cn_row}), .row_bits(cn_row_bits));
     end else begin: english_font
@@ -104,6 +157,17 @@ module ui_osd #(
     always @* begin
         cn_id=0; cn_row=0; cn_col=0; cn_line=0; cn_dx=0; cn_dy=0;
         cn_active=0; cn_line_active=0; cn_kind=0; cn_color=24'hffffff;
+        result_hit=result_enable && x>=result_x && x<result_right &&
+                   y>=result_y && y<result_bottom && !controls_hit;
+        result_dx=x-result_x-12'd4;result_dy=y-result_y-12'd4;
+        if(result_hit && x>=result_x+4 && x<result_right-4 &&
+           y>=result_y+4 && y<result_bottom-4) begin
+            cn_active=1;cn_col=result_dx[4:0];cn_row=result_dy[4:0];cn_color=result_color;
+            case(result_dx[6:5])
+                0:cn_id=result_chars[6:0];1:cn_id=result_chars[13:7];
+                2:cn_id=result_chars[20:14];3:cn_id=result_chars[27:21];
+            endcase
+        end
         if(y>=658 && y<690) begin cn_line_active=1; cn_line=0; cn_dy=y-658; end
         else if(y>=694 && y<726) begin cn_line_active=1; cn_line=1; cn_dy=y-694; end
         else if(y>=730 && y<762) begin cn_line_active=1; cn_line=2; cn_dy=y-730; end
@@ -113,7 +177,7 @@ module ui_osd #(
         else if(y>=874 && y<906) begin cn_line_active=1; cn_line=6; cn_dy=y-874; end
         else if(y>=910 && y<942) begin cn_line_active=1; cn_line=7; cn_dy=y-910; end
         else if(y>=946 && y<978 && !I_picture_page && !mode_page && !rec_page) begin cn_line_active=1;cn_line=8;cn_dy=y-946;end
-        if(MENU_CHINESE && I_menu_enable && cn_line_active) begin
+        if(MENU_CHINESE && I_menu_enable && cn_line_active && x>=24 && x<492) begin
             cn_row=cn_dy[4:0];
             if(x>=44 && x<300) begin
                 cn_dx=x-44; cn_col=cn_dx[4:0];
@@ -495,6 +559,9 @@ module ui_osd #(
         text_y = 12'd0;
         text_active = 1'b0;
         picture_label="        "; picture_value="    ";
+        // A compact dark backing keeps the result legible on every effect,
+        // including white binary/edge pixels; other picture pixels pass through.
+        if(result_hit) pixel=24'h101820;
         // A thin 160x120 focus frame. Draw before menu controls so the UI
         // keeps priority even when the ROI reaches the edge of the panel.
         if(focus_roi_frame[31] === 1'b1 && x>=focus_x && x<focus_x+160 &&

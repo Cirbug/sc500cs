@@ -1695,7 +1695,8 @@ isp_top u_isp_top (
         .IMG_WIDTH  ( `DISPLAY_WIDTH ),
         .IMG_HEIGHT ( `DISPLAY_HEIGHT ),
         // 正常摄像头显示模式；改为 1 可输出全屏彩条进行 HDMI 链路诊断。
-        .DEBUG_MODE ( 0    )
+        .DEBUG_MODE ( 0    ),
+        .SHAPE_LABEL_ENABLE(0) // The final OSD shares its Chinese font with the menu.
     )u_hdmi_mixer(
         .I_clk           ( S_hdmi_pixel_clk   ),
         .I_rst_n         ( S_hdmi_rst_n       ),
@@ -1824,6 +1825,7 @@ isp_top u_isp_top (
     ui_osd #(
         .H_ACTIVE(`HDMI_H_ACTIVE),
         .V_ACTIVE(`HDMI_V_ACTIVE),
+        .RESULT_CHINESE(1),
         .PIXEL_CLOCK_HZ(`HDMI_PIXEL_CLOCK_HZ)
     ) u_ui_osd (
         .I_record_status (rec_ui_status),
@@ -1843,6 +1845,12 @@ isp_top u_isp_top (
         .I_mode_page    ( S_mode_page_p2 ),
         .I_focus_roi    ( S_focus_roi_p2 ),
         .I_image_step   ( S_image_step_p2 ),
+        .I_image_effect ( S_dbg_effect_sel ),
+        .I_shape_valid  ( S_shape_valid ),
+        .I_shape_type   ( S_shape_type ),
+        .I_shape_x0     ( S_shape_x0 ),
+        .I_shape_y0     ( S_shape_y0 ),
+        .I_shape_y1     ( S_shape_y1 ),
         .I_picture_ctrl ( S_picture_pixel ),
         .I_exposure     ( S_ui_ae_p2 ),
         .I_gain         ( S_ui_ag_p2 ),

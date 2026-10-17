@@ -1,250 +1,184 @@
-/*****************************************************************
- * AWB (Auto White Balance) - resource-optimized version
- *
- * 原设计用 2 个全流水 48 位除法器 IP（div_gen_G_R_r1 / divide_G_B_r1）
- * 逐像素连续运行，约 5500 个寄存器；另有 50 拍 BRAM 延迟线（signal_delay）。
- * 但 AWB 增益（G/R、G/B）每帧只需要计算一次：
- *   - 帧起始（I_tuser）锁存上一帧 R/G/B 累加和；
- *   - 用一个串行移位减法除法器，在消隐期内分时算出 R 增益和 B 增益；
- *   - 本帧所有像素共用同一个增益（原设计也只用了 lane0 的增益）。
- *
- * 效果：约 5500 寄存器 -> 约 200 寄存器，并去掉 50 拍 BRAM 延迟线。
- * 行为变化：由"逐像素滑动平均增益"改为"上一帧统计、本帧应用"（标准 AWB）。
- * 保留：黑电平扣除、近灰门限、亮像素排除、旁路/固定增益、0.5x~4x 目标限幅、
- *       IIR 平滑(alpha=7/8)、样本量保护。
- *****************************************************************/
+/* Frame-statistics AWB with confidence gating and frame-atomic gains.
+ * One lane per four RGB pixels is sampled. Dark/clipped/high-chroma samples
+ * cannot steer the estimate. A shared serial divider computes G/R and G/B;
+ * completed candidates are committed at a later frame boundary, never mid-frame.
+ * The pixel pipeline and all four gain multipliers retain their original latency.
+ */
 module awb #(
     parameter IMG_HEIGHT = 1080,
     parameter IMG_WIDTH  = 1920,
-    parameter             AWB_EN           = 1'b1,
-    parameter      [19:0] AWB_FIXED_GAIN_R = 20'h10000,
-    parameter      [19:0] AWB_FIXED_GAIN_B = 20'h10000
+    parameter AWB_EN = 1'b1,
+    parameter [19:0] AWB_FIXED_GAIN_R = 20'h10000,
+    parameter [19:0] AWB_FIXED_GAIN_B = 20'h10000,
+    // At least 1/64 of the expected lane-0 samples, and at least 16 samples.
+    parameter integer MIN_VALID_SAMPLES =
+        ((IMG_HEIGHT*IMG_WIDTH+255)/256 > 16) ? (IMG_HEIGHT*IMG_WIDTH+255)/256 : 16
 )(
-    input                   I_clk,
-    input                   I_rst_n,
-    input                   I_tlast,
-    input                   I_tuser,
-    input [95:0]            I_tdata,
-    input                   I_tvalid,
-    output                  I_tready,
-    input                   I_bypass,
-    input      [7:0]        I_blc_off,
-    input                   I_gate_en,
-    input      [7:0]        I_gate_th,
-    input                   I_smooth_en,
-    output                  O_tlast,
-    output                  O_tuser,
-    output [95:0]           O_tdata,
-    output                  O_tvalid,
-    input                   O_tready
+    input I_clk, I_rst_n, I_tlast, I_tuser,
+    input [95:0] I_tdata,
+    input I_tvalid,
+    output I_tready,
+    input I_bypass,
+    input [7:0] I_blc_off,
+    input I_gate_en,
+    // Relative chroma threshold in Q0.8: 64 means (max-min)/max <= 1/4.
+    input [7:0] I_gate_th,
+    input I_smooth_en,
+    output O_tlast, O_tuser,
+    output [95:0] O_tdata,
+    output O_tvalid,
+    input O_tready
 );
-
-    // ---- 黑电平扣除 ----
     function [7:0] sub_off;
-        input [7:0] d;
-        input [7:0] off;
+        input [7:0] d, off;
+        begin sub_off=(d>off) ? d-off : 8'd0; end
+    endfunction
+    wire [95:0] S_tdata_raw=I_tdata;
+    wire [95:0] S_tdata={
+        sub_off(I_tdata[95:88],I_blc_off),sub_off(I_tdata[87:80],I_blc_off),sub_off(I_tdata[79:72],I_blc_off),
+        sub_off(I_tdata[71:64],I_blc_off),sub_off(I_tdata[63:56],I_blc_off),sub_off(I_tdata[55:48],I_blc_off),
+        sub_off(I_tdata[47:40],I_blc_off),sub_off(I_tdata[39:32],I_blc_off),sub_off(I_tdata[31:24],I_blc_off),
+        sub_off(I_tdata[23:16],I_blc_off),sub_off(I_tdata[15:8],I_blc_off),sub_off(I_tdata[7:0],I_blc_off)
+    };
+    wire S_awb_off=(~AWB_EN) | I_bypass;
+    wire [18:0] config_live={I_blc_off,I_gate_th,I_gate_en,I_smooth_en,I_bypass};
+    reg [18:0] frame_config;
+    reg frame_dirty;
+    reg I_tvalid_r0,I_tvalid_r1,sof_d0,sof_d1,raw_clipped_d0;
+    reg [95:0] I_tdata_d0,I_tdata_d1;
+    always @(posedge I_clk or negedge I_rst_n) begin
+        if(!I_rst_n) begin
+            I_tdata_d0<=0;I_tdata_d1<=0;I_tvalid_r0<=0;I_tvalid_r1<=0;
+            sof_d0<=0;sof_d1<=0;raw_clipped_d0<=0;
+        end else begin
+            I_tdata_d0<=S_tdata;I_tdata_d1<=I_tdata_d0;
+            I_tvalid_r0<=I_tvalid;I_tvalid_r1<=I_tvalid_r0;
+            sof_d0<=I_tuser;sof_d1<=sof_d0;
+            // Check before black subtraction: clipped input must not become
+            // an apparently safe sample simply by subtracting BLACK.
+            raw_clipped_d0<=(I_tdata[23:16]>=8'd250) ||
+                            (I_tdata[15:8]>=8'd250) || (I_tdata[7:0]>=8'd250);
+        end
+    end
+    wire [7:0] r=I_tdata_d0[23:16],g=I_tdata_d0[15:8],b=I_tdata_d0[7:0];
+    wire [7:0] mx=(r>g) ? ((r>b)?r:b) : ((g>b)?g:b);
+    wire [7:0] mn=(r<g) ? ((r<b)?r:b) : ((g<b)?g:b);
+    wire [7:0] chroma=mx-mn;
+    // The production threshold is constant 64, hence this product reduces
+    // to wiring/shifts in synthesis, not a new per-pixel divider or DSP.
+    wire [15:0] gray_limit=mx*I_gate_th;
+    wire S_stat_en=I_tvalid_r0 && !raw_clipped_d0 &&
+        mx>=8'd32 && mx<=8'd240 && mn>=8'd8 && chroma<=(mx>>1) &&
+        (!I_gate_en || {chroma,8'd0}<=gray_limit);
+
+    localparam integer COUNT_W=$clog2((IMG_HEIGHT*IMG_WIDTH+3)/4+1);
+    reg [COUNT_W-1:0] sample_count;
+    reg [31:0] sum_r,sum_g,sum_b;
+    // A frame containing a control change is not mixed with a different
+    // BLACK/gating/mode profile. Zero denominators are checked before divide.
+    wire frame_ok=!frame_dirty && frame_config==config_live &&
+        sample_count>=MIN_VALID_SAMPLES && sum_r!=0 && sum_b!=0;
+    always @(posedge I_clk or negedge I_rst_n) begin
+        if(!I_rst_n) begin
+            sum_r<=0;sum_g<=0;sum_b<=0;sample_count<=0;
+            frame_config<=0;frame_dirty<=1;
+        end else if(sof_d0) begin
+            // Include a valid first pixel even when SOF and valid coincide.
+            sum_r<=S_stat_en ? {24'd0,r}:32'd0;
+            sum_g<=S_stat_en ? {24'd0,g}:32'd0;
+            sum_b<=S_stat_en ? {24'd0,b}:32'd0;
+            sample_count<=S_stat_en ? 1:0;
+            frame_config<=config_live;frame_dirty<=0;
+        end else begin
+            if(frame_config!=config_live) frame_dirty<=1;
+            if(S_stat_en && !(&sample_count)) begin
+                sum_r<=sum_r+r;sum_g<=sum_g+g;sum_b<=sum_b+b;
+                sample_count<=sample_count+1'b1;
+            end
+        end
+    end
+
+    // Restoring divide: 48-bit numerator (sumG << 16), 32-bit denominator.
+    // The stored remainder is < denominator; only its shifted compare needs
+    // 33 bits. Shift in quotient bits instead of a variable 48-bit bit-mask.
+    reg [31:0] lat_g,lat_b,div_den,div_rem;
+    reg [18:0] lat_config;
+    reg [47:0] div_num,div_quot;
+    reg [19:0] calc_r;
+    reg [5:0] div_cnt;
+    reg [1:0] div_st;
+    reg div_phase,div_done;
+    wire [32:0] div_rem_sh={div_rem,div_num[47]};
+    wire [32:0] div_den_ex={1'b0,div_den};
+    wire div_ge=div_rem_sh>=div_den_ex;
+    function [19:0] bounded_gain;
+        input [47:0] q;
         begin
-            sub_off = (d > off) ? (d - off) : 8'd0;
+            if(q<48'h000000008000) bounded_gain=20'h08000;
+            else if(q>48'h000000040000) bounded_gain=20'h40000;
+            else bounded_gain=q[19:0];
         end
     endfunction
-
-    wire [95:0] S_tdata_raw = I_tdata;
-    wire [95:0] S_tdata = {
-        sub_off(S_tdata_raw[95:88], I_blc_off), sub_off(S_tdata_raw[87:80], I_blc_off), sub_off(S_tdata_raw[79:72], I_blc_off),
-        sub_off(S_tdata_raw[71:64], I_blc_off), sub_off(S_tdata_raw[63:56], I_blc_off), sub_off(S_tdata_raw[55:48], I_blc_off),
-        sub_off(S_tdata_raw[47:40], I_blc_off), sub_off(S_tdata_raw[39:32], I_blc_off), sub_off(S_tdata_raw[31:24], I_blc_off),
-        sub_off(S_tdata_raw[23:16], I_blc_off), sub_off(S_tdata_raw[15:8],  I_blc_off), sub_off(S_tdata_raw[7:0],   I_blc_off)
-    };
-
-    wire S_awb_off = (~AWB_EN) | I_bypass;
-
-    // ---- 输入流水 ----
-    reg         I_tvalid_r0, I_tvalid_r1;
-    reg  [95:0] I_tdata_d0, I_tdata_d1;
-
-    // ---- 统计累加器（与原设计一致，只用 lane0）----
-    reg [31:0] sum_r, sum_g, sum_b;
-    reg [9:0]  rgb_sum;
-
-    // ---- 像素拆分（raw / 1 拍延迟）----
-    wire [7:0] rgb888_r_d  = S_tdata[16+:8];
-    wire [7:0] rgb888_g_d  = S_tdata[8+:8];
-    wire [7:0] rgb888_b_d  = S_tdata[0+:8];
-    wire [7:0] rgb888_r_d0 = I_tdata_d0[16+:8];
-    wire [7:0] rgb888_g_d0 = I_tdata_d0[8+:8];
-    wire [7:0] rgb888_b_d0 = I_tdata_d0[0+:8];
-
-    // ---- 输入寄存 ----
     always @(posedge I_clk or negedge I_rst_n) begin
-        if (!I_rst_n) begin
-            I_tdata_d0  <= 0;
-            I_tdata_d1  <= 0;
-            I_tvalid_r0 <= 0;
-            I_tvalid_r1 <= 0;
+        if(!I_rst_n) begin
+            lat_g<=0;lat_b<=1;lat_config<=0;div_num<=0;div_den<=1;
+            div_rem<=0;div_quot<=0;calc_r<=20'h10000;div_cnt<=0;
+            div_st<=0;div_phase<=0;div_done<=0;
         end else begin
-            I_tdata_d0  <= S_tdata;
-            I_tdata_d1  <= I_tdata_d0;
-            I_tvalid_r0 <= I_tvalid;
-            I_tvalid_r1 <= I_tvalid_r0;
-        end
-    end
-
-    // ---- 亮像素排除（R+G+B < 720），显式扩位避免 8bit 溢出 ----
-    always @(posedge I_clk or negedge I_rst_n) begin
-        if (!I_rst_n)
-            rgb_sum <= 0;
-        else if (I_tvalid)
-            rgb_sum <= {2'b0, rgb888_r_d} + {2'b0, rgb888_g_d} + {2'b0, rgb888_b_d};
-    end
-
-    // ---- 近灰门限判断（|max-min| < I_gate_th）----
-    wire [7:0] ng_mx = (rgb888_r_d0 > rgb888_g_d0)
-                     ? ((rgb888_r_d0 > rgb888_b_d0) ? rgb888_r_d0 : rgb888_b_d0)
-                     : ((rgb888_g_d0 > rgb888_b_d0) ? rgb888_g_d0 : rgb888_b_d0);
-    wire [7:0] ng_mn = (rgb888_r_d0 < rgb888_g_d0)
-                     ? ((rgb888_r_d0 < rgb888_b_d0) ? rgb888_r_d0 : rgb888_b_d0)
-                     : ((rgb888_g_d0 < rgb888_b_d0) ? rgb888_g_d0 : rgb888_b_d0);
-
-    wire S_stat_en = I_tvalid_r0 && (rgb_sum < 720) &&
-                     (~I_gate_en || ((ng_mx - ng_mn) < I_gate_th));
-
-    // ---- 累加（帧起始清 1，避免除 0）----
-    always @(posedge I_clk or negedge I_rst_n) begin
-        if (!I_rst_n || I_tuser) begin
-            sum_r <= 1;
-            sum_g <= 1;
-            sum_b <= 1;
-        end else if (S_stat_en) begin
-            sum_r <= sum_r + rgb888_r_d0;
-            sum_g <= sum_g + rgb888_g_d0;
-            sum_b <= sum_b + rgb888_b_d0;
-        end
-    end
-
-    // =====================================================================
-    // 串行移位减法除法器（替换 2 个全流水除法器 IP）
-    //   帧起始锁存 sum_r/g/b，先算 gain_r = (G<<16)/R，再算 gain_b = (G<<16)/B。
-    //   每个商 48 bit，恢复余数法，每 bit 一个时钟，共约 96 拍（在消隐期完成）。
-    // =====================================================================
-    localparam DW = 48;
-
-    reg [31:0]    lat_r, lat_g, lat_b;   // 帧首锁存的累加和
-    reg [DW-1:0]  div_num;               // 被除数移位寄存器
-    reg [31:0]    div_den;               // 除数
-    reg [DW-1:0]  div_rem;               // 部分余数
-    reg [DW-1:0]  div_quot;              // 商（当前阶段）
-    reg [DW-1:0]  quot_r;                // 锁存的 R 增益商
-    reg [5:0]     div_cnt;               // 0..47
-    reg [1:0]     div_st;                // 0=空闲 1=运行 2=收尾
-    reg           div_phase;             // 0=R 1=B
-    reg           div_done;              // 两路增益就绪的 1 拍脉冲
-
-    wire [DW-1:0] div_rem_sh = {div_rem[DW-2:0], div_num[DW-1]};
-    wire [DW-1:0] div_den_ex = {{(DW-32){1'b0}}, div_den};
-    wire          div_ge     = (div_rem_sh >= div_den_ex);
-
-    always @(posedge I_clk or negedge I_rst_n) begin
-        if (!I_rst_n) begin
-            lat_r <= 32'd1; lat_g <= 32'd1; lat_b <= 32'd1;
-            div_num <= 0; div_den <= 0; div_rem <= 0; div_quot <= 0; quot_r <= 0;
-            div_cnt <= 0; div_st <= 2'd0; div_phase <= 1'b0; div_done <= 1'b0;
-        end else begin
-            div_done <= 1'b0;
-            case (div_st)
-            2'd0: begin   // 空闲：帧起始触发
-                if (I_tuser) begin
-                    lat_r <= sum_r;
-                    lat_g <= sum_g;
-                    lat_b <= sum_b;
-                    div_num   <= {sum_g, 16'd0};
-                    div_den   <= sum_r;
-                    div_phase <= 1'b0;
-                    div_rem   <= 0;
-                    div_quot  <= 0;
-                    div_cnt   <= 0;
-                    div_st    <= 2'd1;
-                end
+            div_done<=0;
+            case(div_st)
+            0: if(sof_d0 && frame_ok && !S_awb_off) begin
+                lat_g<=sum_g;lat_b<=sum_b;lat_config<=frame_config;
+                div_num<={sum_g,16'd0};div_den<=sum_r;
+                div_rem<=0;div_quot<=0;div_cnt<=0;div_phase<=0;div_st<=1;
             end
-            2'd1: begin   // 每拍一个恢复余数迭代
-                if (div_ge) begin
-                    div_rem  <= div_rem_sh - div_den_ex;
-                    div_quot <= div_quot | ({{(DW-1){1'b0}}, 1'b1} << (DW-1 - div_cnt));
-                end else begin
-                    div_rem  <= div_rem_sh;
-                end
-                div_num <= {div_num[DW-2:0], 1'b0};
-                if (div_cnt == (DW-1))
-                    div_st <= 2'd2;
-                else
-                    div_cnt <= div_cnt + 1'b1;
+            1: begin
+                div_rem<=div_ge ? div_rem_sh-div_den_ex : div_rem_sh;
+                div_quot<={div_quot[46:0],div_ge};
+                div_num<={div_num[46:0],1'b0};
+                if(div_cnt==47) div_st<=2;
+                else div_cnt<=div_cnt+1'b1;
             end
-            2'd2: begin   // 收尾：存 R 商并启动 B，或完成
-                if (div_phase == 1'b0) begin
-                    quot_r   <= div_quot;
-                    div_num  <= {lat_g, 16'd0};
-                    div_den  <= lat_b;
-                    div_phase<= 1'b1;
-                    div_rem  <= 0;
-                    div_quot <= 0;
-                    div_cnt  <= 0;
-                    div_st   <= 2'd1;
-                end else begin
-                    div_done <= 1'b1;
-                    div_st   <= 2'd0;
-                end
-            end
-            default: div_st <= 2'd0;
+            2: if(!div_phase) begin
+                calc_r<=bounded_gain(div_quot);
+                div_num<={lat_g,16'd0};div_den<=lat_b;
+                div_rem<=0;div_quot<=0;div_cnt<=0;div_phase<=1;div_st<=1;
+            end else begin div_done<=1;div_st<=0;end
+            default: div_st<=0;
             endcase
         end
     end
 
-    // ---- 目标增益（饱和 + 0.5x~4x 限幅）----
-    wire [19:0] tgt_r_raw = (|quot_r[47:20])   ? 20'hfffff : quot_r[19:0];
-    wire [19:0] tgt_b_raw = (|div_quot[47:20]) ? 20'hfffff : div_quot[19:0];
-    wire [19:0] tgt_r = (tgt_r_raw < 20'h08000) ? 20'h08000 :
-                        (tgt_r_raw > 20'h40000) ? 20'h40000 : tgt_r_raw;
-    wire [19:0] tgt_b = (tgt_b_raw < 20'h08000) ? 20'h08000 :
-                        (tgt_b_raw > 20'h40000) ? 20'h40000 : tgt_b_raw;
-
-    wire tgt_ok = (lat_g > 32'd65536);
-
-    // ---- IIR 平滑（alpha = 7/8）----
-    reg [19:0] in_r_r1, in_b_r1;
-    wire signed [20:0] dif_r = $signed({1'b0, tgt_r}) - $signed({1'b0, in_r_r1});
-    wire signed [20:0] dif_b = $signed({1'b0, tgt_b}) - $signed({1'b0, in_b_r1});
-    wire signed [20:0] nxt_r = $signed({1'b0, in_r_r1}) + (dif_r >>> 3);
-    wire signed [20:0] nxt_b = $signed({1'b0, in_b_r1}) + (dif_b >>> 3);
-    wire [19:0] smt_r = nxt_r[20] ? 20'h08000 :
-                        ((nxt_r > 21'sh40000) ? 20'h40000 : nxt_r[19:0]);
-    wire [19:0] smt_b = nxt_b[20] ? 20'h08000 :
-                        ((nxt_b > 21'sh40000) ? 20'h40000 : nxt_b[19:0]);
-
-    // ---- 增益更新（帧级，替代原来的逐像素 done[0]）----
+    reg [19:0] pending_r,pending_b,in_r_r1,in_b_r1;
+    reg [18:0] pending_config;
+    reg pending_valid;
+    wire signed [20:0] dif_r=$signed({1'b0,pending_r})-$signed({1'b0,in_r_r1});
+    wire signed [20:0] dif_b=$signed({1'b0,pending_b})-$signed({1'b0,in_b_r1});
+    wire signed [20:0] nxt_r=$signed({1'b0,in_r_r1})+(dif_r>>>3);
+    wire signed [20:0] nxt_b=$signed({1'b0,in_b_r1})+(dif_b>>>3);
     always @(posedge I_clk or negedge I_rst_n) begin
-        if (!I_rst_n || (!I_smooth_en && I_tuser)) begin
-            in_r_r1 <= S_awb_off ? AWB_FIXED_GAIN_R : 20'h10000;
-            in_b_r1 <= S_awb_off ? AWB_FIXED_GAIN_B : 20'h10000;
-        end
-        else if (I_smooth_en && S_awb_off) begin
-            in_r_r1 <= AWB_FIXED_GAIN_R;
-            in_b_r1 <= AWB_FIXED_GAIN_B;
-        end
-        else if (I_smooth_en) begin
-            if (div_done && tgt_ok) begin
-                in_r_r1 <= smt_r;
-                in_b_r1 <= smt_b;
+        if(!I_rst_n) begin
+            in_r_r1<=AWB_FIXED_GAIN_R;in_b_r1<=AWB_FIXED_GAIN_B;
+            pending_r<=20'h10000;pending_b<=20'h10000;
+            pending_config<=0;pending_valid<=0;
+        end else begin
+            // Align the gain boundary with data_d1, just before multiplication.
+            // This also handles consecutive frames with no blanking gap.
+            if(sof_d1) begin
+                pending_valid<=0;
+                if(S_awb_off) begin
+                    in_r_r1<=AWB_FIXED_GAIN_R;in_b_r1<=AWB_FIXED_GAIN_B;
+                end else if(pending_valid && pending_config==config_live) begin
+                    in_r_r1<=I_smooth_en ? nxt_r[19:0] : pending_r;
+                    in_b_r1<=I_smooth_en ? nxt_b[19:0] : pending_b;
+                end
+            end
+            if(div_done && !S_awb_off && lat_config==config_live) begin
+                pending_r<=calc_r;pending_b<=bounded_gain(div_quot);
+                pending_config<=lat_config;pending_valid<=1;
             end
         end
-        else if (div_done && S_awb_off) begin
-            in_r_r1 <= AWB_FIXED_GAIN_R;
-            in_b_r1 <= AWB_FIXED_GAIN_B;
-        end
-        else if (div_done) begin
-            in_r_r1 <= (|quot_r[47:20])   ? 20'hfffff : quot_r[19:0];
-            in_b_r1 <= (|div_quot[47:20]) ? 20'hfffff : div_quot[19:0];
-        end
     end
-
 
     // ---- 数据/有效信号流水（去掉 50 拍 BRAM 延迟线，仅 1 拍）----
     reg [95:0] data_d1;
@@ -322,7 +256,7 @@ module awb #(
     wire [7:0] G_new_x4 = G_new_r4;
     wire [7:0] B_new_x4 = (B_new_r4[27:24]) ? 255 : B_new_r4[23:16];
 
-    // ---- 输出（与原设计一致：O_tuser 直通、O_tlast 为 valid 上升沿）----
+    // ---- 输出（与原设计一致：O_tuser 直通、O_tlast 为 valid 下降沿）----
     assign O_tlast  = (valid_d1 == 0) && (valid_d2 == 1);
     assign O_tuser  = I_tuser;
     assign O_tvalid = valid_d2;

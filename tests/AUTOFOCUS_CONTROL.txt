@@ -1,0 +1,58 @@
+Autofocus request/recovery correction / 2026-10-17
+
+Scope
+  RAM/TCM target FDwork/anlu_app only. No FPGA, JTAG configuration, SDK timer,
+  touch gesture thresholds, servo direction or Flash-target changes.
+  main.c includes shared/autofocus_control.h; test_autofocus.c tests that same code.
+
+Reproduced original faults
+  AF while lens initialization is busy was discarded.
+  AF with a latched lens error only reinitialized the lens; success never resumed AF.
+  af_wait_ms counted main-loop calls, not milliseconds. SDK MDelay uses a frequency
+  divided by five, whereas this board's verified timer convention is 100 MHz.
+  Cooperative SD waits handled touch but did not service an accepted AF request.
+  Idle ADC diagnostics could latch an error and provoke an unsolicited move to 8192.
+
+Behavior
+  Every recognized AF request waits for lens idle/initialization, with a 1000 ms limit.
+  LIC3 recovery is attempted once per request; successful recovery restarts coarse AF.
+  Permanent faults stop with debugger-visible status; no automatic idle retries.
+  After a position transaction completes, wait 80 real milliseconds, then take three
+  time-spaced metric samples 40 ms apart. These are not guaranteed distinct camera frames.
+  Coarse grid 512, fine grid 64 within +/-512, lens code range 0..16383 unchanged.
+  The final best-position transaction is checked before scan completion is reported.
+  Recorder service runs the same nonblocking AF task; rapid calls cannot shorten waits.
+  ADC84/85 still refresh automatically after lens initialization and every position write.
+  Existing gesture: two short taps outside menu; max hold 250 ms; tap gap 350 ms;
+  per-axis motion tolerance 16 px; inter-tap location tolerance 48 px. Single tap is not AF.
+  Physical BACK first exits an open menu; with menu closed it triggers AF.
+
+Debugger
+  g_af_debug.requests: recognized AF attempts; compare before/after the gesture.
+  g_af_debug.reason: 0 idle, 1 queued, 2 waiting for lens, 3 recovery,
+    4 coarse, 5 fine, 6 final return, 7 scan complete, 8 I2C/init failure,
+    9 timeout, 10 manual override, 11 missing AFR1 capability, 12 manual move rejected.
+  g_af_debug.lens_status: bit0 busy, bit1 initialized, bit2 error.
+  g_af_debug.diag: retained fault diagnostic, even if the bounded retry succeeds.
+    bits23:20: 1 NACK, 2 SCL timeout, 3 SDA stuck.
+    bits6:4: 1 active mode, 2/3 position high/low, 4/5 ADC84/85.
+  Reason 7 means scan/return completed, not measured optical focus quality.
+
+Offline validation
+  D:/python/python.exe tests/run_autofocus.py --out <isolated output directory>
+  Tests cover startup busy, background busy, one-shot recovery, persistent faults,
+  mid-scan fault, repeated request, deadlines, true elapsed time, timer wrap,
+  final move failure, manual override, complete peak search at varying poll rates,
+  plus existing touch, tracking, picture, recording and VTS controls.
+  Existing RTL tests tb_lens_i2c_diag, tb_lens_i2c_recovery and tb_touch_focus are
+  also rerun against the unchanged lens bus/metric RTL.
+
+Memory / remaining validation
+  FD TCM ELF: text 40176, data 160, bss 8512 bytes (bss includes reservations).
+  Heap 0x0800B300..0x0800B700 (1024 B); stack 0x0800B800..0x0800C000 (2048 B).
+  Static layout gap 256 B, not a runtime stack measurement. Default old image gap 208 B.
+  No board download performed. Verify trigger recognition and real optical response.
+  A complete 50-position scan has about 8 seconds of timed sampling plus I2C/scheduling.
+  Frozen video, metric CDC coherence, exposure/texture variation and moving scenes are
+  not solved by this request/timing patch. Current FPGA exposes no camera-frame ID
+  alongside the metric; strict fresh-frame sampling would need an FPGA interface change.

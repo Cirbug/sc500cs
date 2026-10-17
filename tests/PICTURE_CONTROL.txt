@@ -21,8 +21,11 @@ GAMMA: OFF/ON, existing gamma LUT, MCU default OFF. Sobel edge display
      The OSD shows the effective value, so Gamma remains ON during Sobel.
 BRIGHT: 1.0/1.125/1.25/1.5, default 1.125; displayed as 1.12.
 SAT: 1.0/1.25/1.5/1.75/2.0, default 1.0.
-AWB: AUTO (unsmoothed), SMTH (IIR + clamp), GRAY (near-gray 32 + SMTH),
-     OFF (unity R/B gain). Default SMTH. Black subtraction is independent.
+AWB (updated 2026-10-17): AUTO (unsmoothed), SMTH (1/8 IIR),
+     GRAY (relative chroma <= 25% + SMTH), OFF (unity R/B gain).
+     All automatic modes reject dark/clipped/high-chroma pixels, require
+     enough accepted samples, clamp gains and commit only at frame boundaries.
+     Default SMTH. Black subtraction is independent. See AWB_ROBUST.txt.
 DENOISE: OFF/LOW/MID/HIGH, default OFF. Edge-limited spatial filtering of
      actual display pixels after linear scaling and before gamma; not temporal
      frame averaging. First line bypasses vertical filtering; strong edges

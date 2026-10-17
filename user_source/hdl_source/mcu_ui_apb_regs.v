@@ -42,6 +42,8 @@ module mcu_ui_apb_regs #(
     output reg  [2:0]  O_menu_index,
     output reg  [15:0] O_exposure,
     output reg  [15:0] O_gain,
+    output reg [15:0] O_vts,
+    output reg [22:0] O_camera_display,
     // Image controls written by the MCU menu.  These replace the old
     // independent FPGA dbg_ctrl key path.
     output reg  [2:0]  O_image_step,
@@ -63,6 +65,7 @@ module mcu_ui_apb_regs #(
     output reg O_rtc_set,
     output reg [1:0] O_wifi_ctrl,
     input wire [1:0] I_wifi_pads,
+    input wire [31:0] I_track_status, I_track_errors,
     output reg         O_lens_cmd,
     output reg         O_lens_retry, O_lens_read_adc,
     output reg  [13:0] O_lens_position,
@@ -70,6 +73,10 @@ module mcu_ui_apb_regs #(
     output reg  [15:0] O_servo_tilt_us
 );
 
+    // Full 1944-line mode: trial range 1980..2500; reset remains 2000.
+    wire [15:0] write_vts=(I_pwdata[15:0]<1980)?16'd1980:(I_pwdata[15:0]>2500)?16'd2500:I_pwdata[15:0];
+    wire [15:0] ae_max_dynamic=(O_vts<<1)-16'd10;
+    wire [15:0] write_vts_limit=(write_vts<<1)-16'd10;
     localparam [31:0] ID_VALUE = 32'h55494D55; // "UIMU"
     wire apb_write = I_psel && I_penable && I_pwrite;
     wire apb_read  = I_psel && I_penable && !I_pwrite;
@@ -122,6 +129,7 @@ module mcu_ui_apb_regs #(
             O_menu_index  <= 3'd0;
             O_exposure    <= AE_INIT;
             O_gain        <= AG_INIT;
+            O_vts<=2000; O_camera_display<={7'd127,16'h2000};
             O_image_step  <= 3'd2;
             O_image_effect <= 3'd0;
             O_image_target <= 2'd0;
@@ -154,9 +162,15 @@ module mcu_ui_apb_regs #(
                         O_picture_page <= I_pwdata[3];
                         O_mode_page <= I_pwdata[4];
                     end
-                    8'h0c: O_menu_index <= (I_pwdata[2:0] > 3'd6) ? 3'd6 : I_pwdata[2:0];
+                    8'h0c: O_menu_index <= I_pwdata[2:0];
                     8'h10: O_exposure <= (I_pwdata[15:0] < AE_MIN) ? AE_MIN :
-                                           ((I_pwdata[15:0] > AE_MAX) ? AE_MAX : I_pwdata[15:0]);
+                                           ((I_pwdata[15:0] > ae_max_dynamic) ? ae_max_dynamic : I_pwdata[15:0]);
+                    8'h9c: if(&I_pstrobe[1:0]) begin
+                        O_vts<=write_vts;
+                        if(O_exposure>write_vts_limit) O_exposure<=write_vts_limit;
+                    end
+                    // MCU formats VTS BCD and exposure bar off the pixel path.
+                    8'ha4: if(&I_pstrobe[2:0]) O_camera_display<=I_pwdata[22:0];
                     8'h14: O_gain <= (I_pwdata[15:0] < AG_MIN) ? AG_MIN :
                                        ((I_pwdata[15:0] > AG_MAX) ? AG_MAX : I_pwdata[15:0]);
                     // 0x20: bit0 releases reset; bit1 enables external SPI.
@@ -219,6 +233,12 @@ module mcu_ui_apb_regs #(
                 8'h08: O_prdata = {27'd0, O_mode_page, O_picture_page, O_info_enable, O_edit_enable, O_menu_enable};
                 8'h0c: O_prdata = {29'd0, O_menu_index};
                 8'h10: O_prdata = {16'd0, O_exposure};
+                8'h9c: O_prdata = {16'd0,O_vts};
+                8'ha0: O_prdata = 32'h56545331; // VTS1: dynamic frame length + eight-row menu
+                8'ha4: O_prdata = {9'd0,O_camera_display};
+                8'ha8: O_prdata = 32'h54524b31; // TRK1: coherent tracking result mailbox
+                8'hac: O_prdata = I_track_status;
+                8'hb0: O_prdata = I_track_errors;
                 8'h14: O_prdata = {16'd0, O_gain};
                 8'h18: O_prdata = 32'h0001081e; // Full sensor input, HDMI 1080p30
                 8'h1c: O_prdata = 32'h4d415831; // "MAX1": USB extension present

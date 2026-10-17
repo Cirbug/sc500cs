@@ -17,7 +17,7 @@ module tb_ui_osd;
     reg [23:0] sample;
     reg [23:0] block_row [0:511];
 
-    ui_osd #(.MENU_CHINESE(0)) dut (
+    ui_osd #(.MENU_CHINESE(0)) dut (.I_mipi_clk(clk),.I_mipi_frame_start(1'b0),.I_camera_display({7'd127,16'h2000}),
         .I_clk(clk), .I_rst_n(rst_n), .I_vsync(vsync),
         .I_hsync(hsync), .I_de(de), .I_data(data),
         .I_menu_enable(menu_enable), .I_edit_enable(1'b0),
@@ -58,26 +58,26 @@ module tb_ui_osd;
                 de = 1;
                 for (px = 0; px < 1920; px = px + 1) begin
                     tick;
-                    if (!((menu_enable && px >= 24 && px < 492 && py >= 680 && py < 1004) ||
+                    if (!((menu_enable && px >= 24 && px < 492 && py >= 644 && py < 1004) ||
                           (px >= 24 && px < 220 && py >= 1016 && py < 1076) ||
                           (px >= 236 && px < 260 && py >= 1034 && py < 1058) ||
-                          (px >= 818 && px < 1102 && py >= 16 && py < 60) || (px >= 1440 && px < 1904 && py >= 16 && py < 96)))
+                          (px >= 782 && px < 1102 && py >= 16 && py < 60) || (px >= 1440 && px < 1904 && py >= 16 && py < 168)))
                         if (out_data !== data)
                             $fatal(1, "Video passthrough mismatch at %0d,%0d data=%06x expected=%06x menu=%b", px, py, out_data, data, menu_enable);
-                    if (px >= 826 && px < 1082 && py >= 24 && py < 52 &&
+                    if (px >= 790 && px < 1082 && py >= 24 && py < 52 &&
                         out_data === 24'hffffff)
                         clock_hits = clock_hits + 1;
                     if (mode == 0) begin
                         if (px < 512 && py < 320)
                             $fwrite(fd, "%0d %0d %0d\n", out_data[23:16], out_data[15:8], out_data[7:0]);
                         line_index = -1;
-                        if (py >= 696 && py < 724) line_index = 0;
-                        if (py >= 732 && py < 760) line_index = 1;
-                        if (py >= 768 && py < 796) line_index = 2;
-                        if (py >= 804 && py < 832) line_index = 3;
-                        if (py >= 840 && py < 868) line_index = 4;
+                        if (py >= 660 && py < 688) line_index = 0;
+                        if (py >= 696 && py < 724) line_index = 1;
+                        if (py >= 732 && py < 760) line_index = 2;
+                        if (py >= 768 && py < 796) line_index = 3;
+                        if (py >= 804 && py < 832) line_index = 4;
                         last_x = (line_index == 1) ? 288 : (line_index == 3) ? 268 : 160;
-                        if (out_data === 24'hffffff && px < 512 && py >= 680 && py < 868) begin
+                        if (out_data === 24'hffffff && px < 512 && py >= 644 && py < 832) begin
                             if (line_index < 0 || px < 44 || px >= last_x)
                                 $fatal(1, "Repeated or out-of-bounds text at %0d,%0d", px, py);
                             char_index = (px - 44) / 32;
@@ -85,7 +85,7 @@ module tb_ui_osd;
                         end
                         // Each font dot must form a solid square, without missing rows.
                         if (line_index >= 0 && px >= 44 && px < 300) begin
-                            start_y = 696 + line_index * 36;
+                            start_y = 660 + line_index * 36;
                             if ((px - 44) % 4 == 0) sample = out_data;
                             else if (out_data !== sample)
                                 $fatal(1, "Uneven horizontal font scaling");

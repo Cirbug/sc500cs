@@ -3,14 +3,14 @@
 int main(void) {
     MenuState s={.menu=1,.index=2,.picture_available=1,.picture=PICTURE_DEFAULT,
         .servo_pan_us=1500,.servo_tilt_us=1500,.touch_capture=-1};
-    TouchEvent e={400,840,TOUCH_DOWN};
+    TouchEvent e={400,804,TOUCH_DOWN};
     menu_key(&s,8); assert(s.picture_page && s.index==0 && !s.edit);
     menu_key(&s,8); menu_key(&s,1); assert((s.picture&63)==13);
     menu_key(&s,4); assert(!s.edit && s.picture_page);
     menu_key(&s,4); assert(!s.picture_page && s.index==2 && s.menu);
     menu_key(&s,8);
     for(unsigned row=1;row<6;row++) {
-        e.y=728+36*row+12;
+        e.y=692+36*row+12;
         uint32_t old=s.picture;
         menu_touch(&s,&e); touch_servo_apply(&s,&e);
         assert(s.picture!=old && !s.servo_touch_active);
@@ -20,7 +20,7 @@ int main(void) {
     menu_adjust(&s,1); assert((s.picture&63)==63);
     s.picture&=~63u; menu_adjust(&s,-1); assert((s.picture&63)==0);
     s.index=6; menu_adjust(&s,1); assert(s.picture==PICTURE_DEFAULT);
-    e.y=710; menu_touch(&s,&e); assert(!s.picture_page && s.index==2);
+    e.y=674; menu_touch(&s,&e); assert(!s.picture_page && s.index==2);
     assert(s.servo_pan_us==1500 && s.servo_tilt_us==1500);
     s.picture_available=0; menu_key(&s,8); assert(!s.picture_page);
     assert((PICTURE_DEFAULT & 63u)==12 && !(PICTURE_DEFAULT & 64u));
@@ -54,14 +54,14 @@ int main(void) {
     menu_key(&s,2);assert(s.index==0);menu_key(&s,8);assert(s.image_step==2);
     menu_key(&s,1);assert(s.index==3);
     for(unsigned mode=0;mode<4;mode++) {
-        e=(TouchEvent){100,(uint16_t)(740+36*mode),TOUCH_DOWN};
+        e=(TouchEvent){100,(uint16_t)(704+36*mode),TOUCH_DOWN};
         menu_touch(&s,&e);touch_servo_apply(&s,&e);
         assert(s.image_step==mode+2 && s.index==mode && !s.servo_touch_active);
-        e.type=TOUCH_MOVE;e.y=750;menu_touch(&s,&e);assert(s.image_step==mode+2);
+        e.type=TOUCH_MOVE;e.y=714;menu_touch(&s,&e);assert(s.image_step==mode+2);
     }
-    e=(TouchEvent){100,950,TOUCH_DOWN};menu_touch(&s,&e);assert(s.image_step==5 && s.index==3);
-    e.y=710;menu_touch(&s,&e);assert(!s.picture_page && s.index==4);
-    e.y=890;menu_touch(&s,&e);assert(s.picture_page==2 && s.image_step==5);
+    e=(TouchEvent){100,914,TOUCH_DOWN};menu_touch(&s,&e);assert(s.image_step==5 && s.index==3);
+    e.y=674;menu_touch(&s,&e);assert(!s.picture_page && s.index==4);
+    e.y=854;menu_touch(&s,&e);assert(s.picture_page==2 && s.image_step==5);
     menu_key(&s,4);assert(!s.picture_page && s.index==4);
     return 0;
 }

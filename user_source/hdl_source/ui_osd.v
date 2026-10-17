@@ -1,4 +1,5 @@
 `include "ui_font_cn.v"
+`include "camera_menu_support.v"
 `include "hdmi_frame_stats.v"
 // Fixed Chinese menu subset in synchronous ROM; ASCII digits retain 5x7 font.
 // Chinese mode adds one aligned pipeline cycle to video and all controls.
@@ -6,8 +7,12 @@ module ui_osd #(
     parameter integer H_ACTIVE = 1920,
     parameter integer V_ACTIVE = 1080,
     parameter integer MENU_CHINESE = 1,
+    parameter integer RESULT_CHINESE = 0,
     parameter integer PIXEL_CLOCK_HZ = 75000000
 )(
+    // Legacy raw-source ports; main keeps its separately synchronized MIPI counters.
+    input wire I_mipi_clk,I_mipi_frame_start,
+    input wire [22:0] I_camera_display,
     input  wire        I_clk,
     input  wire        I_rst_n,
     input  wire        I_vsync,
@@ -27,6 +32,10 @@ module ui_osd #(
     input  wire        I_mode_page,
     input  wire [31:0] I_focus_roi,
     input  wire [2:0]  I_image_step,
+    input  wire [2:0]  I_image_effect,
+    input  wire        I_shape_valid,
+    input  wire [2:0]  I_shape_type,
+    input  wire [11:0] I_shape_x0, I_shape_y0, I_shape_y1,
     input  wire [15:0] I_picture_ctrl,
     input  wire [15:0] I_exposure,
     input  wire [15:0] I_gain,
@@ -55,7 +64,7 @@ module ui_osd #(
     reg [7:0] ch;
     reg [2:0] row;
     reg [2:0] col;
-    reg [2:0] line_no;
+    reg [3:0] line_no;
     reg [3:0] char_no;
     reg [11:0] text_x;
     reg [11:0] text_y;
@@ -67,7 +76,7 @@ module ui_osd #(
     reg [7:0] pan_bar_width;
     reg [7:0] tilt_bar_width;
     localparam [11:0] MENU_X0 = 12'd24;
-    localparam [11:0] MENU_Y0 = 12'd680;
+    localparam [11:0] MENU_Y0 = 12'd644;
     localparam integer CLOCK_X0 = (H_ACTIVE - 284) / 2;
     localparam integer CLOCK_Y0 = 16;
     localparam integer STATS_X0 = H_ACTIVE - 480;
@@ -86,6 +95,7 @@ module ui_osd #(
     hdmi_frame_stats #(.PIXEL_CLOCK_HZ(PIXEL_CLOCK_HZ)) frame_stats(
         .clk(I_clk), .rst_n(I_rst_n), .vsync(I_vsync),
         .frames_bcd(hdmi_frames), .fps_bcd(hdmi_fps), .fps_valid(hdmi_fps_valid));
+    reg [22:0] camera_display_frame;
     reg [7:0] rtc_hours_frame, rtc_minutes_frame, rtc_seconds_frame;
     reg rtc_valid_frame;
     reg [15:0] picture_frame;
@@ -97,7 +107,7 @@ module ui_osd #(
     wire rec_page=(rec_frame[10] === 1'b1);
     wire mode_page=(I_mode_page === 1'b1);
     reg [4:0] cn_row, cn_col;
-    reg [2:0] cn_line;
+    reg [3:0] cn_line;
     reg [11:0] cn_dx, cn_dy;
     reg cn_active, cn_line_active;
     reg [3:0] cn_kind;
@@ -109,6 +119,55 @@ module ui_osd #(
     reg vs_pipe, hs_pipe, de_pipe;
 
     `include "ui_font_cn_map.vh"
+    // Reuse the menu ROM port at pixels outside the controls. Result strings
+    // are decoded before raster addressing; no additional glyph ROM or video
+    // latency is needed. Frame-level detector outputs are in this clock domain.
+    reg result_enable;
+    reg [11:0] result_x, result_y, result_right, result_bottom;
+    reg [27:0] result_chars;
+    reg [23:0] result_color;
+    reg result_hit;
+    reg [11:0] result_dx, result_dy;
+    reg [11:0] anchor_x, anchor_y, label_width;
+    wire controls_hit = (I_menu_enable && x>=24 && x<492 && y>=644 && y<1004) ||
+                        (x>=24 && x<220 && y>=1016 && y<1076) ||
+                        (x>=236 && x<260 && y>=1034 && y<1058) ||
+                        (x>=CLOCK_X0 && x<CLOCK_X0+284 && y>=CLOCK_Y0 && y<CLOCK_Y0+44) ||
+                        (x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<168);
+    always @* begin
+        label_width=(I_shape_type==4)?12'd104:12'd72;
+        anchor_x=(I_shape_x0>H_ACTIVE-label_width)?H_ACTIVE-label_width:I_shape_x0;
+        // Prefer below the box. Keep the entire 40-pixel label inside video.
+        anchor_y=(I_shape_y1<=V_ACTIVE-46)?I_shape_y1+12'd6:
+                 (I_shape_y0>=12'd44)?I_shape_y0-12'd44:12'd0;
+    end
+    always @(posedge I_clk or negedge I_rst_n) begin
+        if(!I_rst_n) begin
+            result_enable<=0;result_x<=0;result_y<=0;result_right<=0;result_bottom<=0;
+            result_chars<=0;result_color<=24'hffffff;
+        end else begin
+            result_enable<=0;
+            if(RESULT_CHINESE && MENU_CHINESE) begin
+                if(I_image_step==2 && I_image_effect>=1 && I_image_effect<=5) begin
+                    result_enable<=1;result_x<=200;result_y<=24;result_bottom<=64;
+                    case(I_image_effect)
+                        1,2:result_right<=272;
+                        3,4:result_right<=304;
+                        default:result_right<=336;
+                    endcase
+                    result_chars<={cn_effect_id(I_image_effect,3),cn_effect_id(I_image_effect,2),
+                                   cn_effect_id(I_image_effect,1),cn_effect_id(I_image_effect,0)};
+                    result_color<=24'hffffff;
+                end else if(I_image_step==3 && I_shape_valid && I_shape_type>=1 && I_shape_type<=5) begin
+                    result_enable<=1;result_x<=anchor_x;result_y<=anchor_y;
+                    result_right<=anchor_x+label_width;result_bottom<=anchor_y+12'd40;
+                    result_chars<={cn_shape_id(I_shape_type,3),cn_shape_id(I_shape_type,2),
+                                   cn_shape_id(I_shape_type,1),cn_shape_id(I_shape_type,0)};
+                    result_color<=24'hfff200;
+                end
+            end
+        end
+    end
     generate if(MENU_CHINESE) begin: chinese_font
         ui_font_cn font(.clk(I_clk), .address({cn_id,cn_row}), .row_bits(cn_row_bits));
     end else begin: english_font
@@ -120,15 +179,27 @@ module ui_osd #(
     always @* begin
         cn_id=0; cn_row=0; cn_col=0; cn_line=0; cn_dx=0; cn_dy=0;
         cn_active=0; cn_line_active=0; cn_kind=0; cn_color=24'hffffff;
-        if(y>=694 && y<726) begin cn_line_active=1; cn_line=0; cn_dy=y-694; end
-        else if(y>=730 && y<762) begin cn_line_active=1; cn_line=1; cn_dy=y-730; end
-        else if(y>=766 && y<798) begin cn_line_active=1; cn_line=2; cn_dy=y-766; end
-        else if(y>=802 && y<834) begin cn_line_active=1; cn_line=3; cn_dy=y-802; end
-        else if(y>=838 && y<870) begin cn_line_active=1; cn_line=4; cn_dy=y-838; end
-        else if(y>=874 && y<906) begin cn_line_active=1; cn_line=5; cn_dy=y-874; end
-        else if(y>=910 && y<942) begin cn_line_active=1; cn_line=6; cn_dy=y-910; end
-        else if(y>=946 && y<978) begin cn_line_active=1; cn_line=7; cn_dy=y-946; end
-        if(MENU_CHINESE && I_menu_enable && cn_line_active) begin
+        result_hit=result_enable && x>=result_x && x<result_right &&
+                   y>=result_y && y<result_bottom && !controls_hit;
+        result_dx=x-result_x-12'd4;result_dy=y-result_y-12'd4;
+        if(result_hit && x>=result_x+4 && x<result_right-4 &&
+           y>=result_y+4 && y<result_bottom-4) begin
+            cn_active=1;cn_col=result_dx[4:0];cn_row=result_dy[4:0];cn_color=result_color;
+            case(result_dx[6:5])
+                0:cn_id=result_chars[6:0];1:cn_id=result_chars[13:7];
+                2:cn_id=result_chars[20:14];3:cn_id=result_chars[27:21];
+            endcase
+        end
+        if(y>=658 && y<690) begin cn_line_active=1; cn_line=0; cn_dy=y-658; end
+        else if(y>=694 && y<726) begin cn_line_active=1; cn_line=1; cn_dy=y-694; end
+        else if(y>=730 && y<762) begin cn_line_active=1; cn_line=2; cn_dy=y-730; end
+        else if(y>=766 && y<798) begin cn_line_active=1; cn_line=3; cn_dy=y-766; end
+        else if(y>=802 && y<834) begin cn_line_active=1; cn_line=4; cn_dy=y-802; end
+        else if(y>=838 && y<870) begin cn_line_active=1; cn_line=5; cn_dy=y-838; end
+        else if(y>=874 && y<906) begin cn_line_active=1; cn_line=6; cn_dy=y-874; end
+        else if(y>=910 && y<942) begin cn_line_active=1; cn_line=7; cn_dy=y-910; end
+        else if(y>=946 && y<978 && !I_picture_page && !mode_page && !rec_page) begin cn_line_active=1;cn_line=8;cn_dy=y-946;end
+        if(MENU_CHINESE && I_menu_enable && cn_line_active && x>=24 && x<492) begin
             cn_row=cn_dy[4:0];
             if(x>=44 && x<300) begin
                 cn_dx=x-44; cn_col=cn_dx[4:0];
@@ -209,7 +280,7 @@ module ui_osd #(
     endfunction
 
     function [7:0] text_char;
-        input [2:0] line;
+        input [3:0] line;
         input [3:0] index;
         begin
             text_char = 8'h20;
@@ -222,6 +293,7 @@ module ui_osd #(
                 3'd5: case(index) 0:text_char="M"; 1:text_char="O"; 2:text_char="D"; 3:text_char="E"; endcase
                 3'd6: case(index) 0:text_char="E"; 1:text_char="F"; 2:text_char="F"; 3:text_char="E"; 4:text_char="C"; 5:text_char="T"; endcase
                 3'd7: case(index) 0:text_char="L"; 1:text_char="O"; 2:text_char="G"; 3:text_char="O"; endcase
+                4'd8: case(index) 0:text_char="V";1:text_char="T";2:text_char="S";endcase
                 default: text_char = 8'h20;
             endcase
         end
@@ -509,6 +581,9 @@ module ui_osd #(
         text_y = 12'd0;
         text_active = 1'b0;
         picture_label="        "; picture_value="    ";
+        // A compact dark backing keeps the result legible on every effect,
+        // including white binary/edge pixels; other picture pixels pass through.
+        if(result_hit) pixel=24'h101820;
         // A thin 160x120 focus frame. Draw before menu controls so the UI
         // keeps priority even when the ROI reaches the edge of the panel.
         if(focus_roi_frame[31] === 1'b1 && x>=focus_x && x<focus_x+160 &&
@@ -516,14 +591,14 @@ module ui_osd #(
            (x<focus_x+2 || x>=focus_x+158 || y<focus_y+2 || y>=focus_y+118)) begin
             overlay=1; pixel=24'h40ff80;
         end
-        // Panel: lower-left, x=24..492, y=680..1004. The lower-left MENU
+        // Panel: lower-left, x=24..492, y=644..1004. The lower-left MENU
         // button remains visible even when this panel is hidden.
         if(I_menu_enable && (x >= MENU_X0) && (x < MENU_X0 + 12'd468) &&
-           (y >= MENU_Y0) && (y < MENU_Y0 + 12'd324)) begin
+           (y >= MENU_Y0) && (y < MENU_Y0 + 12'd360)) begin
             overlay = 1'b1;
             pixel = 24'h101820;
             if((x < MENU_X0 + 12'd4) || (x >= MENU_X0 + 12'd464) ||
-               (y < MENU_Y0 + 12'd4) || (y >= MENU_Y0 + 12'd320))
+               (y < MENU_Y0 + 12'd4) || (y >= MENU_Y0 + 12'd356))
                 pixel = 24'h3090d0;
             else if((y >= MENU_Y0 + 12'd48) && (y < MENU_Y0 + 12'd84) && (I_menu_index == 3'd0))
                 pixel = I_edit_enable ? 24'hd08020 : 24'h205080;
@@ -539,6 +614,9 @@ module ui_osd #(
                 pixel = 24'h205080;
             else if((y >= MENU_Y0 + 12'd264) && (y < MENU_Y0 + 12'd300) && (I_menu_index == 3'd6))
                 pixel = 24'h205080;
+
+            else if(y>=MENU_Y0+300 && y<MENU_Y0+336 && I_menu_index==7 && !I_picture_page && !mode_page && !rec_page)
+                pixel=I_edit_enable?24'hd08020:24'h205080;
 
             // Eight 32-pixel character cells: 20-pixel glyph + 12-pixel gap.
             // Bound x before taking bit slices to prevent character index wrap.
@@ -563,6 +641,9 @@ module ui_osd #(
                     text_active = 1'b1; line_no = 3'd6; text_y = y - (MENU_Y0 + 12'd232);
                 end else if((y >= MENU_Y0 + 12'd268) && (y < MENU_Y0 + 12'd296)) begin
                     text_active = 1'b1; line_no = 3'd7; text_y = y - (MENU_Y0 + 12'd268);
+                end
+                else if(y>=MENU_Y0+304 && y<MENU_Y0+332 && !I_picture_page && !mode_page && !rec_page) begin
+                    text_active=1;line_no=8;text_y=y-(MENU_Y0+304);
                 end
                 row = text_y[4:2];
                 ch = text_char(line_no, char_no);
@@ -594,6 +675,13 @@ module ui_osd #(
                            ((glyph & (5'b10000 >> col)) != 0);
             end
             if(glyph_on) pixel = 24'hffffff;
+            if(!I_picture_page && !mode_page && !rec_page && x>=330 && x<458 && y>=948 && y<976) begin
+                text_x=x-330;col=text_x[4:2];char_no={2'b0,text_x[6:5]};row=(y-948)>>2;
+                picture_value={4'h3,camera_display_frame[15:12],4'h3,camera_display_frame[11:8],
+                               4'h3,camera_display_frame[7:4],4'h3,camera_display_frame[3:0]};
+                ch=picture_value >> ((3-char_no)*8);glyph=glyph_bits(ch,row);
+                if(col<5 && ((glyph & (5'b10000>>col))!=0))pixel=24'h80e0c0;
+            end
             // Four short value bars fit beside the labels.  The PAN/TILT bars
             // are status indicators for the full-screen touch controller.
             if(!mode_page && !I_picture_page && !rec_page && (x >= MENU_X0 + 12'd306) && (x < MENU_X0 + 12'd434)) begin
@@ -606,11 +694,11 @@ module ui_osd #(
             if(mode_page && x>=330 && x<458) begin
                 text_x=x-330; col=text_x[4:2]; char_no={2'b0,text_x[6:5]};
                 text_active=0;picture_value="    ";text_y=0;
-                if(!MENU_CHINESE && y>=696 && y<724) begin text_active=1;text_y=y-696;picture_value="BACK";end
-                if(y>=732 && y<760) begin text_active=1;text_y=y-732;picture_value="1   ";end
-                if(y>=768 && y<796) begin text_active=1;text_y=y-768;picture_value="2   ";end
-                if(y>=804 && y<832) begin text_active=1;text_y=y-804;picture_value="3   ";end
-                if(y>=840 && y<868) begin text_active=1;text_y=y-840;picture_value="4   ";end
+                if(!MENU_CHINESE && y>=660 && y<688) begin text_active=1;text_y=y-660;picture_value="BACK";end
+                if(y>=696 && y<724) begin text_active=1;text_y=y-696;picture_value="1   ";end
+                if(y>=732 && y<760) begin text_active=1;text_y=y-732;picture_value="2   ";end
+                if(y>=768 && y<796) begin text_active=1;text_y=y-768;picture_value="3   ";end
+                if(y>=804 && y<832) begin text_active=1;text_y=y-804;picture_value="4   ";end
                 ch=picture_value >> ((3-char_no)*8);row=text_y[4:2];glyph=glyph_bits(ch,row);
                 if(text_active && col<5 && ((glyph & (5'b10000>>col))!=0)) pixel=24'h80e0c0;
             end
@@ -619,30 +707,30 @@ module ui_osd #(
             if(I_picture_page && !rec_page && x>=330 && x<458) begin
                 text_x=x-330; col=text_x[4:2]; char_no={2'b0,text_x[6:5]};
                 text_active=0; picture_value="    "; text_y=0;
-                if(y>=696 && y<724) begin text_active=1; text_y=y-696; picture_value="BACK"; end
-                if(y>=732 && y<760) begin text_active=1; text_y=y-732; picture_value={16'h2020,black_tens,black_ones}; end
-                if(y>=768 && y<796) begin text_active=1; text_y=y-768; picture_value=picture_frame[6]?"  ON":" OFF"; end
+                if(y>=660 && y<688) begin text_active=1; text_y=y-660; picture_value="BACK"; end
+                if(y>=696 && y<724) begin text_active=1; text_y=y-696; picture_value={16'h2020,black_tens,black_ones}; end
+                if(y>=732 && y<760) begin text_active=1; text_y=y-732; picture_value=picture_frame[6]?"  ON":" OFF"; end
+                if(y>=768 && y<796) begin
+                    text_active=1; text_y=y-768;
+                    case(picture_frame[8:7]) 0:picture_value="1.00"; 1:picture_value="1.12"; 2:picture_value="1.25"; 3:picture_value="1.50"; endcase
+                end
                 if(y>=804 && y<832) begin
                     text_active=1; text_y=y-804;
-                    case(picture_frame[8:7]) 0:picture_value="1.00"; 1:picture_value="1.12"; 2:picture_value="1.25"; 3:picture_value="1.50"; endcase
+                    case(picture_frame[11:9]) 0:picture_value="1.00"; 1:picture_value="1.25"; 2:picture_value="1.50"; 3:picture_value="1.75"; default:picture_value="2.00"; endcase
                 end
                 if(y>=840 && y<868) begin
                     text_active=1; text_y=y-840;
-                    case(picture_frame[11:9]) 0:picture_value="1.00"; 1:picture_value="1.25"; 2:picture_value="1.50"; 3:picture_value="1.75"; default:picture_value="2.00"; endcase
+                    case(picture_frame[13:12]) 0:picture_value="AUTO"; 1:picture_value="SMTH"; 2:picture_value="GRAY"; 3:picture_value=" OFF"; endcase
                 end
                 if(y>=876 && y<904) begin
                     text_active=1; text_y=y-876;
-                    case(picture_frame[13:12]) 0:picture_value="AUTO"; 1:picture_value="SMTH"; 2:picture_value="GRAY"; 3:picture_value=" OFF"; endcase
-                end
-                if(y>=912 && y<940) begin
-                    text_active=1; text_y=y-912;
                     case(picture_frame[15:14]) 0:picture_value=" OFF"; 1:picture_value=" LOW"; 2:picture_value=" MID"; 3:picture_value="HIGH"; endcase
                 end
-                if(y>=948 && y<976) begin text_active=1; text_y=y-948; picture_value="SET "; end
+                if(y>=912 && y<940) begin text_active=1; text_y=y-912; picture_value="SET "; end
                 ch=picture_value >> ((3-char_no)*8); row=text_y[4:2];
                 glyph=glyph_bits(ch,row);
                 if(text_active && col<5 && ((glyph & (5'b10000>>col))!=0) &&
-                   (!MENU_CHINESE || (y>=732 && y<760) || (y>=804 && y<868)))
+                   (!MENU_CHINESE || (y>=696 && y<724) || (y>=768 && y<832)))
                     pixel=24'h80e0c0;
             end
         end
@@ -650,15 +738,15 @@ module ui_osd #(
         if(I_menu_enable && rec_page && x>=330 && x<458) begin
             text_x=x-330;col=text_x[4:2];char_no={2'b0,text_x[6:5]};
             text_active=0;picture_value="    ";text_y=0;
-            if(y>=840 && y<868) begin
-                text_active=1;text_y=y-840;
+            if(y>=804 && y<832) begin
+                text_active=1;text_y=y-804;
                 case(rec_frame[14:12])
                     0:picture_value="  2S";1:picture_value="  5S";2:picture_value=" 10S";
                     3:picture_value=" 30S";default:picture_value=" 60S";
                 endcase
             end
-            if(y>=876 && y<904) begin
-                text_active=1;text_y=y-876;
+            if(y>=840 && y<868) begin
+                text_active=1;text_y=y-840;
                 picture_value={4'h3,rec_frame[31:28],4'h3,rec_frame[27:24],4'h3,rec_frame[23:20],4'h3,rec_frame[19:16]};
             end
             ch=picture_value >> ((3-char_no)*8);row=text_y[4:2];glyph=glyph_bits(ch,row);
@@ -761,6 +849,7 @@ module ui_osd #(
                     pixel=stats_mipi ? 24'h80ffb0 : 24'h80e0ff;
             end
         end
+
     end
 
     always @(posedge I_clk or negedge I_rst_n) begin
@@ -771,6 +860,7 @@ module ui_osd #(
             rtc_valid_frame <= 0;
             fps_frame<=0; fps_valid_frame<=0;
             mipi_frames_frame<=0; mipi_fps_frame<=0; mipi_fps_valid_frame<=0;
+            camera_display_frame<={7'd127,16'h2000};
             picture_frame <= 16'h1050; black_tens<="1"; black_ones<="6";
             exposure_bar_width <= 8'd48;
             gain_bar_width <= 8'd64;
@@ -802,6 +892,7 @@ module ui_osd #(
                 mipi_frames_frame<=I_mipi_frames;
                 mipi_fps_frame<=I_mipi_fps;
                 mipi_fps_valid_frame<=I_mipi_fps_valid;
+                camera_display_frame<=I_camera_display;
                 picture_frame<=I_picture_ctrl;
                 black_tens<="0"+I_picture_ctrl[5:0]/10;
                 black_ones<="0"+I_picture_ctrl[5:0]%10;
@@ -817,8 +908,7 @@ module ui_osd #(
                                    I_rtc_seconds <= 8'h59 && I_rtc_seconds[3:0] <= 9;
                 // The bars update once per frame.  Shift/add approximations
                 // avoid putting a multiplier/divider in the pixel data path.
-                exposure_bar_width <= (I_exposure >= 16'd3990) ? 8'd127 :
-                                      ((I_exposure >> 5) + (I_exposure >> 10));
+                exposure_bar_width <= {1'b0,I_camera_display[22:16]};
                 if(I_gain <= 16'd16)
                     gain_bar_width <= 8'd0;
                 else if(I_gain >= 16'd143)

@@ -44,6 +44,7 @@ input  wire             I_rst_n,  //ϵͳ��λ����
 input  wire             I_ae_req,//����ͷAE����
 input  wire	 [15:0] 	I_ae,
 input  wire	 [15:0] 	I_ag,
+input wire [15:0] I_vts,
 output wire             O_cam_scl, //I2C���ߣ�SCLʱ��
 inout  wire             IO_cam_sda, //I2C���ߣ�SDA����
 output reg              O_cfg_done, //�������
@@ -161,7 +162,8 @@ uics500regAE uics500regAE_inst
 .REG_INDEX(reg_index),//�Ĵ�����
 .REG_DATA(REG_DATA_AE),   //�Ĵ�������
 .I_AG(w_gain_val),
-.I_AE(I_ae)
+.I_AE(I_ae),
+.I_VTS(I_vts)
 );  
 
 

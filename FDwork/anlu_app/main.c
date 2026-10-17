@@ -12,6 +12,7 @@
 #include "../shared/touch_focus.h"
 #include "../shared/sd_recorder.h"
 #include "../shared/rtc_diag.h"
+#include "../shared/red_track_control.h"
 
 /* Keep the UI/AF control code compact enough for 48 KiB TCM with SD + RTC.
  * Peripheral wire timing remains in hardware; the 2 KiB stack is retained. */
@@ -97,6 +98,22 @@ static inline uint32_t ui_read(uint32_t offset)
 static inline void ui_write(uint32_t offset, uint32_t value)
 {
     *ui_reg(offset) = value;
+}
+
+/* FD may inspect/adjust these without a serial console. Both automatic axes
+ * are reversed after the board test showed motion away from the target. */
+volatile RedTrackConfig g_track_config = RED_TRACK_DEFAULT_CONFIG;
+RedTrackControl g_track_control;
+volatile uint32_t g_track_capability;
+static void tracking_service(MenuState *s)
+{
+    uint32_t word=g_track_capability==RED_TRACK_ID ? ui_read(UI_TRACK_STATUS) : 0;
+    unsigned changed=red_track_update(&g_track_control,word,
+        (uint32_t)(AlSys_GetTimerTickCount()/(PH1P35_MCU_TIMER_CLOCK/1000u)),
+        g_track_capability==RED_TRACK_ID && s->servo_menu_available && s->image_step==5u,
+        s->servo_touch_active!=0, &g_track_config, &s->servo_pan_us, &s->servo_tilt_us);
+    if(changed&1u) ui_write(UI_SERVO_PAN_US,s->servo_pan_us);
+    if(changed&2u) ui_write(UI_SERVO_TILT_US,s->servo_tilt_us);
 }
 
 static void ui_ctrl(uint32_t menu, uint32_t edit, uint32_t info, uint32_t picture_page)
@@ -353,16 +370,24 @@ static void autofocus_task(void)
 /* All inputs commit through this one hardware boundary. */
 static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
 {
+    if(s->image_step!=old->image_step || (actions & MENU_REACQUIRE))
+        g_track_control.primed=0;
     if(s->picture_available && picture_effective(s)!=picture_effective(old)) {
         ui_write(0x70, picture_effective(s));
         /* Read back hardware fields without saving Sobel's forced gamma as
          * the user's preference. OSD shows the effective hardware setting. */
         s->picture=(ui_read(0x70) & ~(1u << 6)) | (s->picture & (1u << 6));
     }
+    if(s->vts_available && s->vts != old->vts) {
+        ui_write(UI_VTS,s->vts);s->vts=ui_read(UI_VTS);
+        if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);
+    }
     if(s->exposure != old->exposure) {
         ui_write(UI_EXPOSURE, s->exposure);
         s->exposure = ui_read(UI_EXPOSURE);
     }
+    if(s->vts_available && (s->vts!=old->vts || s->exposure!=old->exposure))
+        ui_write(UI_CAMERA_DISPLAY,camera_display_word(s));
     if(s->gain != old->gain) {
         ui_write(UI_GAIN, s->gain);
         s->gain = ui_read(UI_GAIN);
@@ -428,6 +453,7 @@ static void recorder_service(void) {
         touchscreen_handle(record_ui);
         unsigned keys=ui_read(UI_KEY)&15u;
         if(keys) {focus_gesture=(TouchFocus){0};MenuState old=*record_ui;ui_write(UI_KEY,keys);menu_commit(record_ui,&old,menu_key(record_ui,keys));}
+        tracking_service(record_ui);
     }
 }
 
@@ -477,12 +503,16 @@ AL_S32 main(void)
 
     /* Apply startup defaults even when the previous APB value is legal.
      * Legacy gain 16 is a valid sensor code but displays as an empty bar. */
+    ui.vts_available=(ui_read(UI_VTS_ID)==0x56545331u);
+    ui.vts=2000u;
+    if(ui.vts_available) {ui_write(UI_VTS,ui.vts);ui.vts=ui_read(UI_VTS);}
     ui.exposure = 3990u;
     ui.gain = 80u;
     ui_write(UI_EXPOSURE, ui.exposure);
     ui_write(UI_GAIN, ui.gain);
     ui.exposure = ui_read(UI_EXPOSURE);
     ui.gain = ui_read(UI_GAIN);
+    if(ui.vts_available)ui_write(UI_CAMERA_DISPLAY,camera_display_word(&ui));
     al_printf("CAM: exposure_user=%u gain_user=%u gain_index=%u (sensor table)\r\n",
               ui.exposure, ui.gain, (ui.gain >= 16u) ? ui.gain - 16u : 0u);
     al_printf("CAM: firmware=20261011 fpga=0x%08x expected=0x%08x\r\n",
@@ -493,6 +523,7 @@ AL_S32 main(void)
     ui.servo_tilt_us = ui_read(UI_SERVO_TILT_US);
     ui.servo_menu_available = (ui.servo_pan_us >= 500u && ui.servo_pan_us <= 2500u &&
                             ui.servo_tilt_us >= 500u && ui.servo_tilt_us <= 2500u);
+    g_track_capability=ui_read(UI_TRACK_ID);
     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
     ui.picture_available=(ui_read(0x74)==0x50494331u);
     ui.picture=PICTURE_DEFAULT;
@@ -574,6 +605,7 @@ AL_S32 main(void)
          * one report every loop so a drag follows the finger promptly. */
         max3421e_touch_poll();
         touchscreen_handle(&ui);
+        tracking_service(&ui);
         rtc_diag_poll((uint32_t)UI_APB_BASE);
         recorder_poll();
         wifi_mcu_poll(0);

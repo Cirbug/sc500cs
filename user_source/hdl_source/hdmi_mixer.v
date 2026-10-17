@@ -7,7 +7,9 @@ module hdmi_mixer #(
     parameter V_OFFSET = 60,
     parameter IMG_WIDTH = `DISPLAY_WIDTH,
     parameter IMG_HEIGHT = `DISPLAY_HEIGHT,
-    parameter integer DEBUG_MODE = 0
+    parameter integer DEBUG_MODE = 0,
+    parameter SPRITE_ENABLE = 1'b0,
+    parameter SHAPE_LABEL_ENABLE = 1'b1
 )(
     input wire        I_clk,
     input wire        I_rst_n,
@@ -65,7 +67,9 @@ module hdmi_mixer #(
         .V_OFFSET   (V_OFFSET),
         .IMG_WIDTH  (IMG_WIDTH),
         .IMG_HEIGHT (IMG_HEIGHT),
-        .DEBUG_MODE (DEBUG_MODE)
+        .DEBUG_MODE (DEBUG_MODE),
+        .SPRITE_ENABLE(SPRITE_ENABLE),
+        .SHAPE_LABEL_ENABLE(SHAPE_LABEL_ENABLE)
     ) u_image9 (
         .I_clk           (I_clk),
         .I_rst_n         (I_rst_n),

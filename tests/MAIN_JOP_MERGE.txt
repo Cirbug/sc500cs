@@ -1,0 +1,79 @@
+main 合入 jop1.0：资源优化、红色目标云台跟随、中文结果与 VTS 菜单
+日期：2026-10-17
+
+基线与范围
+main 原提交：6fa8579（保留其 MIPI/HDMI 帧计数方案）。
+合入来源：origin/jop1.0，abba8b8。
+本次使用本地合并提交保留双方历史；没有推送、烧录或下载到开发板。
+RESULT_CHINESE.txt、RED_TRACKING.txt、MAIN_VTS_MENU.txt、VTS_RANGE_UPDATE.txt
+为来源分支的历史记录；其中删除帧率面板的说明和历史资源数字不适用于本合并版本。
+
+合入内容
+1. Sobel 两个行缓存使用 PH1P ERAM，灰度计算复用；锐化中间值缩至10位。
+2. 安路 LOGO 使用同步 ROM，流水级对齐；移动小人默认编译关闭。
+3. 图像特效和形状结果共用菜单中文字库，关闭重复英文形状标签。
+4. 帧长菜单：默认2000，范围1980..2500，步长20；曝光上限联动2*VTS-10。
+5. 曝光/增益/VTS整组握手跨域与I2C组更新；显示字/比例由MCU计算。
+6. 红色目标结果邮箱到APB，MCU消费新结果并控制现有PAN/TILT PWM。
+7. MCU整数诊断共享格式化器，保留原有堆栈和USB缓冲。
+
+main 特有合并处理
+保留 main 的 hdmi_frame_stats.v、MIPI帧事件同步与统计实现。
+保留右上角HDMI/MIPI FPS及累计帧数、顶端中间RTC时钟。
+合并ui_osd冲突：同时保留相机显示字和帧级统计快照。
+中文结果标签避让帧率面板；新增遮挡场景测试，不能让中文字覆盖统计数字。
+保留本机FD launch、JTAG USB位置、SDK工程设置、TD工程路径和锁文件版本。
+传感器初始化表、PLL、引脚约束、MCU IP核均未改变。
+因此本合并不宣称修复Full模式15 fps；VTS=1980的传感器稳定性仍需实测。
+
+云台使用
+使用 FDwork/anlu_app 的配套TCM固件与新FPGA位流。
+显示挡位4（内部image_step=5）自动跟随现有红色连通目标。
+默认PAN方向-1、TILT方向+1；等级对应1/2/4 us，更新间隔至少80 ms。
+捕获或手动释放后等待200 ms，手动拖动优先，目标丢失停止追加运动。
+PWM限位500..2500 us；方向和机械安全行程必须依据本机实测复核。
+anlu_app2保留来源分支的用途及行为，仅同步VTS接口，不包含自动跟随服务。
+此功能不是目标自动对焦；现有双击ROI对焦保留。
+检测在HDMI处理域：新结果序号不代表新的摄像头帧。
+250 ms无邮箱更新保护不能检测摄像头冻结而HDMI重复旧画面的情况。
+
+验证与产物
+本机TD 6.2.168116完成完整design_top_wrapper展开，未出现未解析模块错误。
+本次没有执行完整布局布线/bitgen，不能沿用来源分支85.39%的资源结论。
+独立构建入口：tests/build_main_jop_merge.tcl。
+默认新bit输出：../bank/main_jop_merge_20261017/fpga/camera_to_dsi_display_main_jop.bit。
+脚本检查MCU PAD JTAG、复位向量、最终setup/hold时序，时序不通过停止bitgen。
+可用MAIN_JOP_BUILD_DIR覆盖输出路径；保留main当前时钟和统计时基。
+
+本机已编译的MCU（不是已下载）：
+../bank/main_jop_merge_20261017/mcu/build/anlu_app.elf
+  text=40240 data=160 bss=8496，size合计48896字节。
+  1KiB heap位于0x0800B330..0x0800B730；2KiB栈从0x0800B800开始。
+  额外静态间隙208字节，不能当成宽裕的可用TCM。
+../bank/main_jop_merge_20261017/mcu2/build/anlu_app2.elf
+  text=35860 data=152 bss=8480，size合计44492字节。
+未覆盖原有MCU build目录中的旧ELF，避免旧bit配新接口。
+
+离线测试日志目录：../bank/main_jop_merge_20261017/
+tracking/：云台反馈方向、限位/手动优先/丢失恢复、序号与计时回绕；
+  原触摸对焦/图像菜单/录制菜单/VTS菜单；整数日志；异步邮箱；
+  红色连通检测与原生1920x1080边界/离散块；精简跟踪OSD。
+vts/：65536种VTS/曝光输入、I2C组更新及忙时请求合并；统计OSD；菜单字模。
+resource/：125780周期、112155有效像素、1655360锐化函数向量的前后等价检查。
+regression/：main原HDMI/MIPI计数、RTC/图像菜单/触摸ROI显示。
+osd/：原LOGO与同步ROM的逐地址/逐像素等价检查及小人开关恢复。
+chinese/：19个中文结果场景（含与保留统计面板重叠）及9个原菜单场景。
+elaborate.log、mcu_build.log、mcu2_build.log保存本机工程展开/编译证据。
+离线测试不等于实板的摄像头、USB、RTC、SD或舵机验证。
+
+本机重跑示例（工程根目录，按需替换工具路径）
+python tests/run_red_tracking.py --modelsim F:/modelsim/win64 --gcc E:/mingw64/bin/gcc.exe --out ../bank/main_jop_merge_20261017/tracking
+python tests/run_main_vts.py --modelsim F:/modelsim/win64 --gcc E:/mingw64/bin/gcc.exe --out ../bank/main_jop_merge_20261017/vts
+python tests/run_resource_equivalence.py --modelsim F:/modelsim/win64 --td F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116 --out ../bank/main_jop_merge_20261017/resource
+python tests/run_osd_eram_equivalence.py --modelsim F:/modelsim/win64 --out ../bank/main_jop_merge_20261017/osd
+python tests/run_result_chinese.py --modelsim F:/modelsim/win64 --out ../bank/main_jop_merge_20261017/chinese
+python tests/run_main_vts.py --modelsim F:/modelsim/win64 --out ../bank/main_jop_merge_20261017/regression --tops tb_hdmi_frame_stats tb_mipi_frame_stats tb_ui_osd tb_picture_osd tb_rtc_osd tb_touch_focus_osd
+PowerShell编译MCU：
+& ./FDwork/anlu_app/build.ps1 -FdRoot F:/AnlogicFpga/FD_2026.1 -BuildRoot D:/2026fpga/bank/main_jop_merge_20261017/mcu
+PowerShell完整FPGA编译（本次尚未执行）：
+& F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/td_commands_prompt.exe D:/2026fpga/lab_hd_1_mipi_hdmi/tests/build_main_jop_merge.tcl

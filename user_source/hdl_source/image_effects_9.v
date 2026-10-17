@@ -115,10 +115,8 @@ reg     [11:0]  col         ;   //???(???????)
 reg     [11:0]  col_d1      ;   //????? 1 ?
 reg             de_d1       ;   //de ?? 1 ?
 
-reg     [7:0]   LB1 [0:IMG_WIDTH-1] ;   //???1: ????
-reg     [7:0]   LB2 [0:IMG_WIDTH-1] ;   //???2: ????
-reg     [7:0]   lb1_q       ;   //LB1 ?????(??????)
-reg     [7:0]   lb2_q       ;   //LB2 ?????(??????)
+wire    [7:0]   lb1_q       ;   //LB1 ?????(??????)
+wire    [7:0]   lb2_q       ;   //LB2 ?????(??????)
 reg     [7:0]   g0          ;   //???? 1 ?, ? lb1_q/lb2_q ??
 
 reg     [7:0]   r0_0, r0_1, r0_2 ;   //??? 3 ???
@@ -180,15 +178,45 @@ always@(posedge I_clk)
   end
 
 //LB1/LB2:???(???/???), ????????; LB2 ??????
-always@(posedge I_clk)
-  begin
-    lb1_q   <=  LB1[col];
-    if(I_de == 1'b1)
-        LB1[col]    <=  gray;
-    lb2_q   <=  LB2[col];
-    if(de_d1 == 1'b1)
-        LB2[col_d1] <=  lb1_q;
-  end
+localparam LINE_ADDR_WIDTH = (IMG_WIDTH > 1) ? $clog2(IMG_WIDTH) : 1;
+// Explicit PH1P block RAM prevents TD from moving the read register
+// into the resettable column counter and falling back to distributed RAM.
+PH1P_LOGIC_ERAM #(
+    .DATA_WIDTH_A(8), .DATA_WIDTH_B(8),
+    .ADDR_WIDTH_A(LINE_ADDR_WIDTH), .ADDR_WIDTH_B(LINE_ADDR_WIDTH),
+    .DATA_DEPTH_A(IMG_WIDTH), .DATA_DEPTH_B(IMG_WIDTH),
+    .MODE("DP"), .REGMODE_A("NOREG"), .REGMODE_B("NOREG"),
+    .WRITEMODE_A("READBEFOREWRITE"), .WRITEMODE_B("READBEFOREWRITE"),
+    .IMPLEMENT("20K(FAST)"), .CLKMODE("SYNC"),
+    .RESETMODE_A("ASYNC"), .RESETMODE_B("ASYNC"),
+    .INIT_FILE("NONE"), .FILL_ALL("NONE")
+) u_sobel_line1 (
+    .clka(I_clk), .clkb(I_clk), .cea(1'b1), .ceb(1'b1),
+    .ocea(1'b0), .oceb(1'b0), .rsta(1'b0), .rstb(1'b0),
+    .addra(col[LINE_ADDR_WIDTH-1:0]), .addrb({LINE_ADDR_WIDTH{1'b0}}),
+    .dia(gray), .dib(8'd0), .wea(I_de), .web(1'b0),
+    .bea(1'b0), .beb(1'b0), .doa(lb1_q), .dob(),
+    .ecc_sbiterr(), .ecc_dbiterr(), .ecc_sbiterrinj(1'b0), .ecc_dbiterrinj(1'b0)
+);
+// Explicit PH1P block RAM prevents TD from moving the read register
+// into the resettable column counter and falling back to distributed RAM.
+PH1P_LOGIC_ERAM #(
+    .DATA_WIDTH_A(8), .DATA_WIDTH_B(8),
+    .ADDR_WIDTH_A(LINE_ADDR_WIDTH), .ADDR_WIDTH_B(LINE_ADDR_WIDTH),
+    .DATA_DEPTH_A(IMG_WIDTH), .DATA_DEPTH_B(IMG_WIDTH),
+    .MODE("DP"), .REGMODE_A("NOREG"), .REGMODE_B("NOREG"),
+    .WRITEMODE_A("READBEFOREWRITE"), .WRITEMODE_B("READBEFOREWRITE"),
+    .IMPLEMENT("20K(FAST)"), .CLKMODE("SYNC"),
+    .RESETMODE_A("ASYNC"), .RESETMODE_B("ASYNC"),
+    .INIT_FILE("NONE"), .FILL_ALL("NONE")
+) u_sobel_line2 (
+    .clka(I_clk), .clkb(I_clk), .cea(1'b1), .ceb(1'b1),
+    .ocea(1'b0), .oceb(1'b0), .rsta(1'b0), .rstb(1'b0),
+    .addra(col[LINE_ADDR_WIDTH-1:0]), .addrb(col_d1[LINE_ADDR_WIDTH-1:0]),
+    .dia(8'd0), .dib(lb1_q), .wea(1'b0), .web(de_d1),
+    .bea(1'b0), .beb(1'b0), .doa(lb2_q), .dob(),
+    .ecc_sbiterr(), .ecc_dbiterr(), .ecc_sbiterrinj(1'b0), .ecc_dbiterrinj(1'b0)
+);
 
 //g0:???? 1 ?, ? lb1_q/lb2_q ??????
 always@(posedge I_clk)
@@ -301,7 +329,18 @@ assign  O_data  =   (I_sobel_en == 1'b1)
                     ? ( (de4 == 1'b1 && valid4 == 1'b1) ? (edge_majority ? EDGE_COLOR : FLAT_COLOR) : 24'd0 )
                     : ( (de4 == 1'b1) ? d4 : 24'd0 );
 assign  O_edge  =   edge_majority;
-assign  O_gray  =   gray_exact(d4);
+// Reuse the input grayscale arithmetic; delay its result with the RGB path.
+// Four resettable stages preserve gray_exact(d4), including reset/blanking.
+reg [7:0] gray_d1, gray_d2, gray_d3, gray_d4;
+always @(posedge I_clk or negedge I_rst_n)
+    if (!I_rst_n) begin
+        gray_d1 <= 8'd0; gray_d2 <= 8'd0;
+        gray_d3 <= 8'd0; gray_d4 <= 8'd0;
+    end else begin
+        gray_d1 <= gray; gray_d2 <= gray_d1;
+        gray_d3 <= gray_d2; gray_d4 <= gray_d3;
+    end
+assign O_gray = gray_d4;
 
 endmodule
 

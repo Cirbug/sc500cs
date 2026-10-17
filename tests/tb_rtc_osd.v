@@ -7,7 +7,7 @@ module tb_rtc_osd;
     reg valid=1, error=0, osf=0;
     wire ovs, ohs, ode;
     wire [23:0] pixel;
-    ui_osd #(.MENU_CHINESE(0)) dut(
+    ui_osd #(.MENU_CHINESE(0)) dut(.I_mipi_clk(clk),.I_mipi_frame_start(1'b0),.I_camera_display({7'd127,16'h2000}),
         .I_clk(clk), .I_rst_n(rst_n), .I_vsync(vs), .I_hsync(1'b0),
         .I_de(de), .I_data(24'h526879), .I_menu_enable(1'b0),
         .I_edit_enable(1'b0), .I_info_enable(1'b0), .I_menu_index(3'd0),

@@ -1,4 +1,6 @@
 `include "video_params.vh"
+// Keep the mailbox reachable from existing TD GUI/generated source lists.
+`include "red_track_mailbox.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
@@ -224,6 +226,7 @@ module design_top_wrapper (
     wire [11:0] S_track_x0, S_track_y0, S_track_x1, S_track_y1, S_track_cx, S_track_cy;
     wire signed [12:0] S_track_ex, S_track_ey;
     wire [6:0]  S_track_area;
+    wire [31:0] S_track_status_apb, S_track_errors_apb;
     wire [23:0] S_hdmi_base_data;
     wire        S_hdmi_overlay_valid;
     wire        S_effect_vsync, S_effect_hsync, S_effect_de;
@@ -410,6 +413,9 @@ module design_top_wrapper (
             S_mode_page_p1<=S_mode_page_apb; S_mode_page_p2<=S_mode_page_p1;
         end
     end
+    wire [15:0] S_ui_vts_apb,S_cam_vts;
+    wire [47:0] S_camera_settings;
+    wire [22:0] S_camera_display_apb,S_camera_display_pixel;
     wire [15:0] S_ui_ae_apb;
     wire [15:0] S_ui_ag_apb;
     wire [2:0]  S_image_step_apb;
@@ -417,10 +423,6 @@ module design_top_wrapper (
     wire [1:0]  S_image_target_apb;
     wire        S_image_logo_apb;
     wire        S_image_track_toggle_apb;
-    reg [15:0]  S_ae_sync1;
-    reg [15:0]  S_ae_sync2;
-    reg [15:0]  S_ag_sync1;
-    reg [15:0]  S_ag_sync2;
     reg         S_ui_enable_p1, S_ui_enable_p2;
     reg         S_ui_edit_p1, S_ui_edit_p2;
     reg         S_ui_info_p1, S_ui_info_p2;
@@ -805,19 +807,12 @@ module design_top_wrapper (
 	assign O_cam_rst 	= 1'b1;
     assign O_cam_24m 	= S_24m_clk;
 
-    always @(posedge S_24m_clk or negedge S_rst_n) begin
-        if(!S_rst_n) begin
-            S_ae_sync1 <= 16'd5990;
-            S_ae_sync2 <= 16'd5990;
-            S_ag_sync1 <= 16'd80;
-            S_ag_sync2 <= 16'd80;
-        end else begin
-            S_ae_sync1 <= S_ui_ae_apb;
-            S_ae_sync2 <= S_ae_sync1;
-            S_ag_sync1 <= S_ui_ag_apb;
-            S_ag_sync2 <= S_ag_sync1;
-        end
-    end
+    camera_menu_cdc #(.WIDTH(48),.RESET_VALUE({16'd3990,16'd80,16'd2000})) u_camera_settings (
+        .src_clk(S_mcu_apb_clk),.dst_clk(S_24m_clk),.rst_n(S_rst_n),
+        .requested({S_ui_ae_apb,S_ui_ag_apb,S_ui_vts_apb}),.active(S_camera_settings));
+    camera_menu_cdc #(.WIDTH(23),.RESET_VALUE({7'd127,16'h2000})) u_camera_display (
+        .src_clk(S_mcu_apb_clk),.dst_clk(S_hdmi_pixel_clk),.rst_n(S_rst_n),
+        .requested(S_camera_display_apb),.active(S_camera_display_pixel));
 
     always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
         if(!S_hdmi_rst_n) begin
@@ -1155,6 +1150,7 @@ module design_top_wrapper (
         .O_mode_page   ( S_mode_page_apb ),
         .O_picture_ctrl( S_picture_apb ),
         .O_exposure    ( S_ui_ae_apb ),
+        .O_vts(S_ui_vts_apb), .O_camera_display(S_camera_display_apb),
         .O_gain        ( S_ui_ag_apb ),
         .O_image_step  ( S_image_step_apb ),
         .O_image_effect( S_image_effect_apb ),
@@ -1177,6 +1173,7 @@ module design_top_wrapper (
         .O_rtc_set_time0(S_rtc_set_time0), .O_rtc_set_time1(S_rtc_set_time1),
         .O_rtc_set(S_rtc_set), .I_rtc_set_status(S_rtc_set_status),
         .O_wifi_ctrl(S_wifi_ctrl), .I_wifi_pads(S_wifi_pad_sync),
+        .I_track_status(S_track_status_apb), .I_track_errors(S_track_errors_apb),
         .O_lens_cmd    ( S_lens_cmd ),
         .O_lens_retry  ( S_lens_retry ),
         .O_lens_read_adc( S_lens_read_adc ),
@@ -1194,13 +1191,15 @@ module design_top_wrapper (
       .I_rst(~S_rst_n),
       .I_btn(4'b1111),
       .I_mcu_control_en(1'b1),
-      .I_mcu_ae(S_ae_sync2),
-      .I_mcu_ag(S_ag_sync2),
+      .I_mcu_ae(S_camera_settings[47:32]),
+      .I_mcu_ag(S_camera_settings[31:16]),
+      .I_mcu_vts(S_camera_settings[15:0]),
       .I_cam_cfg_done(S_cam_cfg_done),
       .I_ae_cfg_done(S_ae_cfg_done),
       .O_ae_req(S_ae_req),
       .O_ae(S_ae),
-      .O_ag(S_ag)
+      .O_ag(S_ag),
+      .O_vts(S_cam_vts)
   );
   
     uicfgcs500 #(
@@ -1211,6 +1210,7 @@ module design_top_wrapper (
       .I_ae_req(S_ae_req),
       .I_ae(S_ae),
       .I_ag(S_ag),
+      .I_vts(S_cam_vts),
       .O_cam_scl(O_cam_scl),  //I2C总线，SCL时钟
       .IO_cam_sda(IO_cam_sda),  //I2C总线，SDA数据
       .O_cfg_done(S_cam_cfg_done),  //摄像头寄存器初始化完成
@@ -1657,7 +1657,8 @@ isp_top u_isp_top (
     red_target_tracker #(
         .IMG_WIDTH    (`DISPLAY_WIDTH),
         .IMG_HEIGHT   (`DISPLAY_HEIGHT),
-        .SAMPLE_SHIFT (4)
+        .SAMPLE_SHIFT (4),
+        .REPORT_AREA_PERCENT (0)
     ) u_red_target_tracker_99 (
         .I_clk       ( S_hdmi_pixel_clk ),
         .I_rst_n     ( S_hdmi_rst_n ),
@@ -1677,13 +1678,25 @@ isp_top u_isp_top (
         .O_area_percent (S_track_area)
     );
 
+    red_track_mailbox u_red_track_mailbox (
+        .pixel_clk(S_hdmi_pixel_clk), .apb_clk(S_mcu_apb_clk),
+        .rst_n(S_hdmi_rst_n && S_rst_n),
+        .enable(S_dbg_step == 3'd5), .reacquire(S_track_reacquire),
+        .new_result(S_track_new), .valid(S_track_valid), .state(S_track_state),
+        .dir_x(S_track_dx), .dir_y(S_track_dy),
+        .level_x(S_track_lx), .level_y(S_track_ly),
+        .error_x(S_track_ex), .error_y(S_track_ey),
+        .status(S_track_status_apb), .errors(S_track_errors_apb)
+    );
+
     hdmi_mixer #(
         .H_OFFSET   ( 0    ),
         .V_OFFSET   ( 0    ),
         .IMG_WIDTH  ( `DISPLAY_WIDTH ),
         .IMG_HEIGHT ( `DISPLAY_HEIGHT ),
         // 正常摄像头显示模式；改为 1 可输出全屏彩条进行 HDMI 链路诊断。
-        .DEBUG_MODE ( 0    )
+        .DEBUG_MODE ( 0    ),
+        .SHAPE_LABEL_ENABLE(0) // The final OSD shares its Chinese font with the menu.
     )u_hdmi_mixer(
         .I_clk           ( S_hdmi_pixel_clk   ),
         .I_rst_n         ( S_hdmi_rst_n       ),
@@ -1822,9 +1835,12 @@ isp_top u_isp_top (
     ui_osd #(
         .H_ACTIVE(`HDMI_H_ACTIVE),
         .V_ACTIVE(`HDMI_V_ACTIVE),
+        .RESULT_CHINESE(1),
         .PIXEL_CLOCK_HZ(`HDMI_PIXEL_CLOCK_HZ)
     ) u_ui_osd (
         .I_record_status (rec_ui_status),
+        .I_mipi_clk(S_csi_rx_clk), .I_mipi_frame_start(S_csi_frame_start),
+        .I_camera_display(S_camera_display_pixel),
         .I_clk          ( S_hdmi_pixel_clk ),
         .I_rst_n        ( S_hdmi_rst_n ),
         .I_vsync        ( S_final_vsync ),
@@ -1842,6 +1858,12 @@ isp_top u_isp_top (
         .I_mode_page    ( S_mode_page_p2 ),
         .I_focus_roi    ( S_focus_roi_p2 ),
         .I_image_step   ( S_image_step_p2 ),
+        .I_image_effect ( S_dbg_effect_sel ),
+        .I_shape_valid  ( S_shape_valid ),
+        .I_shape_type   ( S_shape_type ),
+        .I_shape_x0     ( S_shape_x0 ),
+        .I_shape_y0     ( S_shape_y0 ),
+        .I_shape_y1     ( S_shape_y1 ),
         .I_picture_ctrl ( S_picture_pixel ),
         .I_exposure     ( S_ui_ae_p2 ),
         .I_gain         ( S_ui_ag_p2 ),

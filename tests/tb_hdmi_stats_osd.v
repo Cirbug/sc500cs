@@ -7,7 +7,7 @@ module tb_hdmi_stats_osd;
     wire [23:0] a,b;
     wire av,ad,bv,bd;
     ui_osd #(.MENU_CHINESE(0),.PIXEL_CLOCK_HZ(1000)) ascii_osd(
-        .I_mipi_frames(cam_frames),.I_mipi_fps(cam_fps),.I_mipi_fps_valid(1'b1),
+        .I_camera_display({7'd127,16'h2000}),.I_mipi_frames(cam_frames),.I_mipi_fps(cam_fps),.I_mipi_fps_valid(1'b1),
         .I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),.I_de(de),.I_data(24'h526879),
         .I_menu_enable(1'b0),.I_edit_enable(1'b0),.I_info_enable(1'b0),.I_menu_index(3'd0),
         .I_picture_page(1'b0),.I_picture_ctrl(16'h1050),.I_record_status(32'd0),
@@ -15,7 +15,7 @@ module tb_hdmi_stats_osd;
         .I_rtc_hours(8'h12),.I_rtc_minutes(8'h34),.I_rtc_seconds(8'h56),
         .I_rtc_valid(1'b1),.I_rtc_error(1'b0),.I_rtc_osf(1'b0),.O_data(a),.O_vsync(av),.O_de(ad));
     ui_osd #(.MENU_CHINESE(1),.PIXEL_CLOCK_HZ(1000)) chinese_osd(
-        .I_mipi_frames(cam_frames),.I_mipi_fps(cam_fps),.I_mipi_fps_valid(1'b1),
+        .I_camera_display({7'd127,16'h2000}),.I_mipi_frames(cam_frames),.I_mipi_fps(cam_fps),.I_mipi_fps_valid(1'b1),
         .I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),.I_de(de),.I_data(24'h526879),
         .I_menu_enable(1'b0),.I_edit_enable(1'b0),.I_info_enable(1'b0),.I_menu_index(3'd0),
         .I_picture_page(1'b0),.I_picture_ctrl(16'h1050),.I_record_status(32'd0),

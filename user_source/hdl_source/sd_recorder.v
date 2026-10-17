@@ -1,10 +1,11 @@
 `ifndef SD_RECORDER_V
 `define SD_RECORDER_V
+`include "video_params.vh"
 // REC1: APB SPI master and a dedicated 640x360 RGB888 snapshot in DDR.
 // No backpressure is applied to the display. Overflow invalidates the frame.
 module sd_recorder #(
     parameter WIDTH=1920, HEIGHT=1080,
-    parameter [24:0] BASE=25'd8000000 // byte offset 16 MB; live buffers end <13 MB
+    parameter [24:0] BASE=`DDR_SNAPSHOT_BASE_ADDR // byte offset 24 MB
 )(
     input wire rst_n, apb_clk, pixel_clk, ddr_clk,
     input wire [7:0] addr,

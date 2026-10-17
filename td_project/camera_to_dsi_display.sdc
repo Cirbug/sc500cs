@@ -56,3 +56,18 @@ set_max_delay -datapath_only 8.000 -through [get_nets {u_red_track_mailbox/held*
 set_false_path -hold -through [get_nets {u_red_track_mailbox/held* u_red_track_mailbox/req}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 set_max_delay -datapath_only 8.000 -through [get_nets {u_red_track_mailbox/ack}] -to [get_clocks {HDMI_PIXEL_CLK}]
 set_false_path -hold -through [get_nets {u_red_track_mailbox/ack}] -to [get_clocks {HDMI_PIXEL_CLK}]
+
+# VID2 display diagnostics use a held bundle and request/ack handshake.
+# Bound only the held bundle and request/ack crossings, not synchronizer stages.
+set_max_delay -datapath_only 8.000 -through [get_nets {u_display_diag_cdc/held* u_display_diag_cdc/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_false_path -hold -through [get_nets {u_display_diag_cdc/held* u_display_diag_cdc/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_max_delay -datapath_only 8.000 -through [get_nets {u_display_diag_cdc/request}] -to [get_clocks {HDMI_PIXEL_CLK}]
+set_false_path -hold -through [get_nets {u_display_diag_cdc/request}] -to [get_clocks {HDMI_PIXEL_CLK}]
+
+# The derived MCU APB clock is not excluded from MIPI by the clock groups above.
+# RX diagnostics are sampled only after the two-stage ack plus the destination
+# capture edge; the source holds the bundle until the next synchronized request.
+set_max_delay -datapath_only 8.000 -through [get_nets {u_rx_diag_cdc/held* u_rx_diag_cdc/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_false_path -hold -through [get_nets {u_rx_diag_cdc/held* u_rx_diag_cdc/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_max_delay -datapath_only 8.000 -through [get_nets {u_rx_diag_cdc/request}] -to [get_clocks {MIPI_RX_BYTE_CLK}]
+set_false_path -hold -through [get_nets {u_rx_diag_cdc/request}] -to [get_clocks {MIPI_RX_BYTE_CLK}]

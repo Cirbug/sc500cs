@@ -12,6 +12,7 @@
 #include "../shared/touch_focus.h"
 #include "../shared/sd_recorder.h"
 #include "../shared/rtc_diag.h"
+#include "../shared/video_diag.h"
 
 /* Match the RAM application's compact UI/AF control code. */
 #pragma GCC optimize ("Os")
@@ -428,6 +429,7 @@ static MenuState *record_ui;
 static void recorder_service(void) {
     wifi_mcu_poll(1);
     rtc_diag_poll((uint32_t)UI_APB_BASE);
+    video_diag_poll((uint32_t)UI_APB_BASE);
     max3421e_touch_poll();
     if(record_ui) {
         touchscreen_handle(record_ui);
@@ -582,6 +584,7 @@ AL_S32 main(void)
         max3421e_touch_poll();
         touchscreen_handle(&ui);
         rtc_diag_poll((uint32_t)UI_APB_BASE);
+        video_diag_poll((uint32_t)UI_APB_BASE);
         recorder_poll();
         wifi_mcu_poll(0);
         g_ui_debug_stage = 6;

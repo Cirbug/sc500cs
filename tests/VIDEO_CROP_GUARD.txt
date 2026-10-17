@@ -1,0 +1,54 @@
+VIDEO CROP COMPLETION GUARD - 2026-10-17
+
+Problem and change
+The current board rejects every RAW frame and never publishes a display bank.
+First recorded error: RAW row1944 stops after92 RAW32 words, outside the
+centered1920x1080 crop of the2592x1944 sensor image. The record is sticky, so
+this is NOT proof that every later error occurs in that row.
+
+The RAW integrity monitor now exports a same-clock sticky-per-frame error,
+including line/packet/lane errors before the ISP cropped SOF. The writer
+latches that error at cropped SOF and through the final received visible word.
+Thus prefix and visible-region faults remain fatal even if a damaged stream
+happens to produce exactly388800 RGB128 words. Errors strictly after the full
+crop do not discard the completed display region. Full RAW error diagnostics
+are retained. REQUIRE_RAW_FRAME defaults to1 for strict users; this project's
+cropped display explicitly selects0 and connects the per-frame stream error.
+
+Unchanged safeguards
+Exact received AND queued crop length, FIFO full/oversize/missing EOF handling,
+three live-bank ownership, old read-response fencing, display-underflow handling,
+SD snapshot address separation. No new frame memory, UART commands or MCU ABI.
+CSI packet parser and physical MIPI PHY are unchanged by this patch.
+HTS1600/defaultVTS2000, exposure clamp, camera MCLK and PLL are unchanged.
+The existing MCU ELF from video_fault_detail remains compatible.
+
+Validation
+run_video_safe.py now has16 tests. New tb_video_crop_guard compares strict and
+cropped policies with real async FIFO models: faults before SOF, mid-crop,
+coincident with final word, after crop, short/oversize crops, simultaneous last
+word/EOF/fault, and recovery. Full CSI->RAW->ISP->capture simulation checks
+normal full frames, shared-HS packet boundaries, missing-FE/next-FS completion,
+a truncated last RAW row, and truncated prefix/middle rows. The latter can
+still produce the expected crop word count, so rejection is explicitly checked.
+Existing protected vendor-aligner, packet, ownership, SD, DDR and CDC tests pass.
+Memory-layout check passes: live video ends at19020800bytes, snapshot begins24MB.
+
+Evidence boundary
+This changes display acceptance, not the underlying physical HS-valid loss.
+It does not establish that the sensor transmits correct payloads, implement
+payload CRC, or guarantee resolution of every prior split/color-band symptom.
+Tests model the given fault and digital logic; board verification remains needed.
+The first-fault record is not representative of every subsequent frame by itself.
+If faults also affect the visible crop, this version deliberately rejects them.
+
+Use
+Build: tests/build_video_crop_guard.tcl
+Artifact directory: D:/2026fpga/bank/video_crop_guard_20261017/fpga
+Expected bit: camera_to_dsi_display_video_crop_guard.bit
+Use fresh FPGA reset and defaultVTS2000. Keep current MCU diagnostic firmware.
+C0 low16 counts published display crops; it should advance if faults are tail-only.
+B8 upper16 may continue counting bad FULL RAW frames. C4 flags are sticky history;
+C4's raw-error flag alone no longer means a crop was blocked. A usable image and
+advancing published count, without persistent splitting, are board acceptance.
+No automatic board download, sensor rewire, firmware flash or Git commit.

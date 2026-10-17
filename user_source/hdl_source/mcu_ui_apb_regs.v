@@ -66,6 +66,9 @@ module mcu_ui_apb_regs #(
     output reg [1:0] O_wifi_ctrl,
     input wire [1:0] I_wifi_pads,
     input wire [31:0] I_track_status, I_track_errors,
+    input wire [63:0] I_video_rx_diag,I_video_capture_diag,
+    input wire [31:0] I_video_display_diag,
+    input wire [95:0] I_video_fault_details,
     output reg         O_lens_cmd,
     output reg         O_lens_retry, O_lens_read_adc,
     output reg  [13:0] O_lens_position,
@@ -239,6 +242,16 @@ module mcu_ui_apb_regs #(
                 8'ha8: O_prdata = 32'h54524b31; // TRK1: coherent tracking result mailbox
                 8'hac: O_prdata = I_track_status;
                 8'hb0: O_prdata = I_track_errors;
+                8'hb4: O_prdata = 32'h56494432; // VID2: validated triple-buffer video
+                8'hb8: O_prdata = I_video_rx_diag[63:32]; // bad/good RAW frames
+                8'hbc: O_prdata = I_video_rx_diag[31:0]; // flags[31:24], lines, words
+                8'hc0: O_prdata = I_video_capture_diag[63:32]; // rejected/published frames
+                8'hc4: O_prdata = I_video_capture_diag[31:0]; // capture flags/state
+                8'hc8: O_prdata = I_video_display_diag; // underflow frames/flags
+                8'hcc: O_prdata = I_video_fault_details[31:0]; // first bad packet header
+                8'hd0: O_prdata = I_video_fault_details[63:32]; // reason/state/remaining
+                8'hd4: O_prdata = I_video_fault_details[95:64]; // first bad line/words
+                8'hd8: O_prdata = 32'h44455431; // DET1: sticky RX failure evidence
                 8'h14: O_prdata = {16'd0, O_gain};
                 8'h18: O_prdata = 32'h0001081e; // Full sensor input, HDMI 1080p30
                 8'h1c: O_prdata = 32'h4d415831; // "MAX1": USB extension present

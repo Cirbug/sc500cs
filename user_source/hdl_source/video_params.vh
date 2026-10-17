@@ -55,4 +55,7 @@
 // DDR 用户地址每增加 8，对应一个 128 bit（16 字节）数据字，因此地址单位为 2 字节。
 // 1920x1080 RGB888 单帧需要 3110400 个地址单位；这里留出对齐裕量。
 `define DDR_FRAME_STRIDE_ADDR 3200000
+// Three live RGB888 banks end at byte 19020800. Snapshot starts at byte
+// 24000000; 640x360 RGB888-in-32-bit recording uses another 921600 bytes.
+`define DDR_SNAPSHOT_BASE_ADDR 12000000
 `endif

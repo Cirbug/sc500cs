@@ -1,0 +1,71 @@
+30 fps image corruption audit, 2026-10-17
+=======================================
+HISTORICAL BASELINE: this audit describes 94e367e before the VID2 repair.
+The subsequent implementation and acceptance tests are documented in
+tests/VIDEO_SAFE_BUFFERS.txt. References below to tied-off errors and two
+banks describe the old RTL, not the current working tree.
+
+Board evidence
+--------------
+User confirms persistent image division/color bands with no settings change.
+Photo reports HDMI FPS 030, MIPI FPS 030, VTS 1980.
+Confirmed downloaded artifact:
+D:/2026fpga/bank/sc500_motorola_full30_20261017/fpga/camera_to_dsi_display_sc500_motorola.bit
+SHA256 e234da00d9dac9f246997fa9ea37d73e28a9f562250f998a5675a5869cc2e443
+Source checkout: 94e367e (Motorola change de48caa plus launch configuration).
+No new bitstream was built or downloaded during this audit.
+
+Active-source verification
+--------------------------
+TD uses isp/data96_128/data96_128.v, NOT hdl_source/data_96bit_to_128bit.v.
+The inactive older duplicate drops partial words at valid gaps. An initial
+test of that duplicate failed, but this is NOT evidence against the board
+bitstream. The test runner was corrected to use the TD-selected source.
+
+Active scaler -> denoise -> gamma -> packer test
+---------------------------------------------
+E:/conda/python.exe tests/run_rgb_stream.py --out D:/2026fpga/bank/rgb_stream_fix_20261017/actual
+PASS two Full 2592x1944 inputs with RAW10-like validity gaps and different
+line blanking. Per frame: 1080 output lines, 480 RGB96 words per line,
+518400 RGB96 words, 388800 DDR128 words, every packed byte checked.
+Tests denoise bypass/enabled and brightness 1.125, gamma disabled.
+The scale line RAM is modeled as read-before-write with one-clock latency,
+matching the generated IP configuration. The test does not model physical
+MIPI, RAW unpacking/demosaic, DDR bandwidth/PHY, or on-board timing.
+Evidence: bank/rgb_stream_fix_20261017/actual/tb_camera_pixel_stream.log
+
+Confirmed frame-buffer ownership defect
+---------------------------------------
+video_in alternates two write banks at each input frame start. video_out
+latches the published bank at its own frame start. No active-reader bank
+is returned to video_in, so the writer can overwrite the displayed bank.
+
+Reproduce using preserved baseline video_in and a small synchronous FIFO model:
+E:/iverilog/bin/iverilog.exe -g2012 -I user_source/hdl_source -s tb_video_buffer_ownership -o D:/2026fpga/bank/rgb_stream_fix_20261017/ownership.vvp D:/2026fpga/bank/video_safe_20261017/tests/tb_video_buffer_ownership_legacy.sv D:/2026fpga/bank/video_safe_20261017/tests/video_in_legacy.v
+E:/iverilog/bin/vvp.exe D:/2026fpga/bank/rgb_stream_fix_20261017/ownership.vvp
+Observed:
+REPRODUCED buffer ownership violation: camera_frame=3 write_bank=0 HDMI_active_bank=0 address=0 writes=1441
+
+This diagnostic models the display's once-per-refresh bank latch, with
+equal frame periods and different phase. It proves missing bank ownership,
+not the exact phase/extent of corruption on this board. It is intentionally
+a reproduction test, not an acceptance PASS. No production RTL was edited.
+
+Other inspection findings
+-------------------------
+Top-level video_in.I_mipi_rx_error is tied to zero.
+Input FIFO full_flag is disconnected; display empty_flag is not used to
+invalidate a frame. Current MIPI FPS counts frame-start events and cannot
+certify 1944 complete RAW lines or error-free payloads.
+No configured display split corresponding to the photo was identified.
+
+Required fix/acceptance scope
+-----------------------------
+Use explicit active-reader ownership and publish only complete frames.
+If using a third live bank, account for SD snapshot allocation: existing
+SD base=8000000 address units overlaps a third bank starting at 6400000.
+Do not add a third bank without moving/validating that allocation.
+Also instrument CSI line length/count, receiver errors, input overflow and
+display underflow to distinguish upstream corruption from buffer tearing.
+Re-run ownership, pixel payload, SD arbitration, timing/resource checks,
+then verify the physical image. A 30 fps counter alone is not acceptance.

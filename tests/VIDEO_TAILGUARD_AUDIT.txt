@@ -1,0 +1,101 @@
+CSI HS-tail regression comparison - 2026-10-17
+=============================================
+
+Evidence tiers
+--------------
+Original visible board build:
+  bank/sc500_motorola_full30_20261017/fpga/camera_to_dsi_display_sc500_motorola.bit
+  Source baseline 94e367ee0e9e442f8828f6a63bfaf50438a69eba.
+  User picture showed a visible but divided/banded image at input/output 30 fps.
+
+First safe-buffer build, board log:
+  rx=5D020000 geom=1679932A cap=5D010000 state=00004C28
+  RX good=0, bad increases about 30/s. Geometry 1945/810, flags 0x16.
+  No complete published frames; black camera area with working OSD.
+
+Packet-parser build, board log:
+  18:51:12 rx=703F0000 geom=1800032A cap=5C570000
+  18:51:14 rx=A28D0000 geom=1800032A cap=3F010000
+  RX good remains zero; bad counter modulo-65536 increment is 12878 in 2 s
+  (a lower bound if additional wraps occurred). Geometry lines=0,
+  last nonempty line still 810. Flags 0x18 = missing FE / wrong line count.
+  This cannot be a physical 30 fps frame count. Parser regression implicated.
+
+Confirmed source defect and reproduction
+---------------------------------------
+The original decoder qualified FS with an HS rising edge. The packet build
+returned to HEADER0 after every packet and accepted any DT=0 header without
+ECC or burst position qualification. All-zero HS trail is a syntactically
+valid zero-number FS, including ECC=0; ECC alone cannot fix this ambiguity.
+
+tb_csi_hs_tail sends one FS, a two-word RAW packet and one FE, each followed
+by 100 zero-valued cycles while HS valid remains high. Packet-build RTL
+reports 151 frame starts rather than 1. Its failing log and source remain at:
+  bank/video_tailguard_20261017/baseline/
+This is a deterministic reproduction of a code defect consistent with the
+board counters. Actual post-packet PHY bytes have NOT been physically captured.
+
+Current correction
+------------------
+1. FS is allowed only as the first packet after HS is asserted, preserving
+   the original board receiver's successful frame-start qualification.
+2. After a completed packet, a 00/FF lane-fill beat or a new FS-like byte
+   ends parsing until HS deasserts. Do not scan through trail for headers.
+3. FE ends parsing for that HS interval. Shared FS+RAW and RAW+FE still work
+   when immediately adjacent. A new frame must start a new HS burst; this
+   board-specific receiver does not support continuous-HS multi-frame streams.
+4. Verify the six CSI header parity bits and reserved ECC bits before using
+   DT or word count. Invalid headers produce a packet error and discard the
+   rest of the HS interval. Detect/reject only; no ECC correction.
+5. RAW output remains exactly the declared byte count, and line-end is emitted
+   after the footer. Payload CRC is NOT checked. Full RAW geometry, processed
+   frame length, FIFO overflow and three-bank ownership checks remain enabled.
+
+Header parity equations were cross-checked against the primary implementation:
+  https://github.com/hellgate202/csi2_rx/blob/master/src/csi2_hamming_dec.sv
+The local RTL uses reduction XOR masks; the test oracle uses parity columns.
+Known wire-header vectors: FS 00 00 00 00, FE 01 00 00 07,
+RAW10 8 bytes 2B 08 00 32, RAW10 3240 bytes 2B A8 0C 3B.
+
+Comparison with the visible baseline
+------------------------------------
+Original CSI RTL is retained in tests/fixtures/csi_unpacket_legacy.v with only
+its module name changed. tb_csi_legacy_equivalence drives both versions from
+the same stream: two 3240-byte RAW lines, nonconstant payload, HS trail.
+All 1620 output words match both the original RTL and a separate value oracle.
+FS and FE each occur once in both versions. This is payload compatibility,
+not a claim that the original unsafe frame-buffer ownership is restored.
+
+Git comparison confirms these files match baseline 94e367ee:
+  isp/raw10_unpacket_2lane.v, isp/uial2axis.v, isp/isp_top.v, awb.v,
+  picture_control.v, isp/data96_128/data96_128.v, constraints_source/pin.adc.
+Relative to the previous packet build, production changes are confined to
+isp/csi_unpacket_2lane.v. No MCU IP, JTAG, PLL, sensor, ISP, DDR-bank allocation,
+display-reader or SD implementation changes are part of this follow-up.
+
+Validation
+----------
+13 simulation cases in run_video_safe.py:
+ - Original decoder vs new decoder, every payload word checked.
+ - HS tails; header single-bit faults; all four 00/FF lane-fill patterns;
+   malformed headers, following-header suppression and next-HS recovery.
+ - Packet chaining, interrupted RAW packet, metadata skip.
+ - Full decoder -> RAW unpack -> demosaic -> active ISP -> real FIFO writer,
+   two complete 1944-line frames, 388800 DDR128 writes each, known/nonzero data.
+   Every separate HS packet now includes 24 trailing zeros. Both shared-HS
+   FS/RAW/FE and complete-frame next-FS fallback are tested.
+ - Complete/incomplete RAW frames, PHY warnings, fatal lane errors.
+ - Diagnostic CDC; asynchronous FIFOs; three-bank ownership; display underflow
+   and late-response recovery; existing SD and DDR arbitration regressions.
+Also run tests/test_video_memory_layout.py.
+
+Line RAMs use wrapper-matched models. Physical MIPI/DDR electrical behavior
+and on-board image quality are not covered by simulation.
+Read BUILD_RESULT.txt in bank/video_tailguard_20261017 for build/timing results.
+
+Board check
+-----------
+Keep the current VID2 diagnostic MCU firmware. Load only the new FPGA bit.
+RX good (rx low16) and capture published (cap low16) must increase; counts
+are 16-bit wrapping. Complete RAW geometry low24 should be 0x79832A.
+Send picture and two consecutive VIDEO RAW lines. Board validation pending.

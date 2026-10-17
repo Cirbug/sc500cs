@@ -1,0 +1,84 @@
+Video first-failure diagnostic build - 2026-10-17
+================================================
+
+Purpose and evidence boundary
+-----------------------------
+This is a diagnostic build, NOT a board-verified black-video fix.
+It preserves the existing packet acceptance, complete-frame checks and
+three-bank ownership protection. No sensor, MCU IP or JTAG settings change.
+
+Latest board evidence (tailguard bit, 19:38):
+  rx=06160000 geom=3679832A cap=06160000 state=00000C28 disp=06370001
+  rx=06520000 geom=3679832A cap=06520000 state=00000C28 disp=06730001
+RX rejected count increases by 60 over two seconds, accepted count stays 0.
+There are 1944 lines and the LAST nonempty line contains 810 RAW32 words.
+Flags 0x36 include a bad line somewhere in the frame and a packet error.
+They also include PHY sampling mismatch and missing FE, both advisory when
+the remaining completeness conditions hold. Capture publishes zero frames.
+The former processed-count mismatch flag 0x40 is absent in this trace.
+The earlier thousands-of-false-frame-starts regression no longer appears.
+The last-line count does NOT establish that every preceding line is complete.
+
+New observations
+----------------
+The receiver latches the FIRST packet error and FIRST bad-length RAW line
+while a frame is active. These are independent sticky records: they need
+not refer to the same packet or frame. Only FPGA reset clears the records.
+Existing 64-bit RX snapshot is expanded to a coherent 160-bit held mailbox.
+The records are observational only; none feeds the acceptance decision.
+
+Read-only APB registers, base 0x70000000:
+  B4: VID2 capability (unchanged)
+  B8: rejected frames[31:16], accepted frames[15:0]
+  BC: RX flags[31:24], lines[23:12], last RAW32 word count[11:0]
+  C0: capture rejected[31:16], published[15:0]
+  C4: capture state and accumulated errors (unchanged)
+  C8: display underflows[31:16], response error[1], pixel bad[0]
+  CC: first bad packet header, four bytes in wire order
+  D0: packet failure context, decoded below
+  D4: first bad RAW line, decoded below
+  D8: DET1 capability = 0x44455431
+
+D0:
+  bit31 valid; bit30 prior raw_packet flag; bit29 first header of HS burst;
+  bit28 HS valid at detection; bits27:24 reason; bits23:20 parser state;
+  bits19:16 reserved; bits15:0 remaining 16-bit beats (not bytes).
+  Reasons: 1 incomplete header, 2 incomplete payload, 3 missing footer,
+           4 header ECC/reserved-bit error, 5 unsupported word count.
+  States: 0 HEADER0, 1 HEADER1, 2 PAYLOAD, 3 FOOTER, 4 DROP.
+  For reason 1, the final two header bytes are invalid input at HS fall.
+  For header-time faults, raw_packet describes the prior parser state.
+
+D4:
+  bit31 valid; bits30:25 reserved; bits24:13 one-based RAW line index;
+  bits12:0 observed RAW32 words. Expected 810 words on each of 1944 lines.
+
+MCU output and board procedure
+------------------------------
+Load BOTH the matching FPGA bit and MCU ELF in this build directory.
+The MCU prints one short line per register every two seconds, preventing
+the former long diagnostic line from obscuring individual values:
+  VIDEO: b8=........
+  VIDEO: bc=........
+  VIDEO: c0=........
+  VIDEO: c4=........
+  VIDEO: c8=........
+  VIDEO: cc=........
+  VIDEO: d0=........
+  VIDEO: d4=........
+Capture the first group and another group two seconds later after FPGA
+reset/reconfiguration. In particular retain CC, D0 and D4. Old MCU firmware
+prints only RAW counters and cannot expose the new first-failure details.
+The new MCU remains compatible with old VID2 images (only B8..C8 printed).
+
+Offline validation
+------------------
+tests/tb_video_error_details.sv checks all five error reasons, exact records,
+one-based line numbers, stickiness, reset and unchanged rejected-frame result.
+tests/tb_video_diag_cdc.sv tests both 64-bit and expanded 160-bit snapshots
+with asynchronous clocks, source clock pauses and reset.
+The regression runner also checks legacy RAW equivalence, HS trail, header
+ECC, packet boundaries, real full CSI/ISP/capture frames, three-bank FIFO
+ownership, delayed DDR replies, underflow recovery and SD concurrent capture.
+Electrical PHY/DDR behavior is not simulated. Payload CRC is not checked.
+See bank/video_fault_detail_20261017/BUILD_RESULT.txt for actual build results.

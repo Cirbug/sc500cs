@@ -1,0 +1,76 @@
+CSI packet-boundary / black-screen follow-up (2026-10-17)
+======================================================
+
+Board evidence, before this change
+---------------------------------
+VIDEO: RAW rx=5D020000 geom=1679932A cap=5D010000 state=00004C28 disp=60A60001
+VIDEO: RAW rx=5D3E0000 geom=1679932A cap=5D3D0000 state=00004C28 disp=60E20001
+
+RX good=0, bad increments 60 over two seconds. Capture published=0.
+Last geometry: 1945 lines, final nonempty line 810 RAW32 words.
+RX flags 0x16: raw PHY sample comparison, bad line length, no decoded FE.
+Capture history 0x4C: RAW rejected, missing completion, ISP word count mismatch.
+No capture FIFO-full flag and no DDR response-error flag were recorded.
+Black video is therefore explained by zero completed frames being published;
+HDMI/OSD/RTC continuing does not prove camera payload integrity.
+
+Reproduced code defects / changes
+--------------------------------
+The old CSI decoder only recognized headers at an HS rising edge. A test
+containing FS, RAW10 and FE packets in a single HS interval produced FS=1,
+FE=0, words=0. The failing baseline is retained under:
+  D:/2026fpga/bank/video_safe_20261017/packet_baseline/
+This proves a decoder limitation; the actual sensor packet arrangement has
+not been captured, so it is not yet proven to be the entire board root cause.
+
+The decoder now tracks header, payload word count and two-byte footer.
+Multiple even-length packets may share one HS interval. VC0 RAW10 alone is
+forwarded to ISP. Other even-length long packets are skipped by word count.
+Odd-length long packets are unsupported and explicitly flagged/rejected.
+HS interruption terminates payload immediately rather than generating data
+while the input is invalid. The next HS interval re-synchronizes the parser.
+RAW line-completion comes from packet completion, not an HS falling edge.
+
+The RAW monitor still requires exactly 1944 image lines of 810 words, and
+the writer still requires exactly 388800 128-bit words with no FIFO loss.
+The three-bank allocation and HDMI reader fencing are unchanged.
+If FE is absent, the next FS closes the previous frame. This is accepted
+ONLY if both RAW geometry and ISP output count are complete. An incomplete
+frame is rejected. PHY master/slave sample mismatch remains observable but
+alone is not a payload-integrity verdict. No CRC/ECC validation is claimed.
+
+VID2 diagnostics retain the same addresses and serial format
+-----------------------------------------------------------
+RX geom high byte (0xBC[31:24]):
+  bit0: fatal lane error
+  bit1: advisory raw PHY master/slave sample mismatch
+  bit2: fatal RAW line word count mismatch
+  bit3: fatal image line count mismatch
+  bit4: next-FS boundary used because FE was absent (advisory if complete)
+  bit5: fatal packet interruption / unsupported packet length
+At a normal boundary the low 24 geometry bits should be 0x79832A.
+Unlike the original bit, flags 0x02 or 0x12 can coexist with good frames.
+0xB8 low16 and 0xC0 low16 must both increase for successful capture.
+Startup display-underflow can increase before the first published frame;
+continuing underflow growth after publication requires further diagnosis.
+Counts are 16-bit wrapping and snapshots across clock domains are independent.
+
+Verification and delivery
+-------------------------
+run_video_safe.py covers packet chaining, actual RAW/ISP/capture, diagnostic
+CDC, actual asynchronous video FIFOs, bank ownership, rejected partial frames,
+late read replies, SD capture/readback and DDR handshake recovery.
+The full-pipeline test processes two full sensor frames: shared-HS FS/FE,
+then no FE with next-FS completion and a PHY comparison warning. Each frame
+has 388800 known data words written, with nonzero picture content.
+Line RAMs are modeled with the generated wrappers' one-cycle latency; PHY
+and real DDR electrical/bandwidth behavior are not simulated by that test.
+
+Build: tests/build_video_packets.tcl
+Artifact directory: D:/2026fpga/bank/video_packets_20261017/
+Bit: fpga/camera_to_dsi_display_video_packets.bit
+Check BUILD_RESULT.txt and fpga/final_timing.rpt for actual completion.
+The existing diagnostic MCU ELF is sufficient; no MCU IP/JTAG/PLL/sensor
+registers or physical pins were changed by this packet-boundary correction.
+Do not describe simulation/bit generation as board validation. After loading,
+check camera picture, VIDEO log counters, and SD capture separately.

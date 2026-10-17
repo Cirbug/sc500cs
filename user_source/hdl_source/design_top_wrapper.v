@@ -1,6 +1,7 @@
 `include "video_params.vh"
 // Keep the mailbox reachable from existing TD GUI/generated source lists.
 `include "red_track_mailbox.v"
+`include "video_integrity.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
@@ -70,6 +71,17 @@ module design_top_wrapper (
 
 
     wire        	S_100m_clk;
+    wire [3:0] S_lane_match_error;
+    wire S_rx_frame_done,S_rx_frame_bad;
+    wire S_csi_line_end,S_csi_packet_error;
+    wire [63:0] S_rx_diag,S_csi_packet_fault;
+    wire [95:0] S_rx_faults;
+    wire [159:0] S_rx_diag_apb;
+    wire [31:0] S_capture_counts,S_capture_diag,S_display_diag;
+    wire [63:0] S_capture_diag_apb;
+    wire [31:0] S_display_diag_apb;
+    wire [1:0] S_reader_bank;
+    wire S_reader_valid,S_completed_valid;
     // RISC-V core clock: PLL clk3_out, configured to 300 MHz.
     // Keep the 100 MHz clock for APB, timer and the video logic.
     wire        	S_mcu_300m_clk;
@@ -1174,6 +1186,8 @@ module design_top_wrapper (
         .O_rtc_set(S_rtc_set), .I_rtc_set_status(S_rtc_set_status),
         .O_wifi_ctrl(S_wifi_ctrl), .I_wifi_pads(S_wifi_pad_sync),
         .I_track_status(S_track_status_apb), .I_track_errors(S_track_errors_apb),
+        .I_video_rx_diag(S_rx_diag_apb[63:0]),.I_video_fault_details(S_rx_diag_apb[159:64]),.I_video_capture_diag(S_capture_diag_apb),
+        .I_video_display_diag(S_display_diag_apb),
         .O_lens_cmd    ( S_lens_cmd ),
         .O_lens_retry  ( S_lens_retry ),
         .O_lens_read_adc( S_lens_read_adc ),
@@ -1248,7 +1262,7 @@ module design_top_wrapper (
         .I_lp_tx_lane0_p       ( 1'b1             ),
         .I_lp_tx_lane0_n       ( 1'b1             ),
       
-        .O_lane_match_error    (                  ),
+        .O_lane_match_error    ( S_lane_match_error ),
         .O_lane_error          ( S_lane_error     ),
       
         .IO_rx_clk_pad_n       ( IO_rx_clk_pad_n  ),
@@ -1275,6 +1289,9 @@ csi_unpacket_2lane u_csi_unpacket(
 
 .O_csi_frame_start     ( S_csi_frame_start ),
 .O_csi_frame_end       ( S_csi_frame_end   ),
+.O_csi_line_end        ( S_csi_line_end    ),
+.O_csi_packet_error    ( S_csi_packet_error ),
+.O_csi_packet_fault    ( S_csi_packet_fault ),
 .O_csi_valid           ( S_csi_valid       ),
 .O_csi_data            ( S_csi_data        )
 );
@@ -1421,14 +1438,36 @@ isp_top u_isp_top (
     end
 
 
-    video_in u_video_in(
+    wire S_rx_capture_error;
+    video_rx_integrity #(.LINE_WORDS(`SENSOR_WIDTH*10/32),.HEIGHT(`SENSOR_HEIGHT)) u_video_rx_integrity(
+        .clk(S_csi_rx_clk),.rst_n(S_rst_n),.line_end(S_csi_line_end),
+        .packet_error(S_csi_packet_error),.packet_fault(S_csi_packet_fault),.fault_details(S_rx_faults),
+        .frame_start(S_csi_frame_start),.frame_end(S_csi_frame_end),.word_valid(S_csi_valid),
+        .lane_error(|S_lane_error),.match_error(|S_lane_match_error[1:0]),
+        .capture_error(S_rx_capture_error),
+        .frame_done(S_rx_frame_done),.frame_bad(S_rx_frame_bad),.diagnostics(S_rx_diag));
+    video_diag_cdc #(.WIDTH(160)) u_rx_diag_cdc(.src_clk(S_csi_rx_clk),.dst_clk(S_mcu_apb_clk),.rst_n(S_rst_n),
+        .data({S_rx_faults,S_rx_diag}),.snapshot(S_rx_diag_apb));
+    video_diag_cdc u_capture_diag_cdc(.src_clk(S_ddr_clk),.dst_clk(S_mcu_apb_clk),.rst_n(S_rst_n),
+        .data({S_capture_counts,S_capture_diag}),.snapshot(S_capture_diag_apb));
+    video_diag_cdc #(.WIDTH(32)) u_display_diag_cdc(.src_clk(S_hdmi_pixel_clk),.dst_clk(S_mcu_apb_clk),.rst_n(S_rst_n),
+        .data(S_display_diag),.snapshot(S_display_diag_apb));
+    // Require complete cropped data with no detected fault before completion.
+    // RAW faults after the
+    // crop are diagnostic; they must not black out an already complete image.
+    video_in #(.REQUIRE_RAW_FRAME(1'b0)) u_video_in(
         .I_rst_n              (  S_rst_n             ),
 
         .I_camera_clk         ( S_csi_rx_clk          ),
         .I_camera_frame_start ( S_ISP_O_tuser  ),
         .I_camera_valid       ( S_ISP_O_tvalid ),
         .I_camera_data        ( S_ISP_O_tdata  ),
-        .I_mipi_rx_error      ( 1'b0			      ),
+        .I_mipi_rx_error      ( S_rx_frame_bad ),
+        .I_camera_stream_error( S_rx_capture_error ),
+        .I_camera_frame_done ( S_rx_frame_done ),
+        .I_reader_bank(S_reader_bank), .I_reader_valid(S_reader_valid),
+        .O_video_out_valid(S_completed_valid),
+        .O_frame_counts(S_capture_counts), .O_capture_diag(S_capture_diag),
 
         .I_ddr_clk            ( S_ddr_clk             ),
 		.I_display_pause      ( 1'b0                  ),
@@ -1463,6 +1502,9 @@ isp_top u_isp_top (
         .O_video_out_rd_busy ( S_video_out_rd_busy  ),
         .I_video_in_wr_busy  ( S_video_in_wr_busy | rec_block ),
         .I_video_out_rp      ( S_video_out_rp       ),
+        .I_video_out_valid(S_completed_valid),
+        .O_reader_bank(S_reader_bank), .O_reader_valid(S_reader_valid),
+        .O_display_diag(S_display_diag),
  
         .O_ddr_user_rd_en    ( S_vo_ddr_rd_en       ),
         .O_ddr_user_addr     ( S_vo_ddr_rd_addr     ),

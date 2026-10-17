@@ -33,107 +33,108 @@
 
 `timescale 1ns / 1ns
 
-module csi_unpacket_2lane 
-(
-input wire          I_clk,  //来自MIPI 核的时钟
-input wire          I_rst_n,//异步复位
-
-input wire          I_hs_valid,//synthesis keep //来自MIPI核的数据有效信号,其中也包含的数据类型
-input wire[15: 0]   I_hs_data, //synthesis keep //来自MIPI核的数据,其中也包含的数据类型数据，这里定义2LANE，1BYTE模式
-
-output reg           O_csi_frame_start, //帧起始，1个周期有效
-output reg           O_csi_frame_end,   //帧结束，1个周期有效
-output reg           O_csi_valid, //synthesis keep      //有效数据输出
-output reg           O_csi_hs,
-output reg  [31: 0]  O_csi_data   //synthesis keep      //有效数据，这里定义2LANE，1BYTE模式
+// Board lane order: the earlier byte occupies [15:8]. Parse packets by
+// word count, not by HS rising edge: several CSI packets may share one HS
+// interval. Only VC0 RAW10 payload reaches the ISP. Header ECC is checked
+// (detect/reject, not correct); payload CRC is not checked.
+// The aligned PHY valid interval can extend into HS trail. After the first
+// packet, 00/FF fill terminates parsing until a new HS edge. FS is permitted
+// only as the first packet of an HS burst (board SC500 profile); all-zero
+// trail is otherwise indistinguishable from a valid zero-number FS header.
+module csi_unpacket_2lane (
+    input wire I_clk,I_rst_n,I_hs_valid,
+    input wire [15:0] I_hs_data,
+    output reg O_csi_frame_start,O_csi_frame_end,O_csi_valid,O_csi_hs,
+    output reg [31:0] O_csi_data,
+    output reg O_csi_line_end,O_csi_packet_error,
+    output reg [63:0] O_csi_packet_fault
 );
-
-
-//MIPI数据类型
-//DT 00 帧起始包
-//DT 01 帧结束包
-//DT 02 行起始包
-//DT 03 行结束包
-//DT 2a 8BIT模式下的数据长包
-//DT 2b 10BIT模式下的数据长包
-
-localparam FRAME_DATA_DT  = 8'h2B;   //RAW10
-//localparam FRAME_DATA_DT  = 8'h2A;     //RAW8
-localparam FRAME_START_DT = 8'h00;
-localparam FRAME_END_DT   = 8'h01;
-
-reg        S_hs_valid_1d;      //synthesis keep   
-reg [15:0] S_hs_data_1d;       //synthesis keep   
-wire       S_head_en;          //synthesis keep   
-reg        S_head_en_1d;       //synthesis keep      
-reg [15:0] S_data_length;      //synthesis keep      
-reg        S_data_en;          //synthesis keep        
-reg [15:0] S_data_en_cnt;      //synthesis keep      
-
-assign  S_head_en  = ~S_hs_valid_1d & I_hs_valid;//帧头使能
-
-//I_hs_valid 和 I_hs_data 各打1拍
-always @(posedge I_clk) begin 
-    S_hs_valid_1d        <= I_hs_valid;
-    S_hs_data_1d         <= I_hs_data;
-    S_head_en_1d         <= S_head_en;//帧头使能
-end
-
-//帧起始判断
-always @(posedge I_clk) 
-    O_csi_frame_start <= (S_head_en_1d && S_hs_data_1d[15:8] == FRAME_START_DT);
-
-
-//帧结束判断
-always @(posedge I_clk) 
-    O_csi_frame_end  <= (S_head_en_1d && S_hs_data_1d[15:8] == FRAME_END_DT);
-
-//获取数据长度
-always @(posedge I_clk) begin 
-    if(I_hs_valid)begin
-        if(S_head_en_1d && S_hs_data_1d[15:8] == FRAME_DATA_DT)
-            S_data_length <= {I_hs_data[15:8],S_hs_data_1d[7:0]} >> 1;
-        else    
-            S_data_length <= S_data_length;
+    localparam HEADER0=3'd0,HEADER1=3'd1,PAYLOAD=3'd2,FOOTER=3'd3,DROP=3'd4;
+    reg [2:0] state;
+    reg [15:0] header0,header1,remaining,first_half;
+    reg raw_packet,half,first_header;
+    wire [15:0] byte_count={I_hs_data[15:8],header0[7:0]};
+    wire vc0=header0[15:14]==0;
+    wire is_raw=vc0 && header0[13:8]==6'h2b;
+    wire [23:0] header_bits={I_hs_data[15:8],header0[7:0],header0[15:8]};
+    wire [5:0] header_ecc;
+    assign header_ecc[0]=^(header_bits & 24'hf12cb7);
+    assign header_ecc[1]=^(header_bits & 24'hf2555b);
+    assign header_ecc[2]=^(header_bits & 24'h749a6d);
+    assign header_ecc[3]=^(header_bits & 24'hb8e38e);
+    assign header_ecc[4]=^(header_bits & 24'hdf03f0);
+    assign header_ecc[5]=^(header_bits & 24'heffc00);
+    wire ecc_ok=I_hs_data[7:6]==0 && I_hs_data[5:0]==header_ecc;
+    wire tail_fill=(I_hs_data[15:8]==0 || I_hs_data[15:8]==8'hff) &&
+                   (I_hs_data[7:0]==0 || I_hs_data[7:0]==8'hff);
+    // Diagnostic only: output accompanies packet_error and cannot affect parsing.
+    // High word: valid/raw/first/HS, reason[27:24], state[23:20], remaining[15:0].
+    // Low word: four header bytes in wire order. HEADER1 failure uses current input.
+    task report_packet_error(input [3:0] reason);
+        begin
+            O_csi_packet_error<=1;
+            O_csi_packet_fault<={1'b1,raw_packet,first_header,I_hs_valid,
+                reason,1'b0,state,4'd0,remaining,
+                header0,(state==HEADER1 ? I_hs_data:header1)};
+        end
+    endtask
+    always @(posedge I_clk or negedge I_rst_n) begin
+        if(!I_rst_n) begin
+            state<=HEADER0;header0<=0;header1<=0;O_csi_packet_fault<=0;remaining<=0;first_half<=0;raw_packet<=0;half<=0;first_header<=1;
+            O_csi_frame_start<=0;O_csi_frame_end<=0;O_csi_valid<=0;O_csi_hs<=0;
+            O_csi_data<=0;O_csi_line_end<=0;O_csi_packet_error<=0;
+        end else begin
+            O_csi_frame_start<=0;O_csi_frame_end<=0;O_csi_valid<=0;
+            O_csi_line_end<=0;O_csi_packet_error<=0;O_csi_hs<=I_hs_valid;
+            if(!I_hs_valid) begin
+                // An interrupted packet must not generate pixels in LP/blanking.
+                if(state==HEADER1 || state==PAYLOAD || state==FOOTER) begin
+                    report_packet_error(state==HEADER1 ? 4'd1 : (state==PAYLOAD ? 4'd2 : 4'd3));
+                    if(raw_packet && (state==PAYLOAD || state==FOOTER)) O_csi_line_end<=1;
+                end
+                state<=HEADER0;raw_packet<=0;half<=0;first_header<=1;
+            end else case(state)
+                HEADER0: begin
+                    // Do not scan past trail for a plausible packet header.
+                    // Keep the original HS-edge restriction for frame starts.
+                    if(!first_header && (tail_fill || I_hs_data[15:8]==0))
+                        state<=DROP;
+                    else begin header0<=I_hs_data;state<=HEADER1;end
+                end
+                HEADER1: begin
+                    header1<=I_hs_data;
+                    raw_packet<=is_raw;half<=0;first_header<=0;
+                    if(!ecc_ok) begin
+                        report_packet_error(4'd4);raw_packet<=0;state<=DROP;
+                    end else if(header0[13:8]<6'h10) begin
+                        O_csi_frame_start<=first_header && vc0 && header0[13:8]==0;
+                        O_csi_frame_end<=vc0 && header0[13:8]==1;
+                        // FE finishes this burst; no tail can start another frame.
+                        state<=(vc0 && header0[13:8]==1) ? DROP:HEADER0;
+                    end else if(byte_count[0] || (is_raw && (byte_count==0 || byte_count[1:0]!=0))) begin
+                        // This two-byte interface only supports even long packets.
+                        // RAW10 image lines must also contain whole 32-bit groups.
+                        report_packet_error(4'd5);state<=DROP;
+                    end else begin
+                        remaining<=byte_count>>1;
+                        state<=byte_count==0 ? FOOTER:PAYLOAD;
+                    end
+                end
+                PAYLOAD: begin
+                    remaining<=remaining-1'b1;
+                    if(raw_packet) begin
+                        half<=~half;
+                        if(!half) first_half<=I_hs_data;
+                        else begin O_csi_data<={first_half,I_hs_data};O_csi_valid<=1;end
+                    end
+                    if(remaining==1) state<=FOOTER;
+                end
+                FOOTER: begin
+                    // Consume two CRC bytes; the next beat may be another header.
+                    O_csi_line_end<=raw_packet;raw_packet<=0;state<=HEADER0;
+                end
+                default: state<=DROP;
+            endcase
+        end
     end
-    else    
-        S_data_length <= 'd0;
-end
-
-
-//数据有效使能
-always @(posedge I_clk or negedge I_rst_n) begin
-    if(!I_rst_n)
-        S_data_en <= 1'b0;
-    else    
-        if(S_head_en_1d && S_hs_data_1d[15:8] == FRAME_DATA_DT)
-            S_data_en <= 1'b1;
-        else if(S_data_en_cnt == S_data_length-1)
-            S_data_en <= 1'b0;
-        else    
-            S_data_en <= S_data_en;
-end
-
-//数据长度计数器
-always @(posedge I_clk) begin
-    if(S_data_en)
-        S_data_en_cnt <= S_data_en_cnt + 'd1;
-    else
-        S_data_en_cnt <= 'd0;
-end
-
-//有效数据同步输出,把2LANE的16bit数据转为32bit数据
-reg  csi_valid_r;//synthesis keep
-
-always @(posedge I_clk) begin
-    csi_valid_r   <= S_data_en ? ~csi_valid_r : 0; 
-    O_csi_valid   <= csi_valid_r;
-    O_csi_hs      <= I_hs_valid; 
-end
-
-always @(posedge I_clk) begin
-    O_csi_data    <= S_data_en ? {O_csi_data[15:0],I_hs_data} : 0;
-end
-
-    
 endmodule

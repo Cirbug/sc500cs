@@ -65,6 +65,8 @@ if {![regexp {SWNS:\s*([-0-9.]+)ns, STNS:\s*([-0-9.]+)ns} $final_timing _ swns s
 if {$swns < 0 || $hwns < 0 || $stns != 0 || $htns != 0} {
     error "Final timing failed: setup=$swns hold=$hwns; bit generation stopped"
 }
-bitgen -bit camera_to_dsi_display_sc500_motorola.bit
+set bit_name camera_to_dsi_display_sc500_motorola.bit
+if {[info exists ::env(SC500_MOTOROLA_BIT_NAME)]} {set bit_name $::env(SC500_MOTOROLA_BIT_NAME)}
+bitgen -bit $bit_name
 puts SC500_MOTOROLA_BUILD_COMPLETE
 exit

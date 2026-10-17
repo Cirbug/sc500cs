@@ -32,7 +32,7 @@ always @(posedge d) if(rst) begin
  end
  if(we) begin
    if(vi || vo || vr || re) $fatal(1,"recorder collided with video burst");
-   if(ma!==25'd8000000+writes*8) $fatal(1,"capture address out of order");
+   if(ma!==25'd12000000+writes*8) $fatal(1,"capture address out of order");
    if(md!=={4{32'h0012ab56}}) $fatal(1,"capture FIFO pixel corruption");
    writes<=writes+1;
  end

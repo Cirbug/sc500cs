@@ -28,7 +28,7 @@ always @(posedge d) if(rst) begin
    if(produced-consumed>=1024) $fatal(1,"test response queue overflow");
    due[produced & 1023]<=cycle+80;produced<=produced+1;
    owner[produced & 1023]<=re;
-   replies[produced & 1023]<=re?snapshot[(ma-8000000)/8]:128'hbad;
+   replies[produced & 1023]<=re?snapshot[(ma-12000000)/8]:128'hbad;
    if(vr) vleft<=vleft-1;
    if(re) begin
      if(vr || vi || vo) $fatal(1,"snapshot read collided with video");
@@ -42,7 +42,7 @@ always @(posedge d) if(rst) begin
  end
  if(we) begin
    if(vi || vo || vr || re) $fatal(1,"recorder collided with video burst");
-   if(ma!==25'd8000000+writes*8) $fatal(1,"capture address out of order");
+   if(ma!==25'd12000000+writes*8) $fatal(1,"capture address out of order");
    if(md!=={4{32'h0012ab56}}) $fatal(1,"capture FIFO pixel corruption");
    snapshot[writes]<=md;writes<=writes+1;
  end

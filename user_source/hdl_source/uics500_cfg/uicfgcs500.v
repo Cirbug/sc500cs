@@ -36,7 +36,10 @@
 
 module uicfgcs500#
 (
-parameter	 CLK_DIV  = 16'd999
+parameter CLK_DIV = 16'd999,
+parameter FULL30_REFERENCE = 1'b1,
+// At the board camera clock, 120000 cycles are approximately 5 ms.
+parameter RESET_WAIT_CYCLES = 120000
 )
 (
 input  wire             I_clk,  //ϵͳʱ������
@@ -62,6 +65,8 @@ always@(posedge I_clk or negedge I_rst_n)
     else 
        rst_cnt <= rst_cnt; 
 
+localparam WAIT_BITS = RESET_WAIT_CYCLES > 1 ? $clog2(RESET_WAIT_CYCLES+1) : 1;
+reg [WAIT_BITS-1:0] reset_wait;
 reg  iic_req;//�������I2C�������ź�
 wire iic_busy; //I2C������æ�ź� 
 reg  [31:0] wr_data;     //д���ݼĴ���
@@ -76,6 +81,7 @@ wire [8 :0] REG_SIZE_AE;    //�Ĵ�������
 
 always@(posedge I_clk ) begin 
     if(rst_cnt[7] == 1'b0)begin //��λ��ʼ���Ĵ���
+        reset_wait <= RESET_WAIT_CYCLES;
         reg_index  <= 9'd0;
         iic_req    <= 1'b0;
         wr_data    <= 32'd0;
@@ -83,7 +89,9 @@ always@(posedge I_clk ) begin
         O_ae_cfg_done <= 1'b0;
         TS_S     <= 2'd0;    
     end
-    else begin
+    else if (reset_wait != 0) begin
+        reset_wait <= reset_wait - 1'b1;
+    end else begin
         case(TS_S)
         0:if(reg_index == REG_SIZE && O_cfg_done == 1'b0) begin//����������
             O_cfg_done <= 1'b1;       //���� cfg_done��׼
@@ -112,6 +120,9 @@ always@(posedge I_clk ) begin
              TS_S     <= 2'd3;  //��һ��״̬
         end
         3:if(!iic_busy)begin  //�����߷�æ���ſ��Բ���I2C������ 
+            // Leave the sensor idle after software reset; do not immediately
+            // write mode registers while its reset defaults are settling.
+            if (!O_cfg_done && reg_index == 0) reset_wait <= RESET_WAIT_CYCLES;
 			reg_index<= reg_index + 1'b1;//�Ĵ���������1
 			TS_S    <= 2'd0;//�ص���ʼ״̬
         end 
@@ -146,7 +157,7 @@ uii2c_inst
 
 
 //����CAM�ļĴ������ñ�
-uics500reg uics500reg_inst
+uics500reg #(.FULL30_REFERENCE(FULL30_REFERENCE)) uics500reg_inst
 (
 .REG_SIZE(REG_SIZE_REG),  //�Ĵ�������
 .REG_INDEX(reg_index),    //�Ĵ�����

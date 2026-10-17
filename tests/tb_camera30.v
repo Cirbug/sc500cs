@@ -14,17 +14,28 @@ module tb_camera30;
         .I_ae_cfg_done(1'b1),.I_cam_cfg_done(1'b1),
         .O_ae_req(req),.O_ae(ae),.O_ag(ag));
     uics500reg table_dut(.REG_INDEX(index),.REG_DATA(reg_data),.REG_SIZE(reg_size));
-    task table_check(input [8:0] i,input [23:0] expected);
-        begin index=i;#1;if(reg_data!=={8'd0,expected}) $fatal(1,"sensor table %d: %h",i,reg_data);end
+    task table_check(input [15:0] address,input [7:0] expected);
+        integer i,found;
+        begin
+            found=0;
+            for(i=0;i<reg_size;i=i+1) begin
+                index=i;#1;
+                if(reg_data[23:8]==address) begin
+                    found=found+1;
+                    if(reg_data[7:0]!==expected) $fatal(1,"sensor register %h: %h",address,reg_data);
+                end
+            end
+            if(found!=1) $fatal(1,"Missing/duplicate timing register %h",address);
+        end
     endtask
     initial begin
         repeat(3) @(negedge clk);
         if(ae!==3990 || ag!==80) $fatal(1,"startup exposure/gain");
         rst=0;
-        table_check(30,24'h32080a);table_check(31,24'h320920);
-        table_check(32,24'h320a07);table_check(33,24'h320b98);
-        table_check(34,24'h320c0b);table_check(35,24'h320d24);
-        table_check(36,24'h320e07);table_check(37,24'h320fd0);
+        table_check(16'h3208,8'h0a);table_check(16'h3209,8'h20);
+        table_check(16'h320a,8'h07);table_check(16'h320b,8'h98);
+        table_check(16'h320c,8'h06);table_check(16'h320d,8'h40);
+        table_check(16'h320e,8'h07);table_check(16'h320f,8'hd0);
         // All 16-bit writes, including stale 5990 settings, remain safe.
         for(value=0;value<65536;value=value+1) begin
             @(negedge clk);requested=value;
@@ -33,7 +44,7 @@ module tb_camera30;
                 $fatal(1,"exposure clamp input=%d output=%d",value,ae);
             if(ag!==80) $fatal(1,"gain changed");
         end
-        $display("PASS camera30: unchanged full-frame geometry/HTS, VTS=2000, all 65536 exposure inputs, gain=80");
+        $display("PASS camera30: Full geometry, Motorola HTS=1600, VTS=2000, all 65536 exposure inputs, gain=80 (not measured FPS)");
         $finish;
     end
 endmodule

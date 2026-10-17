@@ -15,7 +15,7 @@ module tb_main_vts;
     ae_set ctl(.I_clk(cam_clk),.I_rst(rst),.I_btn(4'hf),.I_mcu_control_en(1'b1),
         .I_mcu_ae(bundle[47:32]),.I_mcu_ag(bundle[31:16]),.I_mcu_vts(bundle[15:0]),
         .I_cam_cfg_done(done),.I_ae_cfg_done(ae_done),.O_ae_req(req),.O_ae(ae),.O_ag(ag),.O_vts(vts));
-    uicfgcs500 #(.CLK_DIV(15)) cfg(.I_clk(cam_clk),.I_rst_n(!rst),.I_ae_req(req),.I_ae(ae),.I_ag(ag),.I_vts(vts),
+    uicfgcs500 #(.CLK_DIV(15),.RESET_WAIT_CYCLES(32)) cfg(.I_clk(cam_clk),.I_rst_n(!rst),.I_ae_req(req),.I_ae(ae),.I_ag(ag),.I_vts(vts),
         .O_cam_scl(scl),.IO_cam_sda(sda),.O_cfg_done(done),.O_ae_cfg_done(ae_done));
     assign sda=(cfg.uii2c_inst.IIC_S==3)?1'b0:1'bz;
     task write_reg(input [7:0] a,input [31:0] d,input [3:0] strb=15);
@@ -65,7 +65,7 @@ module tb_main_vts;
     endtask
     initial begin
         repeat(10)@(negedge apb_clk);rst=0;settled(3990,2000);
-        if(writes!=131)$fatal(1,"startup writes %d",writes);
+        if(writes!=121)$fatal(1,"startup writes %d (111 init + 10 AE)",writes);
         read_check(8'ha0,32'h56545331);read_check(8'h9c,2000);
         write_reg(8'h9c,3000,1);read_check(8'h9c,2000); // reject half a VTS
         write_reg(8'ha4,23'h642500);read_check(8'ha4,23'h642500);

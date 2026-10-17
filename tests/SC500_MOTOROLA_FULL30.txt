@@ -1,0 +1,105 @@
+SC500CS Motorola Full30 adaptation (2026-10-17)
+
+Purpose
+-------
+Replace the former Full-mode sensor initialization with the Motorola reference
+clock/timing profile. The FPGA MIPI receiver, ISP geometry, DDR, HDMI, MCU,
+pin assignments and generated PLL/IP are not changed by this patch.
+This is a sensor-mode change, not proof that the attached module reaches 30 fps.
+
+Pinned reference
+----------------
+MotorolaMobilityLLC/kernel-mtk, commit
+48391d20e8d40992d406af3f8819a6a4f193b180
+drivers/misc/mediatek/imgsensor/src/common/v1/
+mot_ellis_sc500cs_mipi_raw/ellis_lce_sc500csmipiraw_Sensor.c
+https://github.com/MotorolaMobilityLLC/kernel-mtk/blob/48391d20e8d40992d406af3f8819a6a4f193b180/drivers/misc/mediatek/imgsensor/src/common/v1/mot_ellis_sc500cs_mipi_raw/ellis_lce_sc500csmipiraw_Sensor.c
+Reference source carries MediaTek copyright and GPL-2.0 licensing.
+tests/data/sc500_motorola_init.hex contains the 88 active write_cmos_sensor8
+address/value pairs from sensor_init() (MULTI_WRITE=0), in source order.
+tests/data/sc500_legacy_init.hex contains the previous main table at 8dad0e4.
+
+Timing and explicit adaptations
+-------------------------------
+Reference: Full 2592x1944, two lanes, RAW10, MCLK=24 MHz,
+sensor timing pclk=96 MHz, HTS=1600, VTS=2000 => 30 fps.
+The sensor timing pclk is not the MIPI lane clock.
+
+Main retains its existing shared PLL: camera MCLK=23.809524 MHz.
+If the reference clock ratios apply, expected fps is approximately
+30 * 23.809524 / 24 = 29.761905. Exact 30 fps is not promised.
+Changing that shared PLL also affects MCU/APB/HDMI and is outside this patch.
+The existing SDC still assumes a 450 MHz MIPI clock pad (2.222 ns). The
+reference's 96 MHz pclk is not evidence for this lane-clock assumption.
+Final STA passing proves the design under its declared clocks, not the new
+sensor's physical MIPI rate. Measure that clock on the board and update the
+receiver constraints if it differs, especially if it exceeds 450 MHz.
+
+The default table has 111 writes:
+* Preserve all 88 reference writes and their relative order, except 3E02 below.
+* HTS 320C/320D changes from 0B24 (2852) to 0640 (1600).
+* 301F=01 and 36FD=14 follow the reference, as do its analog/timing settings.
+* Remove old extra overrides, including 36EB/36ED/36FA/36FB/36FC.
+  Registers absent from the reference rely on software-reset defaults; absent
+  does not mean write zero. Do not merge the old PLL writes into the new table.
+* Explicitly retain two-lane/RAW10 writes 3018=3A,3031=0A, full window/output
+  3200..320B, VTS=2000 at 320E/F, offsets 3210..3213 from the existing board.
+  These 20 extra writes occur after the reference HTS writes.
+* Insert 3E00=00 and change 3E02=80 to 60: startup exposure becomes 3990
+  half-line units rather than reference 3992, respecting current 2*VTS-10 cap.
+* Retain 3E08=08,3E09=5F before stream-on. Existing initial AE transaction then
+  applies the unchanged gain_user=80 through the sensor gain table.
+* Preserve reference ending: 0100=01 then 302D=00.
+
+uicfgcs500 waits 120000 camera-clock cycles (~5.04 ms) before first request
+and after the software-reset transaction. This is a conservative startup
+quiet interval; it does not change the runtime AE/VTS group-write sequence.
+Simulation overrides the interval to 32 cycles to exercise both reset paths.
+
+Current menu VTS range remains 1980..2500, default 2000; exposure remains
+clamped to 2*VTS-10. Initial board verification must use VTS=2000. Increasing
+VTS still reduces frame rate. Equal exposure codes now correspond to shorter
+physical exposure times if line timing speeds up, so brightness can change.
+
+Offline verification
+--------------------
+E:/conda/python.exe tests/run_main_vts.py --modelsim F:/modelsim/win64 --out D:/2026fpga/bank/sc500_motorola_full30_20261017/sim --tops tb_sc500_motorola_init tb_main_vts tb_camera30
+
+All three passed:
+* Golden-reference comparison of every initialization request, complete LUT
+  address range, exact previous 121-entry rollback table, reset quiet interval,
+  completed initialization and recovery from reset during initialization.
+* APB/AE/VTS CDC and group writes, all 65536 VTS input values and busy coalescing.
+* Full geometry/HTS/VTS and all 65536 exposure inputs, gain remains 80.
+The I2C test supplies ideal ACKs; it does not model physical SC500CS PLL lock.
+The existing camera ACK-error output is not propagated to the UI, so cfg_done
+alone must not be treated as successful physical sensor configuration.
+
+Build
+-----
+F:/AnlogicFpga/TD_6.2.1_Engineer_6.2.168.116/bin/td_commands_prompt.exe tests/build_sc500_motorola.tcl
+Build directory: D:/2026fpga/bank/sc500_motorola_full30_20261017/fpga
+Expected artifact: camera_to_dsi_display_sc500_motorola.bit
+The script checks the MCU PAD-JTAG contract and gates bit generation on both
+setup and hold timing passing. See build.log and fpga/final_timing.rpt for
+the actual run result; the presence of this instruction is not a build pass.
+SC500_MOTOROLA_BUILD_DIR, SC500_MOTOROLA_GATE_DB, SC500_MOTOROLA_ROUTE_DB and
+SC500_MOTOROLA_SEED can override output/resume/placement settings. Resume only
+from databases built from exactly the same sources and constraints.
+
+Board acceptance and rollback
+-----------------------------
+No hardware download is performed by this change.
+After downloading the new bit, reset/power-cycle the camera, use VTS=2000 and
+observe MIPI FPS over several seconds with a complete, stable Full image.
+The integer counter can alternate between 29 and 30 for about 29.76 fps.
+Also check HDMI FPS, MCU debug access, and long-run frame/line integrity.
+If there is no image, broken lines or still 15 fps, record the measured MIPI
+frame count and receiver errors, then read back sensor clock/HTS/VTS registers
+before attributing the failure to exposure. Readback is not added here.
+
+For the old sensor table, set FULL30_REFERENCE to 0 on u_uicfgcs500 in
+user_source/hdl_source/design_top_wrapper.v and rebuild. The unused generate
+branch is elaborated away, so keeping the rollback table does not instantiate
+both lookup tables in hardware. The added reset wait remains in either mode.
+An old known-good bit also remains a valid hardware rollback.

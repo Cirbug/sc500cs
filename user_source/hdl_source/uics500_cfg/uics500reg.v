@@ -28,148 +28,266 @@
 *8) _s state mechine
 *********************************************************************/
 
-/*******************************ui7611reg***************************
---1.ADV7611芯片配置寄存器配置表
-*********************************************************************/
-
-module uics500reg
-(
-input      [8 :0]  REG_INDEX,
-output reg [31:0]  REG_DATA,
-output     [8 :0]  REG_SIZE  
+// Full-mode register sequence adapted from Motorola's SC500CS sensor_init.
+// Source: MotorolaMobilityLLC/kernel-mtk, commit
+// 48391d20e8d40992d406af3f8819a6a4f193b180 (MediaTek, GPL-2.0).
+// See tests/SC500_MOTOROLA_FULL30.txt for source URL and explicit adaptations.
+// Reference timing: 24 MHz MCLK, HTS=1600, VTS=2000, 2592x1944, 2-lane RAW10.
+// Board MCLK remains 23.809524 MHz: approximately 29.76 fps IF the reference
+// sensor clock ratios apply. This table is not on-board 30 fps validation.
+// Unlike the old profile, do not override 36EB/36ED/36FA/36FB/36FC after reset.
+// FULL30_REFERENCE=0 selects the exact previous 121-entry table for rollback.
+module uics500reg #(
+    parameter FULL30_REFERENCE = 1'b1
+)(
+    input [8:0] REG_INDEX,
+    output reg [31:0] REG_DATA,
+    output [8:0] REG_SIZE
 );
-
-assign	REG_SIZE = 120 + 1;
-//-----------------------------------------------------------------
-/////////////////////   Config Data LUT   //////////////////////////    
-// 以下注释来自 SC500CS 数据手册 V1.8 与工程实际写入值对照。
-always@(*)
-begin
-    case(REG_INDEX)
-		0:	REG_DATA = {16'h0103, 8'h01}; // 软件复位（手册 p.13）；默认值 0x00；工程值 0x01
-		1:	REG_DATA = {16'h0100, 8'h00}; // 软睡眠/streaming 控制（手册 p.13）；默认值 0x00；工程值 0x00
-		2:	REG_DATA = {16'h36e9, 8'h80}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x80
-		3:	REG_DATA = {16'h36f9, 8'h80}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x80
-		4:	REG_DATA = {16'h3018, 8'h3a}; // MIPI lane 数量；工程值 0x3A 为 2-lane（手册 p.18）；默认值 0x3a；工程值 0x3a；可能影响 MIPI 输出
-		5:	REG_DATA = {16'h3031, 8'h0a}; // MIPI 输出数据模式；工程值 0x0A 为 RAW10（手册 p.18）；默认值 0x0a；工程值 0x0a；可能影响 MIPI 输出
-		6:	REG_DATA = {16'h3650, 8'h31}; // MIPI LP 驱动能力（手册 p.18）；默认值 0x31；工程值 0x31；可能影响 MIPI 输出
-		7:	REG_DATA = {16'h3652, 8'h00}; // MIPI lane 0/1 延时与相位（手册 p.18）；默认值 0x00；工程值 0x00；可能影响 MIPI 输出
-		8:	REG_DATA = {16'h3654, 8'h00}; // MIPI 时钟延时与相位（手册 p.18）；默认值 0x00；工程值 0x00；可能影响 MIPI 输出
-		9:	REG_DATA = {16'h36ea, 8'h3c}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x3c
-		10:	REG_DATA = {16'h36eb, 8'h0c}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x0c
-		11:	REG_DATA = {16'h36ec, 8'h0b}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x0b
-		12:	REG_DATA = {16'h36ed, 8'h26}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x26
-		13:	REG_DATA = {16'h36fa, 8'h3b}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x3b
-		14:	REG_DATA = {16'h36fb, 8'ha6}; // 手册公开章节未说明；默认值 手册未找到；工程值 0xa6
-		15:	REG_DATA = {16'h36fc, 8'h10}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x10
-		16:	REG_DATA = {16'h36fd, 8'h24}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x24
-		17:	REG_DATA = {16'h36e9, 8'h04}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x04
-		18:	REG_DATA = {16'h36f9, 8'h04}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x04
-		19:	REG_DATA = {16'h301f, 8'h50}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x50
-		20:	REG_DATA = {16'h302d, 8'h20}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x20
-		21:	REG_DATA = {16'h3106, 8'h01}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x01
-		22:	REG_DATA = {16'h3200, 8'h00}; // Full 模式取样窗口 X 起点高字节：0
-		23:	REG_DATA = {16'h3201, 8'h00}; // Full 模式取样窗口 X 起点低字节：0
-		24:	REG_DATA = {16'h3202, 8'h00}; // Full 模式取样窗口 Y 起点高字节：0
-		25:	REG_DATA = {16'h3203, 8'h00}; // Full 模式取样窗口 Y 起点低字节：0
-		26:	REG_DATA = {16'h3204, 8'h0a}; // Full 模式取样窗口 X 终点高字节：0x0a27 = 2599
-		27:	REG_DATA = {16'h3205, 8'h27}; // Full 模式取样窗口 X 终点低字节
-		28:	REG_DATA = {16'h3206, 8'h07}; // Full 模式取样窗口 Y 终点高字节：0x079f = 1951
-		29:	REG_DATA = {16'h3207, 8'h9f}; // Full 模式取样窗口 Y 终点低字节
-		30:	REG_DATA = {16'h3208, 8'h0a}; // 输出宽度高字节；工程值 0x0a20 = 2592
-		31:	REG_DATA = {16'h3209, 8'h20}; // 输出宽度低字节；工程值 0x0a20 = 2592
-		32:	REG_DATA = {16'h320a, 8'h07}; // 输出高度高字节；工程值 0x0798 = 1944
-		33:	REG_DATA = {16'h320b, 8'h98}; // 输出高度低字节；工程值 0x0798 = 1944
-		34:	REG_DATA = {16'h320c, 8'h0b}; // 行时序参数工程值 0x0b
-		35:	REG_DATA = {16'h320d, 8'h24}; // 行时序参数工程值 0x24
-		36:	REG_DATA = {16'h320e, 8'h07}; // VTS=0x07d0=2000, nominal full-frame 30 fps
-		37:	REG_DATA = {16'h320f, 8'hd0}; // Exposure maximum = 2*VTS-10 = 3990
-		38:	REG_DATA = {16'h3210, 8'h00}; // 输出窗口列起始高字节（手册 p.30）；默认值 0x00；工程值 0x00
-		39:	REG_DATA = {16'h3211, 8'h08}; // 输出窗口列起始低字节（手册 p.30）；默认值 0x08；工程值 0x04
-		40:	REG_DATA = {16'h3212, 8'h00}; // 输出窗口行起始高字节（手册 p.30）；默认值 0x00；工程值 0x00
-		41:	REG_DATA = {16'h3213, 8'h08}; // 输出窗口行起始低字节（手册 p.30）；默认值 0x08；工程值 0x04
-		42:	REG_DATA = {16'h3249, 8'h0f}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x0f
-		43:	REG_DATA = {16'h3253, 8'h06}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x06
-		44:	REG_DATA = {16'h3271, 8'h13}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x13
-		45:	REG_DATA = {16'h3273, 8'h13}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x13
-		46:	REG_DATA = {16'h3301, 8'h0a}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x0a
-		47:	REG_DATA = {16'h3306, 8'h40}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x40
-		48:	REG_DATA = {16'h3309, 8'h60}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x60
-		49:	REG_DATA = {16'h330a, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		50:	REG_DATA = {16'h330b, 8'hd8}; // 手册公开章节未说明；默认值 手册未找到；工程值 0xd8
-		51:	REG_DATA = {16'h331e, 8'h41}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x41
-		52:	REG_DATA = {16'h331f, 8'h51}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x51
-		53:	REG_DATA = {16'h3320, 8'h04}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x04
-		54:	REG_DATA = {16'h3333, 8'h10}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x10
-		55:	REG_DATA = {16'h335d, 8'h60}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x60
-		56:	REG_DATA = {16'h3364, 8'h56}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x56
-		57:	REG_DATA = {16'h336b, 8'h08}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x08
-		58:	REG_DATA = {16'h3390, 8'h08}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x08
-		59:	REG_DATA = {16'h3391, 8'h18}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x18
-		60:	REG_DATA = {16'h3392, 8'h38}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x38
-		61:	REG_DATA = {16'h3393, 8'h0a}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x0a
-		62:	REG_DATA = {16'h3394, 8'h24}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x24
-		63:	REG_DATA = {16'h3395, 8'h30}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x30
-		64:	REG_DATA = {16'h33ad, 8'h29}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x29
-		65:	REG_DATA = {16'h341c, 8'h04}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x04
-		66:	REG_DATA = {16'h341d, 8'h04}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x04
-		67:	REG_DATA = {16'h341e, 8'h03}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x03
-		68:	REG_DATA = {16'h3425, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		69:	REG_DATA = {16'h3426, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		70:	REG_DATA = {16'h3622, 8'hc7}; // 手册公开章节未说明；默认值 手册未找到；工程值 0xc7
-		71:	REG_DATA = {16'h3632, 8'h44}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x44
-		72:	REG_DATA = {16'h3636, 8'h6e}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x6e
-		73:	REG_DATA = {16'h3637, 8'h08}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x08
-		74:	REG_DATA = {16'h3638, 8'h0a}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x0a
-		75:	REG_DATA = {16'h3651, 8'h9d}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x9d
-		76:	REG_DATA = {16'h3670, 8'h4b}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x4b
-		77:	REG_DATA = {16'h3674, 8'hc0}; // 手册公开章节未说明；默认值 手册未找到；工程值 0xc0
-		78:	REG_DATA = {16'h3675, 8'h58}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x58
-		79:	REG_DATA = {16'h3676, 8'h5a}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x5a
-		80:	REG_DATA = {16'h367c, 8'h18}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x18
-		81:	REG_DATA = {16'h367d, 8'h38}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x38
-		82:	REG_DATA = {16'h3690, 8'h43}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x43
-		83:	REG_DATA = {16'h3691, 8'h53}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x53
-		84:	REG_DATA = {16'h3692, 8'h53}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x53
-		85:	REG_DATA = {16'h3699, 8'h08}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x08
-		86:	REG_DATA = {16'h369a, 8'h10}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x10
-		87:	REG_DATA = {16'h369b, 8'h1f}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x1f
-		88:	REG_DATA = {16'h369c, 8'h18}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x18
-		89:	REG_DATA = {16'h369d, 8'h38}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x38
-		90:	REG_DATA = {16'h36a2, 8'h08}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x08
-		91:	REG_DATA = {16'h36a3, 8'h18}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x18
-		92:	REG_DATA = {16'h36a6, 8'h08}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x08
-		93:	REG_DATA = {16'h36a7, 8'h18}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x18
-		94:	REG_DATA = {16'h36ab, 8'h40}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x40
-		95:	REG_DATA = {16'h36ac, 8'h40}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x40
-		96:	REG_DATA = {16'h36ad, 8'h40}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x40
-		97:	REG_DATA = {16'h3901, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		98:	REG_DATA = {16'h3904, 8'h0c}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x0c
-		99:	REG_DATA = {16'h3906, 8'h3a}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x3a
-		100:	REG_DATA = {16'h391d, 8'h14}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x14
-		101:	REG_DATA = {16'h3e01, 8'h8c}; // 曝光时间中位（手册 p.23）；默认值 手册未找到；工程值 0x8c
-		102:	REG_DATA = {16'h3e02, 8'h60}; // 曝光时间低位（手册 p.23）；默认值 手册未找到；工程值 0x60
-		103:	REG_DATA = {16'h4000, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		104:	REG_DATA = {16'h4001, 8'h04}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x04
-		105:	REG_DATA = {16'h4002, 8'hb0}; // 手册公开章节未说明；默认值 手册未找到；工程值 0xb0
-		106:	REG_DATA = {16'h4003, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		107:	REG_DATA = {16'h4004, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		108:	REG_DATA = {16'h4005, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		109:	REG_DATA = {16'h4006, 8'h07}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x07
-		110:	REG_DATA = {16'h4007, 8'hae}; // 手册公开章节未说明；默认值 手册未找到；工程值 0xae
-		111:	REG_DATA = {16'h4008, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		112:	REG_DATA = {16'h4009, 8'hc8}; // 手册公开章节未说明；默认值 手册未找到；工程值 0xc8
-		113:	REG_DATA = {16'h440e, 8'h02}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x02
-		114:	REG_DATA = {16'h4509, 8'h28}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x28
-		115:	REG_DATA = {16'h4837, 8'h21}; // MIPI 相关配置，功能细节手册未说明；默认值 手册未找到；工程值 0x21；可能影响 MIPI 输出
-		116:	REG_DATA = {16'h5000, 8'h0e}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x0e
-		117:	REG_DATA = {16'h302d, 8'h00}; // 手册公开章节未说明；默认值 手册未找到；工程值 0x00
-		118:	REG_DATA = {16'h3e08, 8'h08}; // 模拟增益（手册 p.23-25）；默认值 手册未找到；工程值 0x08
-		119:	REG_DATA = {16'h3e09, 8'h5f}; // 模拟细增益（手册 p.23-25）；默认值 手册未找到；工程值 0x5f
-		120:	REG_DATA = {16'h0100, 8'h01}; // 软睡眠/streaming 控制（手册 p.13）；默认值 0x00；工程值 0x01
-
-		default:REG_DATA    =   {16'h0000, 8'h00};
-    endcase
-end
-
+assign REG_SIZE = FULL30_REFERENCE ? 9'd111 : 9'd121;
+generate if (FULL30_REFERENCE) begin : g_motorola
+    always @* begin
+        case (REG_INDEX)
+            9'd0: REG_DATA = 32'h00010301;
+            9'd1: REG_DATA = 32'h00010000;
+            9'd2: REG_DATA = 32'h0036e980;
+            9'd3: REG_DATA = 32'h0036f980;
+            9'd4: REG_DATA = 32'h0036ea3c;
+            9'd5: REG_DATA = 32'h0036ec0b;
+            9'd6: REG_DATA = 32'h0036fd14;
+            9'd7: REG_DATA = 32'h0036e904;
+            9'd8: REG_DATA = 32'h0036f904;
+            9'd9: REG_DATA = 32'h00301f01;
+            9'd10: REG_DATA = 32'h00310601;
+            9'd11: REG_DATA = 32'h00320c06; // HTS high: 0x0640 = 1600
+            9'd12: REG_DATA = 32'h00320d40; // HTS low
+            9'd13: REG_DATA = 32'h0030183a; // explicit board 2-lane default
+            9'd14: REG_DATA = 32'h0030310a; // explicit board RAW10 default
+            9'd15: REG_DATA = 32'h00320000;
+            9'd16: REG_DATA = 32'h00320100;
+            9'd17: REG_DATA = 32'h00320200;
+            9'd18: REG_DATA = 32'h00320300;
+            9'd19: REG_DATA = 32'h0032040a;
+            9'd20: REG_DATA = 32'h00320527;
+            9'd21: REG_DATA = 32'h00320607;
+            9'd22: REG_DATA = 32'h0032079f;
+            9'd23: REG_DATA = 32'h0032080a;
+            9'd24: REG_DATA = 32'h00320920;
+            9'd25: REG_DATA = 32'h00320a07;
+            9'd26: REG_DATA = 32'h00320b98;
+            9'd27: REG_DATA = 32'h00320e07; // explicit VTS=2000
+            9'd28: REG_DATA = 32'h00320fd0; // explicit VTS=2000
+            9'd29: REG_DATA = 32'h00321000;
+            9'd30: REG_DATA = 32'h00321108;
+            9'd31: REG_DATA = 32'h00321200;
+            9'd32: REG_DATA = 32'h00321308;
+            9'd33: REG_DATA = 32'h0032490f;
+            9'd34: REG_DATA = 32'h00325306;
+            9'd35: REG_DATA = 32'h00327113;
+            9'd36: REG_DATA = 32'h00327313;
+            9'd37: REG_DATA = 32'h0033010a;
+            9'd38: REG_DATA = 32'h00330960;
+            9'd39: REG_DATA = 32'h00330a00;
+            9'd40: REG_DATA = 32'h00330be8;
+            9'd41: REG_DATA = 32'h00331e41;
+            9'd42: REG_DATA = 32'h00331f51;
+            9'd43: REG_DATA = 32'h00332004;
+            9'd44: REG_DATA = 32'h00333310;
+            9'd45: REG_DATA = 32'h00335d60;
+            9'd46: REG_DATA = 32'h00336456;
+            9'd47: REG_DATA = 32'h00336b08;
+            9'd48: REG_DATA = 32'h00339008;
+            9'd49: REG_DATA = 32'h00339118;
+            9'd50: REG_DATA = 32'h00339238;
+            9'd51: REG_DATA = 32'h0033930a;
+            9'd52: REG_DATA = 32'h00339424;
+            9'd53: REG_DATA = 32'h00339540;
+            9'd54: REG_DATA = 32'h0033ad29;
+            9'd55: REG_DATA = 32'h00341c04;
+            9'd56: REG_DATA = 32'h00341d04;
+            9'd57: REG_DATA = 32'h00341e03;
+            9'd58: REG_DATA = 32'h00342500;
+            9'd59: REG_DATA = 32'h00342600;
+            9'd60: REG_DATA = 32'h003622c7;
+            9'd61: REG_DATA = 32'h00363244;
+            9'd62: REG_DATA = 32'h0036366e;
+            9'd63: REG_DATA = 32'h00363708;
+            9'd64: REG_DATA = 32'h0036380a;
+            9'd65: REG_DATA = 32'h0036519d;
+            9'd66: REG_DATA = 32'h0036704b;
+            9'd67: REG_DATA = 32'h003674c0;
+            9'd68: REG_DATA = 32'h00367558;
+            9'd69: REG_DATA = 32'h0036765a;
+            9'd70: REG_DATA = 32'h00367c18;
+            9'd71: REG_DATA = 32'h00367d38;
+            9'd72: REG_DATA = 32'h00369043;
+            9'd73: REG_DATA = 32'h00369153;
+            9'd74: REG_DATA = 32'h00369253;
+            9'd75: REG_DATA = 32'h00369908;
+            9'd76: REG_DATA = 32'h00369a10;
+            9'd77: REG_DATA = 32'h00369b1f;
+            9'd78: REG_DATA = 32'h00369c18;
+            9'd79: REG_DATA = 32'h00369d38;
+            9'd80: REG_DATA = 32'h0036a208;
+            9'd81: REG_DATA = 32'h0036a318;
+            9'd82: REG_DATA = 32'h0036a608;
+            9'd83: REG_DATA = 32'h0036a718;
+            9'd84: REG_DATA = 32'h0036ab40;
+            9'd85: REG_DATA = 32'h0036ac40;
+            9'd86: REG_DATA = 32'h0036ad40;
+            9'd87: REG_DATA = 32'h00390100;
+            9'd88: REG_DATA = 32'h0039040c;
+            9'd89: REG_DATA = 32'h0039063a;
+            9'd90: REG_DATA = 32'h00391d14;
+            9'd91: REG_DATA = 32'h003e0000; // explicit exposure high bits
+            9'd92: REG_DATA = 32'h003e01f9;
+            9'd93: REG_DATA = 32'h003e0260; // 3990 half-lines, bounded to 2*VTS-10
+            9'd94: REG_DATA = 32'h00400000;
+            9'd95: REG_DATA = 32'h00400104;
+            9'd96: REG_DATA = 32'h004002aa;
+            9'd97: REG_DATA = 32'h004003aa;
+            9'd98: REG_DATA = 32'h004004aa;
+            9'd99: REG_DATA = 32'h00400500;
+            9'd100: REG_DATA = 32'h00400607;
+            9'd101: REG_DATA = 32'h004007a5;
+            9'd102: REG_DATA = 32'h00400800;
+            9'd103: REG_DATA = 32'h004009c8;
+            9'd104: REG_DATA = 32'h00450928;
+            9'd105: REG_DATA = 32'h00483721;
+            9'd106: REG_DATA = 32'h0050000e;
+            9'd107: REG_DATA = 32'h003e0808;
+            9'd108: REG_DATA = 32'h003e095f;
+            9'd109: REG_DATA = 32'h00010001;
+            9'd110: REG_DATA = 32'h00302d00;
+            default: REG_DATA = 32'd0;
+        endcase
+    end
+end else begin : g_legacy
+    always @* begin
+        case (REG_INDEX)
+            9'd0: REG_DATA = 32'h00010301;
+            9'd1: REG_DATA = 32'h00010000;
+            9'd2: REG_DATA = 32'h0036e980;
+            9'd3: REG_DATA = 32'h0036f980;
+            9'd4: REG_DATA = 32'h0030183a;
+            9'd5: REG_DATA = 32'h0030310a;
+            9'd6: REG_DATA = 32'h00365031;
+            9'd7: REG_DATA = 32'h00365200;
+            9'd8: REG_DATA = 32'h00365400;
+            9'd9: REG_DATA = 32'h0036ea3c;
+            9'd10: REG_DATA = 32'h0036eb0c;
+            9'd11: REG_DATA = 32'h0036ec0b;
+            9'd12: REG_DATA = 32'h0036ed26;
+            9'd13: REG_DATA = 32'h0036fa3b;
+            9'd14: REG_DATA = 32'h0036fba6;
+            9'd15: REG_DATA = 32'h0036fc10;
+            9'd16: REG_DATA = 32'h0036fd24;
+            9'd17: REG_DATA = 32'h0036e904;
+            9'd18: REG_DATA = 32'h0036f904;
+            9'd19: REG_DATA = 32'h00301f50;
+            9'd20: REG_DATA = 32'h00302d20;
+            9'd21: REG_DATA = 32'h00310601;
+            9'd22: REG_DATA = 32'h00320000;
+            9'd23: REG_DATA = 32'h00320100;
+            9'd24: REG_DATA = 32'h00320200;
+            9'd25: REG_DATA = 32'h00320300;
+            9'd26: REG_DATA = 32'h0032040a;
+            9'd27: REG_DATA = 32'h00320527;
+            9'd28: REG_DATA = 32'h00320607;
+            9'd29: REG_DATA = 32'h0032079f;
+            9'd30: REG_DATA = 32'h0032080a;
+            9'd31: REG_DATA = 32'h00320920;
+            9'd32: REG_DATA = 32'h00320a07;
+            9'd33: REG_DATA = 32'h00320b98;
+            9'd34: REG_DATA = 32'h00320c0b;
+            9'd35: REG_DATA = 32'h00320d24;
+            9'd36: REG_DATA = 32'h00320e07;
+            9'd37: REG_DATA = 32'h00320fd0;
+            9'd38: REG_DATA = 32'h00321000;
+            9'd39: REG_DATA = 32'h00321108;
+            9'd40: REG_DATA = 32'h00321200;
+            9'd41: REG_DATA = 32'h00321308;
+            9'd42: REG_DATA = 32'h0032490f;
+            9'd43: REG_DATA = 32'h00325306;
+            9'd44: REG_DATA = 32'h00327113;
+            9'd45: REG_DATA = 32'h00327313;
+            9'd46: REG_DATA = 32'h0033010a;
+            9'd47: REG_DATA = 32'h00330640;
+            9'd48: REG_DATA = 32'h00330960;
+            9'd49: REG_DATA = 32'h00330a00;
+            9'd50: REG_DATA = 32'h00330bd8;
+            9'd51: REG_DATA = 32'h00331e41;
+            9'd52: REG_DATA = 32'h00331f51;
+            9'd53: REG_DATA = 32'h00332004;
+            9'd54: REG_DATA = 32'h00333310;
+            9'd55: REG_DATA = 32'h00335d60;
+            9'd56: REG_DATA = 32'h00336456;
+            9'd57: REG_DATA = 32'h00336b08;
+            9'd58: REG_DATA = 32'h00339008;
+            9'd59: REG_DATA = 32'h00339118;
+            9'd60: REG_DATA = 32'h00339238;
+            9'd61: REG_DATA = 32'h0033930a;
+            9'd62: REG_DATA = 32'h00339424;
+            9'd63: REG_DATA = 32'h00339530;
+            9'd64: REG_DATA = 32'h0033ad29;
+            9'd65: REG_DATA = 32'h00341c04;
+            9'd66: REG_DATA = 32'h00341d04;
+            9'd67: REG_DATA = 32'h00341e03;
+            9'd68: REG_DATA = 32'h00342500;
+            9'd69: REG_DATA = 32'h00342600;
+            9'd70: REG_DATA = 32'h003622c7;
+            9'd71: REG_DATA = 32'h00363244;
+            9'd72: REG_DATA = 32'h0036366e;
+            9'd73: REG_DATA = 32'h00363708;
+            9'd74: REG_DATA = 32'h0036380a;
+            9'd75: REG_DATA = 32'h0036519d;
+            9'd76: REG_DATA = 32'h0036704b;
+            9'd77: REG_DATA = 32'h003674c0;
+            9'd78: REG_DATA = 32'h00367558;
+            9'd79: REG_DATA = 32'h0036765a;
+            9'd80: REG_DATA = 32'h00367c18;
+            9'd81: REG_DATA = 32'h00367d38;
+            9'd82: REG_DATA = 32'h00369043;
+            9'd83: REG_DATA = 32'h00369153;
+            9'd84: REG_DATA = 32'h00369253;
+            9'd85: REG_DATA = 32'h00369908;
+            9'd86: REG_DATA = 32'h00369a10;
+            9'd87: REG_DATA = 32'h00369b1f;
+            9'd88: REG_DATA = 32'h00369c18;
+            9'd89: REG_DATA = 32'h00369d38;
+            9'd90: REG_DATA = 32'h0036a208;
+            9'd91: REG_DATA = 32'h0036a318;
+            9'd92: REG_DATA = 32'h0036a608;
+            9'd93: REG_DATA = 32'h0036a718;
+            9'd94: REG_DATA = 32'h0036ab40;
+            9'd95: REG_DATA = 32'h0036ac40;
+            9'd96: REG_DATA = 32'h0036ad40;
+            9'd97: REG_DATA = 32'h00390100;
+            9'd98: REG_DATA = 32'h0039040c;
+            9'd99: REG_DATA = 32'h0039063a;
+            9'd100: REG_DATA = 32'h00391d14;
+            9'd101: REG_DATA = 32'h003e018c;
+            9'd102: REG_DATA = 32'h003e0260;
+            9'd103: REG_DATA = 32'h00400000;
+            9'd104: REG_DATA = 32'h00400104;
+            9'd105: REG_DATA = 32'h004002b0;
+            9'd106: REG_DATA = 32'h00400300;
+            9'd107: REG_DATA = 32'h00400400;
+            9'd108: REG_DATA = 32'h00400500;
+            9'd109: REG_DATA = 32'h00400607;
+            9'd110: REG_DATA = 32'h004007ae;
+            9'd111: REG_DATA = 32'h00400800;
+            9'd112: REG_DATA = 32'h004009c8;
+            9'd113: REG_DATA = 32'h00440e02;
+            9'd114: REG_DATA = 32'h00450928;
+            9'd115: REG_DATA = 32'h00483721;
+            9'd116: REG_DATA = 32'h0050000e;
+            9'd117: REG_DATA = 32'h00302d00;
+            9'd118: REG_DATA = 32'h003e0808;
+            9'd119: REG_DATA = 32'h003e095f;
+            9'd120: REG_DATA = 32'h00010001;
+            default: REG_DATA = 32'd0;
+        endcase
+    end
+end endgenerate
 endmodule

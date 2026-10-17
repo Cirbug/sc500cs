@@ -23,7 +23,7 @@ def main():
     tops=args.tops or ['tb_main_vts','tb_main_meter','tb_camera30','tb_camera30_osd','tb_hdmi_stats_osd','tb_menu_chinese']
     sources=[h/'ui_osd.v',h/'mcu_ui_apb_regs.v',h/'uiisp_beta/ae_set.v',h/'key_remove_shakes.v']
     sources += [h/'uics500_cfg'/n for n in ['uicfgcs500.v','uics500reg.v','uics500regAE.v','uii2c.v','SC500GainTbl.v']]
-    sources += [tests/(n+('.sv' if n in ['tb_main_vts','tb_main_meter'] else '.v')) for n in tops]
+    sources += [tests/(n+('.sv' if (tests/(n+'.sv')).exists() else '.v')) for n in tops]
     if not lib.exists():subprocess.run([str(tool/'vlib.exe'),str(lib)],check=True,capture_output=True)
     for top in tops:
         script=out/(top+'.do');log=out/(top+'.log')

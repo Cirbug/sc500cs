@@ -1203,7 +1203,9 @@ module design_top_wrapper (
   );
   
     uicfgcs500 #(
-      .CLK_DIV(24000000 / 100000 - 1)
+      .CLK_DIV(24000000 / 100000 - 1),
+      // Set to 0 and rebuild to restore the pre-Motorola sensor table.
+      .FULL30_REFERENCE(1'b1)
   ) u_uicfgcs500 (
       .I_clk(S_24m_clk),  //系统时钟输入
       .I_rst_n(S_rst_n),  //系统复位输入

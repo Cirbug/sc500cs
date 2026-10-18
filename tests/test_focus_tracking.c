@@ -14,6 +14,7 @@
 static uint32_t ms,regs[64],lens_diag_available=3;
 static uint32_t servo_writes,lens_moves,bus_started,bus_duration;
 static unsigned bus_pending,retry_fails;
+static unsigned track_races,track_status_reads,track_error_reads;
 volatile RedTrackConfig g_track_config=RED_TRACK_DEFAULT_CONFIG;
 RedTrackControl g_track_control;
 volatile uint32_t g_track_capability=RED_TRACK_ID;
@@ -21,6 +22,11 @@ static MenuState ui;
 static uint32_t ui_now_ms(void){return ms;}
 static uint32_t ui_read(uint32_t off)
 {
+    if(off==UI_TRACK_STATUS)++track_status_reads;
+    if(off==UI_TRACK_ERRORS) {
+        ++track_error_reads;
+        if(track_races) {--track_races;regs[UI_TRACK_STATUS/4]+=0x10000u;}
+    }
     if(bus_pending && ms-bus_started>=bus_duration) {
         regs[UI_LENS_STAT/4]=(bus_pending==2 && retry_fails)?6u:2u;
         bus_pending=0;
@@ -62,11 +68,13 @@ static void reset(void)
     memset(regs,0,sizeof regs);memset(&g_track_control,0,sizeof g_track_control);
     ui=(MenuState){.servo_pan_us=1500,.servo_tilt_us=1500,.servo_menu_available=1,.image_step=5};
     ms=servo_writes=lens_moves=bus_pending=retry_fails=0;
+    track_races=track_status_reads=track_error_reads=0;
     af_state=AF_IDLE;af_retried=af_move_pending=0;
     g_af_debug.requests=g_af_debug.reason=g_af_debug.diag=0;
     g_track_capability=RED_TRACK_ID;g_track_config.enabled=1;
     regs[UI_LENS_STAT/4]=2;regs[UI_LENS_POS/4]=8192;
     regs[UI_TRACK_STATUS/4]=0x0001daf0u;
+    regs[UI_TRACK_ERRORS/4]=(400u<<16)|700u;
     tracking_service(&ui);service(200,1);
     assert(servo_writes==2 && g_track_control.reason==TRACK_LOCKED);
 }
@@ -130,4 +138,18 @@ int main(void)
     reset();ms=0xffffff80u;request();service(199,1);assert(lens_moves==0);
     service(1,1);assert(lens_moves==1);finish(AF_REASON_DONE);resume();
     puts("PASS explicit manual lens override and timer wrap preserve ownership handoff");
+
+    reset();before=servo_writes;ms+=33;fresh();
+    track_races=1;track_status_reads=track_error_reads=0;
+    tracking_service(&ui);
+    assert(servo_writes==before+2 && track_error_reads==2 && track_status_reads==4);
+    before=servo_writes;ms+=33;fresh();track_races=2;
+    track_status_reads=track_error_reads=0;tracking_service(&ui);
+    assert(servo_writes==before && !g_track_control.primed && g_track_control.reason==TRACK_STALE);
+    assert(track_error_reads==2 && track_status_reads==4);
+    tracking_service(&ui);resume();
+    g_track_capability=0;track_error_reads=track_status_reads=0;
+    before=servo_writes;tracking_service(&ui);
+    assert(servo_writes==before && !track_error_reads && !track_status_reads);
+    puts("PASS atomic status/errors/status, bounded retry, torn result hold/rearm, missing FPGA capability");
 }

@@ -54,7 +54,8 @@ ASM_SRCS :=
 #########################################################################
 # Share RISC-V register-save helpers to fit touch gestures in TCM.
 # Keep the existing 1 KiB heap and 2 KiB stack.
-CFLAGS := -Os -g -flto -msave-restore -DAL_CAMERA_COMPACT_DIAG
+# MUI1 panel firmware: keep legacy source available, omit old menu paths from TCM.
+CFLAGS := -DMENU_LEGACY_COMPAT=0 -Os -g -flto -msave-restore -DAL_CAMERA_COMPACT_DIAG
 # This application only formats integer diagnostics.  The SDK default pulls
 # in the floating-point printf formatter and wastes several KiB of the image.
 PFLOAT := 0

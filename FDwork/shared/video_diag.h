@@ -4,7 +4,7 @@
 #include "al_systimer.h"
 #pragma GCC push_options
 #pragma GCC optimize ("Os")
-static void video_diag_poll(uintptr_t base)
+static __attribute__((noinline)) void video_diag_poll(uintptr_t base)
 {
     static uint32_t last;
     static unsigned started;

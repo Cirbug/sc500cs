@@ -47,8 +47,11 @@ def main():
         print(next(line for line in text.splitlines() if 'PASS' in line),flush=True)
     for path in ['FDwork/anlu_app/main.c','FDwork/anlu_app2/main.c']:
         text=(root/path).read_text(encoding='utf-8-sig')
-        assert 'auto_exposure_init(&ui);' in text and 'auto_exposure_poll(&ui);' in text
-        assert 'auto_exposure_poll(record_ui);' in text and 'autofocus_active())auto_exposure_pause()' in text
+        assert 'auto_exposure_init(&ui);' in text and 'ui_controls_poll(&ui);' in text
+        assert 'ui_controls_poll(record_ui);' in text
+        service=text[text.index('static __attribute__((noinline)) void ui_controls_poll'):text.index('static MenuState *record_ui;')]
+        assert 'autofocus_active())auto_exposure_pause();else auto_exposure_poll(s);' in service
+        assert 'histogram_poll(s);' in service and 'mcu_menu_poll(s);' in service
     print('PASS both firmware targets: startup, main loop, recording service and AF pause',flush=True)
 
 

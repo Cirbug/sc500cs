@@ -14,10 +14,12 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     vectors = out/'panel_vectors.hex'
     for name in ['test_panel_ui', 'test_picture_menu', 'test_record_menu', 'test_vts_menu', 'test_touch_focus']:
-        exe = out/(name+'.exe')
-        subprocess.run(['gcc', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
-                        str(root/'tests'/(name+'.c')), '-o', str(exe)], check=True)
-        subprocess.run([str(exe)] + ([str(vectors)] if name == 'test_panel_ui' else []), check=True)
+        for compat in ([1,0] if name == 'test_panel_ui' else [1]):
+            exe = out/(name+f'_compat{compat}.exe')
+            subprocess.run(['gcc', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
+                            f'-DMENU_LEGACY_COMPAT={compat}',
+                            str(root/'tests'/(name+'.c')), '-o', str(exe)], check=True)
+            subprocess.run([str(exe)] + ([str(vectors)] if name == 'test_panel_ui' else []), check=True)
     h = root/'user_source/hdl_source'
     lib = out/'simlib'
     if not lib.exists():

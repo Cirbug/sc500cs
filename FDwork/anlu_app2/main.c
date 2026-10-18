@@ -13,6 +13,7 @@
 #include "../shared/sd_recorder.h"
 #include "../shared/rtc_diag.h"
 #include "../shared/video_diag.h"
+#include "../shared/red_track_control.h"
 
 /* Match the RAM application's compact UI/AF control code. */
 #pragma GCC optimize ("Os")
@@ -106,7 +107,11 @@ static uint32_t ui_now_ms(void)
 
 #include "../shared/mcu_menu.h"
 #include "../shared/auto_exposure.h"
+#include "../shared/histogram_equalization.h"
 
+volatile RedTrackConfig g_track_config = RED_TRACK_DEFAULT_CONFIG;
+RedTrackControl g_track_control;
+volatile uint32_t g_track_capability;
 static void ui_ctrl(uint32_t menu, uint32_t edit, uint32_t info, uint32_t picture_page)
 {
     ui_write(UI_CTRL, (menu ? 1u : 0u) | (edit ? 2u : 0u) |
@@ -116,7 +121,7 @@ static void ui_ctrl(uint32_t menu, uint32_t edit, uint32_t info, uint32_t pictur
 /* MCU-owned _9 image controls. Hardware step IDs 2..5 (displayed 1..4): normal/effect,
  * shape, motion, red tracking.  In motion mode target selects 3/2/1 in the
  * FPGA recognizer; in tracking mode bit 9 requests a reacquire pulse. */
-static void image_ctrl_write(uint32_t step, uint32_t effect,
+static __attribute__((noinline)) void image_ctrl_write(uint32_t step, uint32_t effect,
                              uint32_t target, uint32_t logo, uint32_t reset)
 {
     uint32_t value = (step & 7u) | ((effect & 7u) << 3) |
@@ -128,6 +133,7 @@ static void image_ctrl_write(uint32_t step, uint32_t effect,
 /* FireWater fixed six channels: target, metric, status, raw84, raw85, valid.
  * Raw ADC byte order/bit alignment is not documented; do NOT label a decoded
  * position or invent a value on failed reads. -1,-1,0 means unavailable. */
+#if !UI_QUIET_SERIAL
 static void focus_plot(uint32_t position, uint32_t metric, uint32_t status)
 {
     uint32_t adc = (lens_diag_available == 3) ? ui_read(UI_LENS_ADC_RAW) : 0;
@@ -137,13 +143,19 @@ static void focus_plot(uint32_t position, uint32_t metric, uint32_t status)
               valid ? (int)(adc & 255u) : -1,
               valid ? (int)((adc >> 8) & 255u) : -1, valid);
 }
+#else
+#define focus_plot(...) ((void)0)
+#endif
 
+#if !UI_QUIET_SERIAL
 static uint32_t lens_last_tx_count;
+#endif
 
 /* Report the most recent completed transaction; a failure freezes the result
  * until an explicit retry, so successful background reads cannot hide it. */
 static void lens_diag_report(void)
 {
+#if !UI_QUIET_SERIAL
     uint32_t count, diag, phase, nack, pins = 0, fault;
     const char *phase_name, *byte_name, *reason;
     if(!lens_diag_available || (ui_read(UI_LENS_STAT) & 1u)) return;
@@ -179,10 +191,12 @@ static void lens_diag_report(void)
     }
     if(diag & (1u << 17))
         al_printf("LOG: LENS error latched; exit menu and press BACK to retry (LIC3)\r\n");
+#endif
 }
 
 #include "../shared/autofocus_control.h"
 #include "../shared/lens_serial_diag.h"
+#include "../shared/tracking_service.h"
 
 /* All inputs commit through this one hardware boundary. */
 static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
@@ -192,6 +206,8 @@ static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
     if(autofocus_active() && (s->servo_pan_us!=old->servo_pan_us ||
                              s->servo_tilt_us!=old->servo_tilt_us))
         autofocus_stop(AF_REASON_MANUAL);
+    if(s->image_step!=old->image_step || (actions & MENU_REACQUIRE))
+        g_track_control.primed=0;
     if(s->picture_available && picture_effective(s)!=picture_effective(old)) {
         ui_write(0x70, picture_effective(s));
         /* Read back hardware fields without saving Sobel's forced gamma as
@@ -243,6 +259,16 @@ static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
 }
 
 static TouchFocus focus_gesture;
+/* The normal loop and SD cooperative service use the same key transaction. */
+static __attribute__((noinline)) void menu_keys_commit(MenuState *s,unsigned keys)
+{
+    if(!keys)return;
+    MenuState old=*s;
+    focus_gesture=(TouchFocus){0};
+    ui_write(UI_KEY,keys);
+    menu_commit(s,&old,menu_key(s,keys));
+}
+
 static void touchscreen_handle(MenuState *s)
 {
     TouchEvent event;
@@ -266,6 +292,14 @@ static void touchscreen_handle(MenuState *s)
     }
 }
 
+static __attribute__((noinline)) void ui_controls_poll(MenuState *s)
+{
+    tracking_service(s);
+    if(autofocus_active())auto_exposure_pause();else auto_exposure_poll(s);
+    histogram_poll(s);
+    mcu_menu_poll(s);
+}
+
 static MenuState *record_ui;
 #include "../shared/wifi_mcu.h"
 static void recorder_service(void) {
@@ -276,10 +310,9 @@ static void recorder_service(void) {
     autofocus_task();
     if(record_ui) {
         touchscreen_handle(record_ui);
-        if(autofocus_active())auto_exposure_pause();else auto_exposure_poll(record_ui);
-        mcu_menu_poll(record_ui);
         unsigned keys=ui_read(UI_KEY)&15u;
-        if(keys) {focus_gesture=(TouchFocus){0};MenuState old=*record_ui;ui_write(UI_KEY,keys);menu_commit(record_ui,&old,menu_key(record_ui,keys));}
+        menu_keys_commit(record_ui,keys);
+        ui_controls_poll(record_ui);
     }
 }
 
@@ -349,6 +382,7 @@ AL_S32 main(void)
     ui.servo_tilt_us = ui_read(UI_SERVO_TILT_US);
     ui.servo_menu_available = (ui.servo_pan_us >= 500u && ui.servo_pan_us <= 2500u &&
                             ui.servo_tilt_us >= 500u && ui.servo_tilt_us <= 2500u);
+    g_track_capability=ui_read(UI_TRACK_ID);
     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
     ui.picture_available=(ui_read(0x74)==0x50494331u);
     ui.picture=PICTURE_DEFAULT;
@@ -364,8 +398,16 @@ AL_S32 main(void)
     ui_ctrl(ui.menu, ui.edit, ui.info, ui.picture_page);
     /* Publish before USB/Wi-Fi probing so the menu is visible during startup. */
     mcu_menu_available=(ui_read(MCU_MENU_BASE)==MCU_MENU_ID);
+#if !MENU_LEGACY_COMPAT
+    if(!mcu_menu_available) {
+        (al_printf)("UI: MUI1_REQUIRED\r\n");g_ui_debug_stage=0xe2;
+        while(1)AlSys_MDelay(100);
+    }
+#endif
     ui.panel_ui=(uint8_t)mcu_menu_available;
     auto_exposure_init(&ui);
+    ui.histogram_available=(ui_read(HE_BASE)==HE_ID);
+    if(ui.histogram_available)ui_write(HE_BASE+0x1c,0);
     mcu_menu_poll(&ui);
     g_ui_debug_stage = 4;
     /* USB diagnostics are bounded; the existing menu continues on failure. */
@@ -381,14 +423,7 @@ AL_S32 main(void)
         events = ui_read(UI_KEY) & 0x0fu;
         g_ui_debug_events = events;
         g_ui_debug_loops++;
-        if(events) {
-            MenuState old = ui;
-            unsigned actions;
-            ui_write(UI_KEY, events); /* write-one-to-clear */
-            focus_gesture=(TouchFocus){0};
-            actions = menu_key(&ui, events);
-            menu_commit(&ui, &old, actions);
-        }
+        menu_keys_commit(&ui,events);
 
         lens_diag_report();
         autofocus_task();
@@ -398,8 +433,10 @@ AL_S32 main(void)
             id = ui_read(UI_ID);
             g_ui_debug_id = id;
             al_printf("SoC Started, UI APB ID=0x%08x\r\n", id);
+#if !UI_QUIET_SERIAL
             focus_plot(ui_read(UI_LENS_POS) & 0x3fffu,
                        ui_read(UI_FOCUS_METRIC), ui_read(UI_LENS_STAT));
+#endif
             max3421e_diag_report();
             /* Keep the latest raw-BCD RTC snapshot in RAM; serial output stays
              * reserved for touch reports in this build. */
@@ -425,8 +462,7 @@ AL_S32 main(void)
         lens_serial_poll();
         recorder_poll();
         wifi_mcu_poll(0);
-        if(autofocus_active())auto_exposure_pause();else auto_exposure_poll(&ui);
-        mcu_menu_poll(&ui);
+        ui_controls_poll(&ui);
         g_ui_debug_stage = 6;
         AlSys_MDelay(1);
     }

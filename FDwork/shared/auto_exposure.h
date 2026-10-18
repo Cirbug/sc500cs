@@ -19,7 +19,7 @@ static volatile AutoExposureConfig g_auto_exposure_config=AUTO_EXPOSURE_DEFAULT;
 typedef struct {
     uint32_t last_poll,last_change;
     volatile uint32_t updates;
-    unsigned active,primed,sequence,settle_frames;
+    uint8_t active,primed,sequence,settle_frames;
     volatile unsigned mean; /* Retain live debugger telemetry under LTO. */
 } AutoExposureControl;
 static AutoExposureControl g_auto_exposure;

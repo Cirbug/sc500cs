@@ -22,8 +22,11 @@ def main():
     assert 'autofocus_task();' in service
     assert '#include "../shared/autofocus_control.h"' in s
     assert '#include "../shared/tracking_service.h"' in s
-    assert 'tracking_service(record_ui);' in service
-    assert 'tracking_service(&ui);' in s
+    assert 'ui_controls_poll(record_ui);' in service
+    assert 'ui_controls_poll(&ui);' in s
+    shared=s[s.index('static __attribute__((noinline)) void ui_controls_poll'):s.index('static MenuState *record_ui;')]
+    assert 'tracking_service(s);' in shared
+    assert 'autofocus_active())auto_exposure_pause()' in shared
     assert 'af_wait_ms++' not in s
     print('PASS AF production inclusion and cooperative recorder service integration',flush=True)
 

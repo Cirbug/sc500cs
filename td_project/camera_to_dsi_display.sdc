@@ -44,11 +44,8 @@ set_false_path -hold -through [get_nets {u_camera_settings/held* u_camera_settin
 set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_settings/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 set_false_path -hold -through [get_nets {u_camera_settings/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 
-# u_camera_display: held bundle is sampled only after 3 request stages and held until ack.
-set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_display/held* u_camera_display/req}] -to [get_clocks {HDMI_PIXEL_CLK}]
-set_false_path -hold -through [get_nets {u_camera_display/held* u_camera_display/req}] -to [get_clocks {HDMI_PIXEL_CLK}]
-set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_display/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
-set_false_path -hold -through [get_nets {u_camera_display/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+# jop3 MCU display-list menu does not consume u_camera_display; synthesis
+# removes it. Its obsolete net exceptions caused unmatched-net critical warnings.
 
 # Tracking result mailbox: held bundle remains fixed until the 3-stage ack.
 # Limit only the crossing paths; internal synchronizer stages remain timed.
@@ -84,3 +81,10 @@ set_max_delay -datapath_only 8.000 -through [get_nets {u_ae_meter_cdc/held* u_ae
 set_false_path -hold -through [get_nets {u_ae_meter_cdc/held* u_ae_meter_cdc/ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 set_max_delay -datapath_only 8.000 -through [get_nets {u_ae_meter_cdc/request}] -to [get_clocks {MIPI_RX_BYTE_CLK}]
 set_false_path -hold -through [get_nets {u_ae_meter_cdc/request}] -to [get_clocks {MIPI_RX_BYTE_CLK}]
+# HEQ1: only first-stage control crossings are relaxed. Histogram snapshot
+# metadata remains held until the next CPU capture request after all reads.
+# LUT banks remain immutable until their frame-boundary acknowledgement.
+set_max_delay -datapath_only 8.000 -through [get_nets {u_histogram_equalizer/capture_req u_histogram_equalizer/map_req u_histogram_equalizer/enable_req}] -to [get_clocks {HDMI_PIXEL_CLK}]
+set_false_path -hold -through [get_nets {u_histogram_equalizer/capture_req u_histogram_equalizer/map_req u_histogram_equalizer/enable_req}] -to [get_clocks {HDMI_PIXEL_CLK}]
+set_max_delay -datapath_only 8.000 -through [get_nets {u_histogram_equalizer/capture_ack u_histogram_equalizer/map_ack u_histogram_equalizer/capture_valid u_histogram_equalizer/map_valid u_histogram_equalizer/active_enable u_histogram_equalizer/captured_total*}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+set_false_path -hold -through [get_nets {u_histogram_equalizer/capture_ack u_histogram_equalizer/map_ack u_histogram_equalizer/capture_valid u_histogram_equalizer/map_valid u_histogram_equalizer/active_enable u_histogram_equalizer/captured_total*}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]

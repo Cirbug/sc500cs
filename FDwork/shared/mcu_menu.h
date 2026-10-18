@@ -14,10 +14,13 @@
 #define MCU_MENU_ID 0x4d554931u
 #define MENU_VISIBLE (1u<<23)
 #define MENU_ASCII 256u
+static __attribute__((noinline)) void mcu_value_copy(uint16_t *cells,const unsigned char *value)
+{
+    unsigned i;for(i=0;i<4;i++)cells[8+i]=value[i];
+}
 static void mcu_menu_value(uint16_t *cells, unsigned kind)
 {
-    unsigned i;
-    for(i=0;i<4;i++) cells[8+i]=mcu_values[0][kind][i];
+    mcu_value_copy(cells,mcu_values[0][kind]);
 }
 static void mcu_menu_text(uint16_t *cells, const char *s)
 {
@@ -25,7 +28,7 @@ static void mcu_menu_text(uint16_t *cells, const char *s)
     for(i=0;i<4;i++) cells[8+i]=MENU_ASCII|(unsigned char)s[i];
 }
 /* NUL-terminated shared glyph-ID strings remove repeated/padded labels. */
-static void mcu_menu_label(uint16_t *cells,unsigned offset)
+static __attribute__((noinline)) void mcu_menu_label(uint16_t *cells,unsigned offset)
 {
     const unsigned char *p=mcu_label_pool+offset;
     while(*p)*cells++=*p++;
@@ -33,15 +36,21 @@ static void mcu_menu_label(uint16_t *cells,unsigned offset)
 /* Pure row builder is shared by host tests and both firmware targets. */
 static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row,uint16_t cells[12])
 {
-    unsigned i,page=s->record_page?2:s->picture_page==2?3:s->picture_page?1:0;
+    unsigned i;
+#if MENU_LEGACY_COMPAT
+    unsigned page=s->record_page?2:s->picture_page==2?3:s->picture_page?1:0;
+#else
+    unsigned page=s->panel_page==PANEL_RECORD?2:1;
+#endif
     unsigned p=picture_effective(s),kind=0;
     uint32_t attr=s->menu?MENU_VISIBLE:0;
     memset(cells,0,12*sizeof(*cells));
     if(row==9) {cells[0]=mcu_label_pool[mcu_labels[0][0]];cells[1]=mcu_label_pool[mcu_labels[0][0]+1];return MENU_VISIBLE;}
     if(row==10) return MENU_VISIBLE|((rec&255u?4u:rec&256u?7u:rec&512u?5u:6u)<<9);
     if(row>8) return 0;
+    if(page==1 && row==8 && !s->histogram_available)return attr;
     mcu_menu_label(cells,mcu_labels[page][row]);
-    if(row==s->index+1u && (row<=7 || page==0) && (page!=3 || row<=4))
+    if(row==s->index+1u && (row<=7 || page<=1) && (page!=3 || row<=4))
         attr|=(((s->edit && (s->index<4 || s->index==7))?2u:1u)<<12);
     if(page==0) {
         if(row==1 && s->auto_exposure_available && s->auto_exposure) {
@@ -64,6 +73,9 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
         case 5:kind=(0x01050403u>>(8*((p>>12)&3)))&255u;break;
         case 6:kind=(0x08070601u>>(8*((p>>14)&3)))&255u;break;
         case 7:kind=9;break;
+        case 8:
+            if(s->histogram_mode) {mcu_menu_text(cells,s->histogram_mode==1?"50% ":"100%");return attr;}
+            kind=1;break;
         default:return attr;
         }
         mcu_menu_value(cells,kind);
@@ -83,7 +95,7 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
 }
 static void mcu_panel_value(uint16_t *cells,unsigned kind)
 {
-    unsigned i;for(i=0;i<4;i++)cells[8+i]=mcu_panel_values[0][kind][i];
+    mcu_value_copy(cells,mcu_panel_values[0][kind]);
 }
 static void mcu_panel_number(uint16_t *cells,unsigned value)
 {
@@ -93,7 +105,7 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
 {
     unsigned i,page=s->panel_page;
     uint32_t attr;
-    if(!s->panel_ui || row>=9 || page==PANEL_PICTURE || page==PANEL_RECORD)
+    if((MENU_LEGACY_COMPAT && !s->panel_ui) || row>=9 || page==PANEL_PICTURE || page==PANEL_RECORD)
         return mcu_menu_row_legacy(s,rec,row,cells);
     memset(cells,0,12*sizeof(*cells));
     attr=s->menu?MENU_VISIBLE:0;
@@ -140,7 +152,7 @@ static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16
 {
     uint32_t attr=mcu_menu_row_base(s,rec,row,cells);
     unsigned v,lo,hi,width;
-    if(s->panel_ui && row>=1 && row<=8 && panel_range(s,row-1,&v,&lo,&hi)) {
+    if((!MENU_LEGACY_COMPAT || s->panel_ui) && row>=1 && row<=8 && panel_range(s,row-1,&v,&lo,&hi)) {
         if(v<lo)v=lo;
         if(v>hi)v=hi;
         width=((v-lo)*127+(hi-lo)/2)/(hi-lo);
@@ -166,7 +178,7 @@ static void mcu_menu_publish(const MenuState *s,uint32_t rec)
             if(row<9) {
                 word&=~(7u<<9);
                 word|=(col<8?0u:(attr&(1u<<14))?(attr&(7u<<9)):(1u<<9));
-                if(s->panel_ui && col<8 && (attr&(3u<<12)))word|=1u<<9;
+                if((!MENU_LEGACY_COMPAT || s->panel_ui) && col<8 && (attr&(3u<<12)))word|=1u<<9;
                 if(s->picture_page==2 && row>=1 && row<=4 && s->image_step==row+1 && col<8)word|=1u<<9;
             }
             ui_write(MCU_MENU_BASE+12,word);
@@ -188,7 +200,7 @@ static void mcu_menu_poll(const MenuState *s)
            (s->record_available<<23)|(s->picture_available<<24)|(s->auto_exposure<<25);
     key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s);
     key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8)|
-                                            (s->image_effect<<16)|(s->image_target<<20);
+        (s->image_effect<<16)|(s->image_target<<20)|(s->histogram_mode<<24);
     if((status&6u)==2u && !memcmp(key,mcu_menu_previous,sizeof key))return;
     mcu_menu_publish(s,rec);
     memcpy(mcu_menu_previous,key,sizeof key);

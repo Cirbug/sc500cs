@@ -111,6 +111,22 @@ int main(int argc,char **argv) {
     s.auto_exposure=1;s.gain=16;tap(&s,330,736);assert(!s.auto_exposure && s.gain==16);
     mcu_menu_poll(&s);i=commits;s.auto_exposure=1;mcu_menu_poll(&s);assert(commits==i+1);
     assert(words[8]==(MENU_VISIBLE|MENU_ASCII|'A'|(1u<<9)));
+    /* Merged HE row must work in the panel, without taking AE/effect state. */
+    panel_open(&s,PANEL_PICTURE);assert(panel_rows(&s)==7);
+    s.histogram_available=1;assert(panel_rows(&s)==8);
+    menu_key(&s,1);assert(s.index==7);menu_key(&s,8);assert(s.edit);
+    menu_key(&s,1);assert(s.histogram_mode==1);
+    menu_key(&s,1);assert(s.histogram_mode==2);
+    menu_key(&s,2);assert(s.histogram_mode==1);
+    tap(&s,400,952);assert(s.histogram_mode==2);
+    tap(&s,100,952);assert(s.histogram_mode==1);
+    mcu_menu_poll(&s);i=commits;s.histogram_mode=2;mcu_menu_poll(&s);assert(commits==i+1);
+    assert((words[136]&511u)==(MENU_ASCII|'1'));
+    s.image_effect^=1;mcu_menu_poll(&s);assert(commits==i+2);
+    assert(s.auto_exposure==1);
+    tap(&s,400,916);assert(s.histogram_mode==0 && s.picture==PICTURE_DEFAULT);
+    s.histogram_available=0;menu_key(&s,2);assert(s.index==0);
+    puts("PASS merged panel HE row, keys/touch, reset, AE ownership and independent dirty bits");
     puts("PASS panel AE toggle, manual override, dirty key and AUTO header");
     puts("PASS panel pages, keys/touch, exposure limits, mode/effect, tracking, recording, diagnostics, dirty/busy and focus exclusion");
 }

@@ -2,6 +2,12 @@
 #define MENU_INPUT_H
 #include <stdint.h>
 
+/* Production MUI1 builds omit obsolete legacy input/rendering branches.
+ * Default remains compatible for older hardware and host regressions. */
+#ifndef MENU_LEGACY_COMPAT
+#define MENU_LEGACY_COMPAT 1
+#endif
+
 /* MCU input/state layer. Geometry matches the 1920x1080 ui_osd.v layout.
  * Both firmware targets include this file; no extra FPGA logic is required. */
 enum { TOUCH_DOWN = 1, TOUCH_MOVE, TOUCH_UP, TOUCH_CANCEL };
@@ -47,7 +53,8 @@ typedef struct {
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
     uint32_t record_page, record_available, record_interval;
-    int touch_capture; /* -1:none; legacy 0..3:slider,4:toggle,5:AF,6:row; panel 16..23:slider */
+    uint32_t histogram_mode, histogram_available; /* 0 off, 1 half, 2 full */
+    int touch_capture; /* -1:none; panel 16..23:slider */
     /* A servo drag is relative to the point where the finger went down. */
     uint8_t servo_touch_active;
     uint16_t servo_touch_x0, servo_touch_y0;
@@ -76,7 +83,11 @@ static inline void picture_adjust(MenuState *s, int direction)
     case 3: shift=9; mask=7; high=4; break;
     case 4: shift=12; mask=3; high=3; break;
     case 5: shift=14; mask=3; high=3; break;
-    default: s->picture=PICTURE_DEFAULT; return;
+    case 7:
+        if(s->histogram_available)
+            s->histogram_mode=direction>0?(s->histogram_mode+1)%3:(s->histogram_mode+2)%3;
+        return;
+    default: s->picture=PICTURE_DEFAULT;s->histogram_mode=0;return;
     }
     value=(s->picture>>shift)&mask;
     if(s->index==0) {
@@ -114,7 +125,9 @@ static inline uint32_t camera_display_word(const MenuState *s)
 /* One adjustment implementation for touch actions and physical keys. */
 static inline unsigned menu_adjust(MenuState *s, int direction)
 {
+#if MENU_LEGACY_COMPAT
     if(s->picture_page==2) { s->image_step=s->index+2; return 0; }
+#endif
     if(s->record_page) {
         switch(s->index) {
             case 0:return MENU_PHOTO; case 1:return MENU_RECORD; case 2:return MENU_STOP;
@@ -123,16 +136,20 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
         }
         return 0;
     }
+#if MENU_LEGACY_COMPAT
     if(s->picture_page) { picture_adjust(s,direction); return 0; }
+#endif
     switch(s->index) {
     case 0: s->auto_exposure=0; s->exposure = menu_step(s->exposure, direction, 3, camera_exposure_max(s), 120); break;
     case 1: s->auto_exposure=0; s->gain = menu_step(s->gain, direction, 16, 143, 8); break;
+#if MENU_LEGACY_COMPAT
     /* The former PAN status row opens picture settings. Servo position
      * remains controlled by relative dragging outside the menu. */
     case 2: if(s->picture_available) { s->picture_page=1; s->index=0; s->edit=0; } break;
     case 3: if(s->record_available) {s->record_page=1;s->index=0;s->edit=0;} break;
     case 4: s->picture_page=2; s->index=s->image_step>=2 && s->image_step<=5?s->image_step-2:0;
             s->edit=0; break;
+#endif
     case 5: if(s->image_step == 5) return MENU_REACQUIRE;
             if(s->image_step == 4)
                 s->image_target = direction > 0 ? (s->image_target >= 2 ? 0 : s->image_target + 1)
@@ -141,7 +158,9 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
                 s->image_effect = direction > 0 ? (s->image_effect >= 5 ? 0 : s->image_effect + 1)
                                                 : (s->image_effect == 0 ? 5 : s->image_effect - 1);
             break;
+#if MENU_LEGACY_COMPAT
     case 6: s->logo_enable = !s->logo_enable; break;
+#endif
     case 7: if(s->vts_available) {
         s->vts=menu_step(s->vts,direction,1980u,2500u,20u);
         if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);
@@ -150,6 +169,11 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
     return 0;
 }
 
+static inline unsigned menu_last_index(const MenuState *s)
+{
+    return (s->picture_page==1 && s->histogram_available) ||
+           (!s->picture_page && !s->record_page && s->vts_available) ? 7u : 6u;
+}
 static inline unsigned menu_key_legacy(MenuState *s, unsigned keys)
 {
     /* Physical keys cancel a drag so old touch movement cannot overwrite it. */
@@ -177,14 +201,14 @@ static inline unsigned menu_key_legacy(MenuState *s, unsigned keys)
             else if(s->picture_page) { s->picture_page=0; s->index=2; }
             else { s->menu = 0; s->info = 0; }
         }
-        else if(keys & 1) s->index = s->index == 0 ? ((!s->picture_page && !s->record_page && s->vts_available)?7:6) : s->index - 1;
-        else if(keys & 2) s->index = s->index == ((!s->picture_page && !s->record_page && s->vts_available)?7:6) ? 0 : s->index + 1;
+        else if(keys & 1) s->index = s->index == 0 ? menu_last_index(s) : s->index - 1;
+        else if(keys & 2) s->index = s->index == menu_last_index(s) ? 0 : s->index + 1;
         else if(keys & 8) {
             if(!s->picture_page && !s->record_page && s->index==0 && s->auto_exposure_available) {
                 s->auto_exposure=!s->auto_exposure;s->edit=!s->auto_exposure;return 0;
             }
             if(s->record_page || (!s->picture_page && (s->index>=2 && s->index<=4))) return menu_adjust(s,1);
-            if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT; return 0; }
+            if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT;s->histogram_mode=0;return 0; }
             s->edit = 1; s->info = 0;
         }
     }
@@ -285,7 +309,7 @@ static inline unsigned menu_touch_legacy(MenuState *s, const TouchEvent *e)
         }
         if(s->picture_page) {
             if(y<692) { s->picture_page=0; s->index=2; s->edit=0; return 0; }
-            if(y>=944) return 0;
+            if(y>=980 || (y>=944 && !s->histogram_available)) return 0;
             s->index=(y-692)/36; s->edit=1;
             picture_adjust(s,x<330?-1:1);
             return 0;
@@ -312,7 +336,7 @@ enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
 static inline unsigned panel_rows(const MenuState *s)
 {
     static const uint8_t rows[]={6,7,3,5,3,7,2};
-    return rows[s->panel_page];
+    return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
 }
 static __attribute__((noinline)) void panel_open(MenuState *s,unsigned page)
 {
@@ -365,13 +389,15 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
 static inline int panel_editable(const MenuState *s)
 {
     return s->panel_page==PANEL_EXPOSURE ||
-           (s->panel_page==PANEL_PICTURE && s->index<6) ||
+           (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
            (s->panel_page==PANEL_MODE && s->index==4);
 }
-static inline unsigned menu_key(MenuState *s,unsigned keys)
+static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned keys)
 {
+#if MENU_LEGACY_COMPAT
     if(!s->panel_ui)return menu_key_legacy(s,keys);
+#endif
     s->touch_capture=-1;s->servo_touch_active=0;
     if(!s->menu) {
         if(keys&4)return MENU_AF;
@@ -432,7 +458,9 @@ static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
 static inline unsigned menu_touch(MenuState *s,const TouchEvent *e)
 {
     unsigned row,v,lo,hi;
+#if MENU_LEGACY_COMPAT
     if(!s->panel_ui)return menu_touch_legacy(s,e);
+#endif
     if(e->type==TOUCH_UP || e->type==TOUCH_CANCEL){s->touch_capture=-1;return 0;}
     if(e->type==TOUCH_MOVE) {
         if(s->menu && s->touch_capture>=16 && s->touch_capture<24) {

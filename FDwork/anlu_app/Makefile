@@ -57,7 +57,8 @@ ASM_SRCS :=
 # Keep the existing 1 KiB heap and 2 KiB stack.
 # Share the existing integer formatter between UI/SD and exception/Wi-Fi logs.
 # This recovers TCM for tracking without reducing heap, stack or USB buffers.
-CFLAGS := -Os -g -flto -msave-restore -DAL_CAMERA_COMPACT_DIAG -DAL_CAMERA_SHARED_PRINTF
+# MUI1 panel firmware: keep legacy source available, omit old menu paths from TCM.
+CFLAGS := -DMENU_LEGACY_COMPAT=0 -Os -g -flto -msave-restore -DAL_CAMERA_COMPACT_DIAG -DAL_CAMERA_SHARED_PRINTF
 # This application only formats integer diagnostics.  The SDK default pulls
 # in the floating-point printf formatter and wastes several KiB of the 48 KiB
 # TCM image.

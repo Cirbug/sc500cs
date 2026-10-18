@@ -109,3 +109,4 @@ __pycache__/
 /spi_text/MDK-ARM/spi_text/*
 !/spi_text/MDK-ARM/spi_text/*.sct
 /spi_text/MDK-ARM/*.lst
+td_project/.lock.f

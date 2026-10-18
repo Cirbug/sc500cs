@@ -2,6 +2,7 @@
 // Keep the mailbox reachable from existing TD GUI/generated source lists.
 `include "red_track_mailbox.v"
 `include "video_integrity.v"
+`include "histogram_equalizer.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
@@ -1118,13 +1119,15 @@ module design_top_wrapper (
     wire legacy_ready, legacy_error;
     wire rec_select=(S_mcu_paddr[19:12]==8'h01);
     wire menu_select=(S_mcu_paddr[19:12]==8'h02);
+    wire he_select=(S_mcu_paddr[19:12]==8'h03);
+    wire [31:0] he_rdata;
     wire [31:0] menu_rdata;
     wire rec_block, rec_wr, rec_rd, video_read_valid;
     wire [24:0] rec_addr;
     wire [127:0] rec_data;
-    assign S_mcu_prdata=menu_select?menu_rdata:rec_select?rec_rdata:legacy_rdata;
-    assign S_mcu_pready=(rec_select || menu_select)?1'b1:legacy_ready;
-    assign S_mcu_pslverr=(rec_select || menu_select)?1'b0:legacy_error;
+    assign S_mcu_prdata=he_select?he_rdata:menu_select?menu_rdata:rec_select?rec_rdata:legacy_rdata;
+    assign S_mcu_pready=(rec_select || menu_select || he_select)?1'b1:legacy_ready;
+    assign S_mcu_pslverr=(rec_select || menu_select || he_select)?1'b0:legacy_error;
     sd_recorder u_recorder (
         .rst_n(S_rst_n), .apb_clk(S_mcu_apb_clk),
         .pixel_clk(S_hdmi_pixel_clk), .ddr_clk(S_ddr_clk),
@@ -1148,7 +1151,7 @@ module design_top_wrapper (
         .O_usb_res_n   ( S_apb_usb_res_n ),
         .O_usb_spi_enable ( S_apb_usb_spi_enable ),
         .I_paddr       ( S_mcu_paddr ),
-        .I_psel        ( S_mcu_psel && !rec_select && !menu_select ),
+        .I_psel        ( S_mcu_psel && !rec_select && !menu_select && !he_select ),
         .I_penable     ( S_mcu_penable ),
         .I_pwrite      ( S_mcu_pwrite ),
         .I_pwdata      ( S_mcu_pwdata ),
@@ -1805,13 +1808,23 @@ isp_top u_isp_top (
     // mixer OSD colors through video_overlay_final.  This keeps the current
     // recognition/menu/RTC OSD visible while replacing the old adjacent-pixel
     // edge effect with the spatial Sobel implementation.
+    wire he_vs,he_hs,he_de;
+    wire [23:0] he_rgb;
+    histogram_equalizer u_histogram_equalizer (
+        .rst_n(S_rst_n && S_hdmi_rst_n),.apb_clk(S_mcu_apb_clk),
+        .sel(S_mcu_psel && he_select),.enable(S_mcu_penable),.write(S_mcu_pwrite),
+        .addr(S_mcu_paddr[11:0]),.strobe(S_mcu_pstrobe),.wdata(S_mcu_pwdata),.rdata(he_rdata),
+        .clk(S_hdmi_pixel_clk),.vs(S_hdmi_out_vsync),.hs(S_hdmi_out_hsync),
+        .de(S_hdmi_out_de),.rgb(S_hdmi_base_data),
+        .out_vs(he_vs),.out_hs(he_hs),.out_de(he_de),.out_rgb(he_rgb)
+    );
     image_filter u_image_filter_9 (
         .I_clk    (S_hdmi_pixel_clk),
         .I_rst_n  (S_hdmi_rst_n),
-        .I_vsync  (S_hdmi_out_vsync),
-        .I_hsync  (S_hdmi_out_hsync),
-        .I_de     (S_hdmi_out_de),
-        .I_data   (S_hdmi_base_data),
+        .I_vsync  (he_vs),
+        .I_hsync  (he_hs),
+        .I_de     (he_de),
+        .I_data   (he_rgb),
         .I_mode   ((S_dbg_effect_sel <= 3'd4) ? S_dbg_effect_sel : 3'd0),
         .O_vsync  (S_effect_vsync),
         .O_hsync  (S_effect_hsync),
@@ -1841,7 +1854,7 @@ isp_top u_isp_top (
         .O_gray      (S_edge_gray)
     );
 
-    video_overlay_final #(.EFFECT_LATENCY(5)) u_video_overlay_final_9 (
+    video_overlay_final #(.EFFECT_LATENCY(8)) u_video_overlay_final_9 (
         .I_clk            (S_hdmi_pixel_clk),
         .I_rst_n          (S_hdmi_rst_n),
         .I_overlay_valid  (S_hdmi_overlay_valid),

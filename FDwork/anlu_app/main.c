@@ -107,6 +107,7 @@ static uint32_t ui_now_ms(void)
 }
 
 #include "../shared/mcu_menu.h"
+#include "../shared/histogram_equalization.h"
 
 /* FD may inspect/adjust these without a serial console. Both automatic axes
  * are reversed after the board test showed motion away from the target. */
@@ -284,6 +285,7 @@ static void recorder_service(void) {
     if(record_ui) {
         touchscreen_handle(record_ui);
         mcu_menu_poll(record_ui);
+        histogram_poll(record_ui);
         unsigned keys=ui_read(UI_KEY)&15u;
         if(keys) {focus_gesture=(TouchFocus){0};MenuState old=*record_ui;ui_write(UI_KEY,keys);menu_commit(record_ui,&old,menu_key(record_ui,keys));}
         tracking_service(record_ui);
@@ -372,6 +374,8 @@ AL_S32 main(void)
     ui_ctrl(ui.menu, ui.edit, ui.info, ui.picture_page);
     /* Publish before USB/Wi-Fi probing so the menu is visible during startup. */
     mcu_menu_available=(ui_read(MCU_MENU_BASE)==MCU_MENU_ID);
+    ui.histogram_available=(ui_read(HE_BASE)==HE_ID);
+    if(ui.histogram_available)ui_write(HE_BASE+0x1c,0); // MCU-only reload also restores bypass
     mcu_menu_poll(&ui);
     g_ui_debug_stage = 4;
     /* USB diagnostics are bounded; the existing menu continues on failure. */
@@ -434,6 +438,7 @@ AL_S32 main(void)
         recorder_poll();
         wifi_mcu_poll(0);
         mcu_menu_poll(&ui);
+        histogram_poll(&ui);
         g_ui_debug_stage = 6;
         AlSys_MDelay(1);
     }

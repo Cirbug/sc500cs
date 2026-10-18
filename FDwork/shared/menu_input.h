@@ -45,6 +45,7 @@ typedef struct {
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
     uint32_t record_page, record_available, record_interval;
+    uint32_t histogram_mode, histogram_available; /* 0 off, 1 half, 2 full */
     int touch_capture; /* -1: none, 0..3: slider, 4: toggle, 5: AF, 6: row */
     /* A servo drag is relative to the point where the finger went down. */
     uint8_t servo_touch_active;
@@ -74,7 +75,11 @@ static inline void picture_adjust(MenuState *s, int direction)
     case 3: shift=9; mask=7; high=4; break;
     case 4: shift=12; mask=3; high=3; break;
     case 5: shift=14; mask=3; high=3; break;
-    default: s->picture=PICTURE_DEFAULT; return;
+    case 7:
+        if(s->histogram_available)
+            s->histogram_mode=direction>0?(s->histogram_mode+1)%3:(s->histogram_mode+2)%3;
+        return;
+    default: s->picture=PICTURE_DEFAULT;s->histogram_mode=0;return;
     }
     value=(s->picture>>shift)&mask;
     if(s->index==0) {
@@ -148,6 +153,11 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
     return 0;
 }
 
+static inline unsigned menu_last_index(const MenuState *s)
+{
+    return (s->picture_page==1 && s->histogram_available) ||
+           (!s->picture_page && !s->record_page && s->vts_available) ? 7u : 6u;
+}
 static inline unsigned menu_key(MenuState *s, unsigned keys)
 {
     /* Physical keys cancel a drag so old touch movement cannot overwrite it. */
@@ -175,11 +185,11 @@ static inline unsigned menu_key(MenuState *s, unsigned keys)
             else if(s->picture_page) { s->picture_page=0; s->index=2; }
             else { s->menu = 0; s->info = 0; }
         }
-        else if(keys & 1) s->index = s->index == 0 ? ((!s->picture_page && !s->record_page && s->vts_available)?7:6) : s->index - 1;
-        else if(keys & 2) s->index = s->index == ((!s->picture_page && !s->record_page && s->vts_available)?7:6) ? 0 : s->index + 1;
+        else if(keys & 1) s->index = s->index == 0 ? menu_last_index(s) : s->index - 1;
+        else if(keys & 2) s->index = s->index == menu_last_index(s) ? 0 : s->index + 1;
         else if(keys & 8) {
             if(s->record_page || (!s->picture_page && (s->index>=2 && s->index<=4))) return menu_adjust(s,1);
-            if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT; return 0; }
+            if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT;s->histogram_mode=0;return 0; }
             s->edit = 1; s->info = 0;
         }
     }
@@ -279,7 +289,7 @@ static inline unsigned menu_touch(MenuState *s, const TouchEvent *e)
         }
         if(s->picture_page) {
             if(y<692) { s->picture_page=0; s->index=2; s->edit=0; return 0; }
-            if(y>=944) return 0;
+            if(y>=980 || (y>=944 && !s->histogram_available)) return 0;
             s->index=(y-692)/36; s->edit=1;
             picture_adjust(s,x<330?-1:1);
             return 0;

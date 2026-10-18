@@ -34,8 +34,9 @@ static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16
     if(row==9) {cells[0]=mcu_labels[0][0][0];cells[1]=mcu_labels[0][0][1];return MENU_VISIBLE;}
     if(row==10) return MENU_VISIBLE|((rec&255u?4u:rec&256u?7u:rec&512u?5u:6u)<<9);
     if(row>8) return 0;
+    if(page==1 && row==8 && !s->histogram_available)return attr; // retain panel/border, blank label
     for(i=0;i<8;i++)cells[i]=mcu_labels[page][row][i];
-    if(row==s->index+1u && (row<=7 || page==0) && (page!=3 || row<=4))
+    if(row==s->index+1u && (row<=7 || page<=1) && (page!=3 || row<=4))
         attr|=(((s->edit && (s->index<4 || s->index==7))?2u:1u)<<12);
     if(page==0) {
         if(row==1 || row==2) {
@@ -56,6 +57,9 @@ static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16
         case 5:kind=((const unsigned char[]) {3,4,5,1})[(p>>12)&3];break;
         case 6:kind=((const unsigned char[]) {1,6,7,8})[(p>>14)&3];break;
         case 7:kind=9;break;
+        case 8:
+            if(s->histogram_mode) {mcu_menu_text(cells,s->histogram_mode==1?"50% ":"100%");return attr;}
+            kind=1;break;
         default:return attr;
         }
         mcu_menu_value(cells,kind);
@@ -108,7 +112,7 @@ static void mcu_menu_poll(const MenuState *s)
     rec=s->record_available?ui_read(0x1060u):0;
     key[0]=s->menu|(s->edit<<1)|(s->index<<4)|(s->picture_page<<8)|(s->record_page<<10);
     key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s);
-    key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8);
+    key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8)|(s->histogram_mode<<16);
     if((status&6u)==2u && !memcmp(key,mcu_menu_previous,sizeof key))return;
     mcu_menu_publish(s,rec);
     memcpy(mcu_menu_previous,key,sizeof key);

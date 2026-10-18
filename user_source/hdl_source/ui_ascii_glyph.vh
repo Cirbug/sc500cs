@@ -10,6 +10,14 @@
                 "K": case(r) 0,6:glyph_bits=5'b10001; 1,5:glyph_bits=5'b10010; 2,4:glyph_bits=5'b10100; 3:glyph_bits=5'b11000; endcase
                 "Y": case(r) 0,1:glyph_bits=5'b10001; 2:glyph_bits=5'b01010; default:glyph_bits=5'b00100; endcase
                 ".": case(r) 6:glyph_bits=5'b00100; endcase
+                "m": case(r)
+                    2:glyph_bits=5'b11010;
+                    3,4,5,6:glyph_bits=5'b10101;
+                endcase
+                "s": case(r)
+                    2:glyph_bits=5'b01111; 3:glyph_bits=5'b10000;
+                    4:glyph_bits=5'b01110; 5:glyph_bits=5'b00001; 6:glyph_bits=5'b11110;
+                endcase
                 "A": case(r)
                     3'd0: glyph_bits = 5'b01110;
                     3'd1: glyph_bits = 5'b10001;

@@ -2,6 +2,7 @@
 // Keep the mailbox reachable from existing TD GUI/generated source lists.
 `include "red_track_mailbox.v"
 `include "video_integrity.v"
+`include "capture_display_latency.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
@@ -1878,6 +1879,25 @@ isp_top u_isp_top (
         .fps_valid(S_mipi_fps_valid)
     );
 
+    // Capture->display processing latency measurement for the on-screen
+    // real-time indicator.  The camera frame start is crossed from the MIPI RX
+    // clock into the HDMI pixel domain inside the module via a toggle synchronizer.
+    wire [15:0] S_latency_bcd, S_cam_period_bcd;
+    wire [15:0] S_repeat_bcd;
+    wire        S_latency_valid, S_cam_period_valid;
+    capture_display_latency #(.PIXEL_CLOCK_HZ(`HDMI_PIXEL_CLOCK_HZ)) u_latency (
+        .clk             ( S_hdmi_pixel_clk  ),
+        .rst_n           ( S_rst_n && S_hdmi_rst_n ),
+        .cam_clk         ( S_csi_rx_clk      ),
+        .cam_frame_start ( S_csi_frame_start ),
+        .vsync           ( S_final_vsync     ),
+        .latency_bcd     ( S_latency_bcd     ),
+        .period_bcd      ( S_cam_period_bcd  ),
+        .repeat_bcd      ( S_repeat_bcd      ),
+        .latency_valid   ( S_latency_valid   ),
+        .period_valid    ( S_cam_period_valid)
+    );
+
     ui_osd #(
         .H_ACTIVE(`HDMI_H_ACTIVE),
         .V_ACTIVE(`HDMI_V_ACTIVE),
@@ -1926,6 +1946,9 @@ isp_top u_isp_top (
         .I_rtc_valid    ( S_rtc_valid_p2 ),
         .I_rtc_error    ( S_rtc_error_p2 ),
         .I_rtc_osf      ( S_rtc_osf_p2 ),
+        .I_latency_bcd(S_latency_bcd), .I_camera_period_bcd(S_cam_period_bcd),
+        .I_repeat_bcd(S_repeat_bcd), .I_latency_valid(S_latency_valid),
+        .I_camera_period_valid(S_cam_period_valid),
         .O_vsync        ( S_osd_vsync ),
         .O_hsync        ( S_osd_hsync ),
         .O_de           ( S_osd_de ),

@@ -101,6 +101,11 @@ static inline void ui_write(uint32_t offset, uint32_t value)
     *ui_reg(offset) = value;
 }
 
+static uint32_t ui_now_ms(void)
+{
+    return (uint32_t)(AlSys_GetTimerTickCount()/(PH1P35_MCU_TIMER_CLOCK/1000u));
+}
+
 #include "../shared/mcu_menu.h"
 
 /* FD may inspect/adjust these without a serial console. Both automatic axes
@@ -108,17 +113,6 @@ static inline void ui_write(uint32_t offset, uint32_t value)
 volatile RedTrackConfig g_track_config = RED_TRACK_DEFAULT_CONFIG;
 RedTrackControl g_track_control;
 volatile uint32_t g_track_capability;
-static void tracking_service(MenuState *s)
-{
-    uint32_t word=g_track_capability==RED_TRACK_ID ? ui_read(UI_TRACK_STATUS) : 0;
-    unsigned changed=red_track_update(&g_track_control,word,
-        (uint32_t)(AlSys_GetTimerTickCount()/(PH1P35_MCU_TIMER_CLOCK/1000u)),
-        g_track_capability==RED_TRACK_ID && s->servo_menu_available && s->image_step==5u,
-        s->servo_touch_active!=0, &g_track_config, &s->servo_pan_us, &s->servo_tilt_us);
-    if(changed&1u) ui_write(UI_SERVO_PAN_US,s->servo_pan_us);
-    if(changed&2u) ui_write(UI_SERVO_TILT_US,s->servo_tilt_us);
-}
-
 static void ui_ctrl(uint32_t menu, uint32_t edit, uint32_t info, uint32_t picture_page)
 {
     ui_write(UI_CTRL, (menu ? 1u : 0u) | (edit ? 2u : 0u) |
@@ -150,42 +144,7 @@ static void focus_plot(uint32_t position, uint32_t metric, uint32_t status)
               valid ? (int)((adc >> 8) & 255u) : -1, valid);
 }
 
-/* Two-pass autofocus with temporal averaging.  The focus metric is a
- * frame-level contrast value from the FPGA.  Averaging three settled frames
- * at every lens position rejects the moving-frame/noise spikes that made a
- * one-sample maximum choose a visibly soft position.  The coarse pass finds
- * the broad peak; the fine pass rescans +/-512 codes at 64-code resolution. */
-#define AF_POS_MAX        16383u
-#define AF_COARSE_STEP      512u
-#define AF_FINE_STEP         64u
-#define AF_FINE_RADIUS      512u
-#define AF_SETTLE_MS         80u
-#define AF_SAMPLE_GAP_MS     30u
-#define AF_SAMPLES             3u
-static uint32_t af_state = 3;       /* 0 start, 1 coarse, 2 fine, 3 done */
-static uint32_t af_wait_ms;
-static uint32_t af_position;
-static uint32_t af_scan_end;
-static uint32_t af_scan_step;
-static uint32_t af_best_position;
-static uint32_t af_best_metric;
-static uint32_t af_metric_sum;
-static uint32_t af_metric_count;
-static uint32_t af_metric_min;
-static uint32_t af_metric_max;
 static uint32_t lens_last_tx_count;
-
-static void autofocus_command(uint32_t position)
-{
-    af_position = position & 0x3fffu;
-    ui_write(UI_LENS_POS, af_position);
-    ui_write(UI_LENS_CMD, 1u);
-    af_wait_ms = 0;
-    af_metric_sum = 0;
-    af_metric_count = 0;
-    af_metric_min = 0xffffffffu;
-    af_metric_max = 0;
-}
 
 /* Report the most recent completed transaction; a failure freezes the result
  * until an explicit retry, so successful background reads cannot hide it. */
@@ -228,151 +187,16 @@ static void lens_diag_report(void)
         al_printf("LOG: LENS error latched; exit menu and press BACK to retry (LIC3)\r\n");
 }
 
-static void autofocus_restart(void)
-{
-    uint32_t status = ui_read(UI_LENS_STAT);
-    /* Queue a new scan even during a background ADC transaction. The task
-     * waits for idle before commanding the lens, so a valid double tap is
-     * not lost just because the periodic I2C read happens at that instant. */
-    if((status & 6u) != 2u) {
-        if(status & 1u) return;
-        af_state = 3;
-        if(lens_diag_available == 3) {
-            /* Retry restores the FPGA initialization target to 8192. */
-            ui_write(UI_LENS_POS, 8192u);
-            ui_write(UI_LENS_CMD, 2u);
-            al_printf("LOG: LENS retry initialization + ADC84/85; no automatic focus scan\r\n");
-        } else {
-            al_printf("LOG: LENS retry requires LIC3 FPGA bit\r\n");
-        }
-        return;
-    }
-    af_state = 0;
-    af_wait_ms = 0;
-    af_position = 0;
-    af_scan_end = AF_POS_MAX;
-    af_scan_step = AF_COARSE_STEP;
-    af_best_position = 0;
-    af_best_metric = 0;
-    af_metric_sum = 0;
-    af_metric_count = 0;
-    al_printf("LOG: AF key trigger, 3-frame averaged coarse+fine scan\r\n");
-}
-
-static void manual_focus_step(int32_t delta)
-{
-    uint32_t status = ui_read(UI_LENS_STAT);
-    uint32_t position = ui_read(UI_LENS_POS) & 0x3fffu;
-    /* Manual operation stops a scan so the next poll cannot overwrite it. */
-    af_state = 3;
-    if((status & 7u) != 2u) {
-        al_printf("LOG: AF manual rejected status=0x%x (busy/not initialized/error)\r\n", status);
-        lens_diag_report();
-        return;
-    }
-    if(delta > 0) {
-        position = (position >= AF_POS_MAX - AF_FINE_STEP) ? AF_POS_MAX : position + AF_FINE_STEP;
-    } else {
-        position = (position <= AF_FINE_STEP) ? 0u : position - AF_FINE_STEP;
-    }
-    ui_write(UI_LENS_POS, position);
-    ui_write(UI_LENS_CMD, 1u);
-    al_printf("LOG: AF manual direction=%s position=%u step=%u\r\n",
-              (delta > 0) ? "UP" : "DOWN", position, AF_FINE_STEP);
-    focus_plot(position, ui_read(UI_FOCUS_METRIC), ui_read(UI_LENS_STAT));
-}
-
-static void autofocus_task(void)
-{
-    uint32_t status;
-    uint32_t metric;
-    uint32_t average;
-    uint32_t next;
-
-    if(af_state == 3)
-        return;
-    status = ui_read(UI_LENS_STAT);
-    if(status & (1u << 2)) {
-        al_printf("LOG: AF lens I2C error\r\n");
-        af_state = 3;
-        return;
-    }
-    if(!(status & (1u << 1)))
-        return;                       /* active-mode init not complete */
-    if(status & 1u)
-        return;                       /* do not poll during I2C transaction */
-
-    if(af_state == 0) {
-        af_position = 0;
-        af_scan_end = AF_POS_MAX;
-        af_scan_step = AF_COARSE_STEP;
-        af_best_position = 0;
-        af_best_metric = 0;
-        autofocus_command(af_position);
-        af_state = 1;
-        al_printf("LOG: AF coarse scan started step=%u samples=%u settle=%ums\r\n",
-                  AF_COARSE_STEP, AF_SAMPLES, AF_SETTLE_MS);
-        return;
-    }
-
-    /* Wait after a move, then use several frame values at the same position.
-     * The first frame is discarded by the settle delay; the next three are
-     * averaged before this position can compete for the peak. */
-    if(af_wait_ms < ((af_metric_count == 0u) ? AF_SETTLE_MS : AF_SAMPLE_GAP_MS)) {
-        af_wait_ms++;
-        return;
-    }
-    metric = ui_read(UI_FOCUS_METRIC);
-    af_metric_sum += metric;
-    if(metric < af_metric_min) af_metric_min = metric;
-    if(metric > af_metric_max) af_metric_max = metric;
-    af_metric_count++;
-    af_wait_ms = 0;
-    if(af_metric_count < AF_SAMPLES)
-        return;
-
-    average = af_metric_sum / AF_SAMPLES;
-    focus_plot(af_position, average, status);
-    if(average > af_best_metric) {
-        af_best_metric = average;
-        af_best_position = af_position;
-    }
-    al_printf("LOG: AF sample position=%u avg=%u min=%u max=%u pass=%s\r\n",
-              af_position, average, af_metric_min, af_metric_max,
-              (af_state == 1u) ? "coarse" : "fine");
-
-    if(af_position >= af_scan_end) {
-        if(af_state == 1u) {
-            uint32_t center = af_best_position;
-            uint32_t fine_start = (center > AF_FINE_RADIUS) ?
-                                   center - AF_FINE_RADIUS : 0u;
-            af_scan_end = (center + AF_FINE_RADIUS < AF_POS_MAX) ?
-                          center + AF_FINE_RADIUS : AF_POS_MAX;
-            af_scan_step = AF_FINE_STEP;
-            af_position = fine_start;
-            af_state = 2;
-            autofocus_command(af_position);
-            al_printf("LOG: AF fine scan center=%u range=%u..%u step=%u samples=%u\r\n",
-                      center, fine_start, af_scan_end, AF_FINE_STEP, AF_SAMPLES);
-        } else {
-            /* The averaged peak is the final command.  Keeping the command at
-             * the measured grid point avoids a noisy interpolation overshoot. */
-            autofocus_command(af_best_position);
-            af_state = 3;
-            al_printf("LOG: AF done position=%u best_metric=%u (3-frame average)\r\n",
-                      af_best_position, af_best_metric);
-        }
-    } else {
-        next = af_position + af_scan_step;
-        if(next > af_scan_end)
-            next = af_scan_end;
-        autofocus_command(next);
-    }
-}
+#include "../shared/autofocus_control.h"
+#include "../shared/tracking_service.h"
 
 /* All inputs commit through this one hardware boundary. */
 static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
 {
+    /* Manual gimbal input cancels AF before changing either PWM target. */
+    if(autofocus_active() && (s->servo_pan_us!=old->servo_pan_us ||
+                             s->servo_tilt_us!=old->servo_tilt_us))
+        autofocus_stop(AF_REASON_MANUAL);
     if(s->image_step!=old->image_step || (actions & MENU_REACQUIRE))
         g_track_control.primed=0;
     if(s->picture_available && picture_effective(s)!=picture_effective(old)) {
@@ -432,14 +256,17 @@ static void touchscreen_handle(MenuState *s)
     if(max3421e_touch_pop(&event)) {
         MenuState old = *s;
         unsigned actions = touch_focus(&focus_gesture, &event,
-            (uint32_t)(AlSys_GetTimerTickCount()/(PH1P35_MCU_TIMER_CLOCK/1000u)),
+            ui_now_ms(),
             touch_in_menu_area(s, &event));
         actions |= menu_touch(s, &event);
         if(actions & MENU_AF) {
             /* Gate new behavior on the matching FPGA ROI capability. */
             if(ui_read(0x98)==0x41465231u)
                 ui_write(0x94,touch_focus_roi(focus_gesture.x,focus_gesture.y));
-            else actions &= ~MENU_AF;
+            else {
+                actions &= ~MENU_AF;
+                g_af_debug.reason=AF_REASON_ROI_UNSUPPORTED;
+            }
             s->servo_touch_active=0;
         } else actions |= touch_servo_apply(s, &event);
         menu_commit(s, &old, actions);
@@ -453,6 +280,7 @@ static void recorder_service(void) {
     rtc_diag_poll((uint32_t)UI_APB_BASE);
     video_diag_poll((uint32_t)UI_APB_BASE);
     max3421e_touch_poll();
+    autofocus_task();
     if(record_ui) {
         touchscreen_handle(record_ui);
         mcu_menu_poll(record_ui);
@@ -571,8 +399,7 @@ AL_S32 main(void)
         lens_diag_report();
         autofocus_task();
 
-        /* Repeat the APB ID and issue real bus transactions periodically.
-         * This keeps USB-SPI and VCM-I2C clocks visible to a logic analyzer. */
+        /* Read diagnostics without starting idle lens transactions. */
         if((last_report++ & DIAG_POLL_MASK) == 0) {
             id = ui_read(UI_ID);
             g_ui_debug_id = id;
@@ -594,20 +421,8 @@ AL_S32 main(void)
                     g_rtc_time1 = t1;
                 }
             }
-            /* Keep the VCM bus active for measurement and recovery. An error
-             * state retries the required active-mode/position sequence; an
-             * initialized idle lens performs the 0x84/0x85 ADC read pair. */
-            if(lens_diag_available == 3 && af_state == 3) {
-                uint32_t lens_status = ui_read(UI_LENS_STAT);
-                if(!(lens_status & 1u) && (lens_status & 4u)) {
-                    ui_write(UI_LENS_POS, 8192u);
-                    ui_write(UI_LENS_CMD, 2u);
-                    al_printf("LOG: LENS periodic retry; VCM-I2C transaction started\r\n");
-                } else if((lens_status & 7u) == 2u) {
-                    ui_write(UI_LENS_CMD, 4u);
-                    al_printf("LOG: LENS periodic ADC84/85 read started\r\n");
-                }
-            }
+            /* Position writes already refresh ADC84/85. Only an explicit
+             * AF request may retry initialization; idle must not reset focus. */
         }
         /* Touch reports are independent of the slower diagnostic poll.  Pop
          * one report every loop so a drag follows the finger promptly. */

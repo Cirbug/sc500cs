@@ -22,9 +22,9 @@ module isp_top (
     input  wire [1:0]  I_bright,       // 数字提亮档 0=×1.0 1=×1.125 2=×1.25 3=×1.5
     input  wire [2:0]  I_core_sel,     // 暗部彩噪抑制强度：0=关 1=弱 2=中 3=强 4=极强
     // ★ 白平衡质量改进 + 颜色校正矩阵（CCM）开关，见 awb.v / rgb96_ccm 注释
-    input  wire        I_awb_gate_en,  // 1 = AWB 只统计“近灰”像素 |max-min| < I_awb_gate_th
-    input  wire [7:0]  I_awb_gate_th,  // 近灰门限（8bit 线性域），建议 32~64
-    input  wire        I_awb_smooth_en,// 1 = AWB 增益 IIR 平滑（α=7/8）+ 目标限幅 0.5x~4x
+    input  wire        I_awb_gate_en,  // 1 = AWB 使用更严格的相对色差筛选
+    input  wire [7:0]  I_awb_gate_th,  // 相对色差 Q0.8 门限，64 表示 (max-min)/max <= 1/4
+    input  wire        I_awb_smooth_en,// 1 = AWB 增益 IIR 平滑（α=7/8）；所有自动档均限幅 0.5x~4x
     input  wire        I_sat_off,      // 1 = 饱和度增强直通（×1.0）：用于“撤除所有增益”对照档
     input  wire [1:0]  I_sat_sel,
     input  wire [1:0]  I_denoise,

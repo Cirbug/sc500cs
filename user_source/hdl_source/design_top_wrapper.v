@@ -1395,7 +1395,7 @@ isp_top u_isp_top (
 .I_bright        (S_picture_isp[8:7]),
 .I_core_sel      (3'd0),
 .I_awb_gate_en   (S_picture_isp[13:12] == 2'd2),
-.I_awb_gate_th   (8'd32),
+.I_awb_gate_th   (8'd64),
 .I_awb_smooth_en (S_picture_isp[13:12] != 2'd0),
 .I_sat_off       (S_picture_isp[11:9] == 3'd0),
 .I_sat_sel       (S_picture_isp[10:9] - 2'd1),

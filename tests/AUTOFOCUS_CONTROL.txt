@@ -1,0 +1,78 @@
+Autofocus request/recovery correction / 2026-10-17
+
+Scope
+  Integrated into main on 2026-10-18: shared AF in both FDwork/anlu_app (RAM)
+  and FDwork/anlu_app2 (XIP). Automatic red tracking arbitration applies to
+  anlu_app; anlu_app2 retains its existing lack of automatic red tracking.
+  AF requires no FPGA, JTAG configuration, SDK timer, touch gesture threshold
+  or servo direction changes. The accompanying FPGA build separately imports AWB.
+  main.c includes shared/autofocus_control.h; test_autofocus.c tests that same code.
+
+Reproduced original faults
+  AF while lens initialization is busy was discarded.
+  AF with a latched lens error only reinitialized the lens; success never resumed AF.
+  af_wait_ms counted main-loop calls, not milliseconds. SDK MDelay uses a frequency
+  divided by five, whereas this board's verified timer convention is 100 MHz.
+  Cooperative SD waits handled touch but did not service an accepted AF request.
+  Idle ADC diagnostics could latch an error and provoke an unsolicited move to 8192.
+
+Behavior
+  Every recognized AF request waits for lens idle/initialization, with a 1000 ms limit.
+  AF has priority over automatic red tracking for the complete request lifetime.
+  tracking_service.h holds both PWM targets and invalidates old tracking feedback
+  while AF is queued, recovering, scanning or returning to the selected position.
+  Before the first scan command (also after recovery), wait at least 200 ms from
+  request/retry for the gimbal to settle. This is a configured delay, not mechanical
+  position feedback. Lens settle/sample timing below remains unchanged.
+  Completion/failure resumes through normal tracking acquisition: first prime a
+  new baseline, then wait 200 ms and a fresh detection result. Mode/user disable
+  remains effective. Manual pan/tilt movement cancels AF before its PWM update.
+  LIC3 recovery is attempted once per request; successful recovery restarts coarse AF.
+  Permanent faults stop with debugger-visible status; no automatic idle retries.
+  After a position transaction completes, wait 80 real milliseconds, then take three
+  time-spaced metric samples 40 ms apart. These are not guaranteed distinct camera frames.
+  Coarse grid 512, fine grid 64 within +/-512, lens code range 0..16383 unchanged.
+  The final best-position transaction is checked before scan completion is reported.
+  Recorder service runs the same nonblocking AF task; rapid calls cannot shorten waits.
+  ADC84/85 still refresh automatically after lens initialization and every position write.
+  Existing gesture: two short taps outside menu; max hold 250 ms; tap gap 350 ms;
+  per-axis motion tolerance 16 px; inter-tap location tolerance 48 px. Single tap is not AF.
+  Physical BACK first exits an open menu; with menu closed it triggers AF.
+
+Debugger
+  g_af_debug.requests: recognized AF attempts; compare before/after the gesture.
+  g_af_debug.reason: 0 idle, 1 queued, 2 waiting for lens, 3 recovery,
+    4 coarse, 5 fine, 6 final return, 7 scan complete, 8 I2C/init failure,
+    9 timeout, 10 manual override, 11 missing AFR1 capability, 12 manual move rejected,
+    13 waiting for gimbal settling. g_track_control.reason=6 means AF owns the axes.
+  g_af_debug.lens_status: bit0 busy, bit1 initialized, bit2 error.
+  g_af_debug.diag: retained fault diagnostic, even if the bounded retry succeeds.
+    bits23:20: 1 NACK, 2 SCL timeout, 3 SDA stuck.
+    bits6:4: 1 active mode, 2/3 position high/low, 4/5 ADC84/85.
+  Reason 7 means scan/return completed, not measured optical focus quality.
+
+Offline validation
+  python tests/run_autofocus.py --gcc E:/mingw64/bin/gcc.exe --out <isolated output directory>
+  Tests cover startup busy, background busy, one-shot recovery, persistent faults,
+  mid-scan fault, repeated request, deadlines, true elapsed time, timer wrap,
+  final move failure, manual override, complete peak search at varying poll rates,
+  plus existing touch, tracking, picture, recording and VTS controls.
+  test_focus_tracking.c runs production AF and tracking_service.h together, checking
+  no servo writes in every active AF phase, repeated triggers, settle delay,
+  recovery failure, busy timeout, manual lens override, mode/enable changes,
+  timer wrap and fresh-feedback reacquisition. Both main and SD service use it.
+  Existing RTL tests tb_lens_i2c_diag, tb_lens_i2c_recovery and tb_touch_focus are
+  also rerun against the unchanged lens bus/metric RTL.
+
+Memory / remaining validation
+  FD TCM ELF after AF priority: text 40304, data 160, bss 8512 bytes
+  (bss includes reservations). Previous AF-only text was 40176 (+128 bytes).
+  Reserved heap section 0x0800B380..0x0800B780 (1024 B);
+  stack 0x0800B800..0x0800C000 (2048 B); section gap 128 B (previously 256 B).
+  The linker exposes _heap_end at stack bottom B800, so this gap is not a
+  runtime stack safety margin. Heap/stack configuration has not been reduced.
+  No board download performed. Verify trigger recognition and real optical response.
+  A complete 50-position scan has about 8 seconds of timed sampling plus I2C/scheduling.
+  Frozen video, metric CDC coherence, exposure/texture variation and moving scenes are
+  not solved by this request/timing patch. Current FPGA exposes no camera-frame ID
+  alongside the metric; strict fresh-frame sampling would need an FPGA interface change.

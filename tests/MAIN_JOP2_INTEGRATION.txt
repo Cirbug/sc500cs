@@ -1,0 +1,45 @@
+main / jop2.0 selective integration, 2026-10-18
+
+Sources
+  main: bf8d4a58df7bdb5eac30c180851c789d967be7a6
+  origin/jop2.0: 7ee8c028b41bae96c52435c75351ae09b78d6243
+  Remote fetched before integration verification. This is a selective working-tree
+  integration, not a Git branch merge or push.
+
+Imported
+  AWB: valid-sample filtering, confidence threshold, bounded automatic gain,
+  smoothed updates and frame-boundary publication. See AWB_ROBUST.txt.
+  AF: pending request retention, one bounded LIC3 recovery, elapsed-time waits,
+  final move verification, cooperative SD servicing, no idle reset to 8192.
+  Tracking: hold both PWM targets throughout AF; fresh acquisition after AF.
+  Manual pan/tilt cancels AF before changing PWM. See AUTOFOCUS_CONTROL.txt.
+
+Scope
+  Both RAM and XIP firmware use shared AF. Existing XIP firmware did not implement
+  automatic red tracking; that difference is retained.
+  Latest jop2.0 explicitly rolled back target-triggered local AF and its frame
+  sequence mailbox. Those earlier changes are NOT imported. No continuous target
+  autofocus is added. The existing double-tap/manual AF gesture remains.
+  Main Full30 camera settings, CSI validation, crop guard, DDR triple-buffer
+  ownership, MCU-rendered menu, clocks, JTAG and IP configuration are preserved.
+  Only AWB, its gate threshold (32 -> 64), and related ISP comments change in RTL.
+  Branch 11111 is not imported: its vsync/capture timestamp estimate does not
+  identify which buffered camera frame is actually displayed.
+
+AF interpretation
+  Scan remains 512-code coarse and 64-code fine, +/-512 around the best coarse
+  point. This is reliability integration, not a new focus-search algorithm.
+  A full scan takes approximately 8 seconds plus bus/scheduling delays; the gimbal
+  intentionally holds position during this period. It is not a fixed completion
+  deadline. Lens busy/recovery has a 1000 ms timeout and one recovery attempt.
+  g_af_debug.reason: 7 complete, 8 I2C/init failure, 9 timeout, 10 manual override;
+  1/2/3/4/5/6/13 identify queue/wait/recovery/scan/return/settle progress.
+  Completion does not prove optical sharpness. Samples are time spaced, not tagged
+  with camera frame IDs. Board behavior still requires physical validation.
+
+Outputs
+  D:/2026fpga/bank/main_jop2_20261018/
+  tests/build_main_jop2.tcl performs fresh synthesis, placement, routing and final
+  setup/hold gates before bit generation. No flashing or deployment is performed.
+  Final results, resource comparison, source hashes and paired loading instructions
+  are recorded in that output directory after the build completes.

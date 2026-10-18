@@ -2,7 +2,9 @@
 // Two frame masks and a flood-fill stack map to ERAM, not pixel registers.
 // A nominal 15% target is tested with 5% acquisition / 3% retention thresholds.
 // Direction: 0=hold, 1=left/up, 2=right/down. Level: 0..3 (not servo degrees).
-module red_target_tracker #(
+`include "shape_component_features.v"
+module red_shape_tracker #(
+    parameter integer SHAPE_SUPPORT = 1,
     parameter integer IMG_WIDTH = 1920,
     parameter integer IMG_HEIGHT = 1080,
     parameter integer SAMPLE_SHIFT = 4,
@@ -29,7 +31,9 @@ module red_target_tracker #(
     output reg [11:0] O_x0, O_y0, O_x1, O_y1, O_cx, O_cy,
     output reg signed [12:0] O_error_x, O_error_y,
     output reg [1:0] O_dir_x, O_dir_y, O_level_x, O_level_y,
-    output reg [6:0] O_area_percent
+    output reg [6:0] O_area_percent,
+    input wire I_shape_mode,
+    output reg [2:0] O_shape_type
 );
     localparam integer GW = (IMG_WIDTH + (1<<SAMPLE_SHIFT)-1) >> SAMPLE_SHIFT;
     localparam integer GH = (IMG_HEIGHT + (1<<SAMPLE_SHIFT)-1) >> SAMPLE_SHIFT;
@@ -45,30 +49,54 @@ module red_target_tracker #(
     localparam [4:0] IDLE=0, SCAN_ADDR=1, SCAN_WAIT=2, SCAN_TEST=3,
         POP_ADDR=4, POP_WAIT=5, POP_LOAD=6, NEIGH_ADDR=7, NEIGH_WAIT=8,
         NEIGH_TEST=9, COMPONENT_CALC=10, COMPONENT_SCORE=11,
-        PUBLISH=12, ERROR_CALC=13, COMMAND=14, PERCENT=15, FINISH=16, COMPONENT_CENTER=17;
+        PUBLISH=12, ERROR_CALC=13, COMMAND=14, PERCENT=15, FINISH=16, COMPONENT_CENTER=17, SHAPE_CLEAR_WAIT=18, SHAPE_CLASS_WAIT=19;
     reg [4:0] state;
+    wire shape_mode=SHAPE_SUPPORT && I_shape_mode;
+    reg mode_d;
+    always @(posedge I_clk or negedge I_rst_n)
+        if(!I_rst_n)mode_d<=0;else mode_d<=shape_mode;
+    wire mode_change=(shape_mode!=mode_d);
+    reg [2:0] component_tag,best_kind,component_kind;
+    wire feature_ready,feature_done;
+    wire [2:0] feature_kind;
     reg [10:0] px, py;
     reg de_d, frame_started, capture_bank, scan_bank;
     reg [15:0] written;
     wire [XB-1:0] sample_x = px >> SAMPLE_SHIFT;
     wire [YB-1:0] sample_y = py >> SAMPLE_SHIFT;
-    wire sample_pixel = I_enable && !I_reacquire && frame_started && !I_user &&
+    wire sample_pixel = I_enable && !I_reacquire && !mode_change && frame_started && !I_user &&
         I_de && ((px & ((1<<SAMPLE_SHIFT)-1))==0) &&
         ((py & ((1<<SAMPLE_SHIFT)-1))==0);
     wire [8:0] rr={1'b0,I_data[23:16]}, gg={1'b0,I_data[15:8]}, bb={1'b0,I_data[7:0]};
     wire is_red = (rr>=9'd80) && (rr>=gg+9'd32) && (rr>=bb+9'd32);
-    (* ram_style="bram" *) reg mask0 [0:(1<<AB)-1];
-    (* ram_style="bram" *) reg mask1 [0:(1<<AB)-1];
+    // Shape mode preserves coarse colour classes so touching unlike colours
+    // do not merge. Red mode keeps its original threshold and 4-neighbours.
+    localparam MW=SHAPE_SUPPORT ? 3 : 1;
+    wire [7:0] r=I_data[23:16],g=I_data[15:8],b=I_data[7:0];
+    wire [7:0] vmax=(r>g)?((r>b)?r:b):((g>b)?g:b);
+    wire [7:0] vmin=(r<g)?((r<b)?r:b):((g<b)?g:b);
+    wire [7:0] chroma=vmax-vmin;
+    wire [9:0] ysum={2'b0,r}+{1'b0,g,1'b0}+{2'b0,b};
+    wire [7:0] lum=ysum[9:2];
+    wire rh=({1'b0,r}+9'd40>={1'b0,vmax});
+    wire gh=({1'b0,g}+9'd40>={1'b0,vmax});
+    wire bhh=({1'b0,b}+9'd40>={1'b0,vmax});
+    wire [2:0] colour_tag=(chroma<40) ? ((lum<96)?3'd1:((lum>176)?3'd7:3'd0)) :
+        ((vmax<80)?3'd0:((rh && gh)?3'd5:((rh && bhh)?3'd6:((gh && bhh)?3'd7:(rh?3'd2:(gh?3'd3:3'd4))))));
+    wire [MW-1:0] capture_tag=shape_mode ? colour_tag : (is_red?1:0);
+    (* ram_style="bram" *) reg [MW-1:0] mask0 [0:(1<<AB)-1];
+    (* ram_style="bram" *) reg [MW-1:0] mask1 [0:(1<<AB)-1];
     reg [AB-1:0] mask_addr;
-    reg mask_rd0, mask_rd1;
-    wire mask_bit = scan_bank ? mask_rd1 : mask_rd0;
+    reg [MW-1:0] mask_rd0, mask_rd1;
+    wire [MW-1:0] mask_tag = scan_bank ? mask_rd1 : mask_rd0;
+    wire mask_bit = (mask_tag!=0) && (!shape_mode || state==SCAN_TEST || mask_tag==component_tag);
     wire clear_bit = (state==SCAN_TEST || state==NEIGH_TEST) && mask_bit;
     always @(posedge I_clk) begin
         mask_rd0 <= mask0[mask_addr];
         mask_rd1 <= mask1[mask_addr];
-        if(sample_pixel && !capture_bank) mask0[{sample_y,sample_x}] <= is_red;
+        if(sample_pixel && !capture_bank) mask0[{sample_y,sample_x}] <= capture_tag;
         else if(I_enable && !I_reacquire && clear_bit && !scan_bank) mask0[mask_addr] <= 1'b0;
-        if(sample_pixel && capture_bank) mask1[{sample_y,sample_x}] <= is_red;
+        if(sample_pixel && capture_bank) mask1[{sample_y,sample_x}] <= capture_tag;
         else if(I_enable && !I_reacquire && clear_bit && scan_bank) mask1[mask_addr] <= 1'b0;
     end
     (* ram_style="bram" *) reg [AB-1:0] stack [0:(1<<SB)-1];
@@ -83,7 +111,7 @@ module red_target_tracker #(
 
     reg [XB-1:0] scan_x, cur_x, comp_minx, comp_maxx;
     reg [YB-1:0] scan_y, cur_y, comp_miny, comp_maxy;
-    reg [2:0] neighbour;
+    reg [3:0] neighbour;
     reg [15:0] comp_area, best_area, previous_area;
     reg [11:0] cand_x0,cand_y0,cand_x1,cand_y1,cand_cx,cand_cy;
     reg [11:0] best_x0,best_y0,best_x1,best_y1,best_cx,best_cy;
@@ -108,8 +136,19 @@ module red_target_tracker #(
     wire [12:0] sum_filter_x = {1'b0,O_cx}+{1'b0,best_cx};
     wire [12:0] sum_filter_y = {1'b0,O_cy}+{1'b0,best_cy};
 
+    generate if(SHAPE_SUPPORT)begin: shape_features
+        shape_component_features #(.XB(XB),.YB(YB),.GW(GW),.GH(GH)) features(
+            .clk(I_clk),.rst_n(I_rst_n),.enable(I_enable && shape_mode && !mode_change && !I_reacquire),
+            .start(state==SCAN_TEST && mask_bit),.point_valid(state==NEIGH_TEST && mask_bit),
+            .evaluate(state==COMPONENT_CALC),.point_x(mask_addr[XB-1:0]),.point_y(mask_addr[AB-1:XB]),
+            .min_x(comp_minx),.max_x(comp_maxx),.min_y(comp_miny),.max_y(comp_maxy),.area(comp_area),
+            .ready(feature_ready),.done(feature_done),.kind(feature_kind));
+    end else begin
+        assign feature_ready=1'b1;assign feature_done=1'b0;assign feature_kind=3'd0;
+    end endgenerate
     always @(posedge I_clk or negedge I_rst_n) begin
         if(!I_rst_n) begin
+            component_tag<=0;best_kind<=0;component_kind<=0;O_shape_type<=0;
             px<=0; py<=0; de_d<=0; frame_started<=0; capture_bank<=0; scan_bank<=1;
             written<=0; state<=IDLE; mask_addr<=0; stack_addr<=0; stack_size<=0;
             scan_x<=0; scan_y<=0; cur_x<=0; cur_y<=0; neighbour<=0;
@@ -122,7 +161,8 @@ module red_target_tracker #(
             O_new_result<=0;O_valid<=0;O_state<=0;
             O_x0<=0;O_y0<=0;O_x1<=0;O_y1<=0;O_cx<=CENTRE_X;O_cy<=CENTRE_Y;
             O_error_x<=0;O_error_y<=0;O_dir_x<=0;O_dir_y<=0;O_level_x<=0;O_level_y<=0;O_area_percent<=0;
-        end else if(!I_enable || I_reacquire) begin
+        end else if(!I_enable || I_reacquire || mode_change) begin
+            component_tag<=0;best_kind<=0;component_kind<=0;O_shape_type<=0;
             px<=0;py<=0;de_d<=0;frame_started<=0;capture_bank<=0;scan_bank<=1;
             written<=0;state<=IDLE;stack_size<=0;locked<=0;confirmations<=0;misses<=0;
             O_new_result<=0;O_valid<=0;O_state<=0;O_dir_x<=0;O_dir_y<=0;
@@ -136,7 +176,7 @@ module red_target_tracker #(
                 // Only complete masks are handed to the scanner. Never reset ERAM.
                 if(frame_started && written==CELLS && state==IDLE) begin
                     scan_bank<=capture_bank; capture_bank<=~capture_bank;
-                    scan_x<=0;scan_y<=0;best_area<=0;best_distance<=13'h1fff;
+                    scan_x<=0;scan_y<=0;best_area<=0;best_kind<=0;best_distance<=13'h1fff;
                     state<=SCAN_ADDR;
                 end
             end else if(I_de) begin
@@ -154,13 +194,15 @@ module red_target_tracker #(
                     if(mask_bit) begin
                         stack_size<=1;comp_area<=1;
                         comp_minx<=scan_x;comp_maxx<=scan_x;comp_miny<=scan_y;comp_maxy<=scan_y;
-                        state<=POP_ADDR;
+                        component_tag<=mask_tag;
+                        state<=shape_mode?SHAPE_CLEAR_WAIT:POP_ADDR;
                     end else if(scan_x==GW-1) begin
                         scan_x<=0;
                         if(scan_y==GH-1) state<=PUBLISH;
                         else begin scan_y<=scan_y+1'b1;state<=SCAN_ADDR;end
                     end else begin scan_x<=scan_x+1'b1;state<=SCAN_ADDR;end
                 end
+                SHAPE_CLEAR_WAIT: if(feature_ready)state<=POP_ADDR;
                 POP_ADDR: begin
                     if(stack_size==0) state<=COMPONENT_CALC;
                     else begin stack_addr<=stack_size-1'b1;stack_size<=stack_size-1'b1;state<=POP_WAIT;end
@@ -168,9 +210,13 @@ module red_target_tracker #(
                 POP_WAIT: state<=POP_LOAD;
                 POP_LOAD: begin cur_x<=stack_rd[XB-1:0];cur_y<=stack_rd[AB-1:XB];neighbour<=0;state<=NEIGH_ADDR;end
                 NEIGH_ADDR: begin
-                    if(neighbour==4) state<=POP_ADDR;
+                    if(neighbour==(shape_mode?8:4)) state<=POP_ADDR;
                     else if((neighbour==0 && cur_x==0) || (neighbour==1 && cur_x==GW-1) ||
-                            (neighbour==2 && cur_y==0) || (neighbour==3 && cur_y==GH-1))
+                            (neighbour==2 && cur_y==0) || (neighbour==3 && cur_y==GH-1) ||
+                            (neighbour==4 && (cur_x==0 || cur_y==0)) ||
+                            (neighbour==5 && (cur_x==GW-1 || cur_y==0)) ||
+                            (neighbour==6 && (cur_x==0 || cur_y==GH-1)) ||
+                            (neighbour==7 && (cur_x==GW-1 || cur_y==GH-1)))
                         neighbour<=neighbour+1'b1;
                     else begin
                         case(neighbour)
@@ -178,6 +224,10 @@ module red_target_tracker #(
                             1:mask_addr<={cur_y,cur_x}+1'b1;
                             2:mask_addr<={cur_y,cur_x}-(1<<XB);
                             3:mask_addr<={cur_y,cur_x}+(1<<XB);
+                            4:mask_addr<={cur_y,cur_x}-(1<<XB)-1'b1;
+                            5:mask_addr<={cur_y,cur_x}-(1<<XB)+1'b1;
+                            6:mask_addr<={cur_y,cur_x}+(1<<XB)-1'b1;
+                            7:mask_addr<={cur_y,cur_x}+(1<<XB)+1'b1;
                         endcase
                         state<=NEIGH_WAIT;
                     end
@@ -199,19 +249,25 @@ module red_target_tracker #(
                         (comp_maxx<<SAMPLE_SHIFT)+((1<<SAMPLE_SHIFT)-1) : IMG_WIDTH-1;
                     cand_y1<=((comp_maxy<<SAMPLE_SHIFT)+((1<<SAMPLE_SHIFT)-1)<IMG_HEIGHT) ?
                         (comp_maxy<<SAMPLE_SHIFT)+((1<<SAMPLE_SHIFT)-1) : IMG_HEIGHT-1;
-                    state<=COMPONENT_CENTER;
+                    state<=shape_mode?SHAPE_CLASS_WAIT:COMPONENT_CENTER;
                 end
+                SHAPE_CLASS_WAIT:if(feature_done)begin component_kind<=feature_kind;state<=COMPONENT_CENTER;end
                 COMPONENT_CENTER: begin
                     cand_cx<=({1'b0,cand_x0}+{1'b0,cand_x1})>>1;
                     cand_cy<=({1'b0,cand_y0}+{1'b0,cand_y1})>>1;
                     state<=COMPONENT_SCORE;
                 end
                 COMPONENT_SCORE: begin
-                    if((!locked && comp_area>=ACQUIRE_MIN && comp_area>best_area) ||
+                    if((shape_mode && component_kind!=0 &&
+                        ((!locked && comp_area>best_area) ||
+                         (locked && delta_x<=IMG_WIDTH/8 && delta_y<=IMG_HEIGHT/8 &&
+                          comp_area>=(previous_area>>1) && {1'b0,comp_area}<=({1'b0,previous_area}<<1) &&
+                          (distance<best_distance || (distance==best_distance && comp_area>best_area))))) ||
+                       (!shape_mode && ((!locked && comp_area>=ACQUIRE_MIN && comp_area>best_area) ||
                        (locked && comp_area>=RETAIN_MIN && delta_x<=IMG_WIDTH/4 && delta_y<=IMG_HEIGHT/4 &&
                         comp_area>=(previous_area>>1) && {1'b0,comp_area}<=({1'b0,previous_area}<<1) &&
-                        (distance<best_distance || (distance==best_distance && comp_area>best_area)))) begin
-                        best_area<=comp_area;best_distance<=distance;
+                        (distance<best_distance || (distance==best_distance && comp_area>best_area)))))) begin
+                        best_area<=comp_area;best_distance<=distance;best_kind<=component_kind;
                         best_x0<=cand_x0;best_y0<=cand_y0;best_x1<=cand_x1;best_y1<=cand_y1;
                         best_cx<=cand_cx;best_cy<=cand_cy;
                     end
@@ -222,7 +278,14 @@ module red_target_tracker #(
                     if(REPORT_AREA_PERCENT)
                         percent_remainder<=({4'd0,best_area}<<6)+({4'd0,best_area}<<5)+({4'd0,best_area}<<2);
                     percent_value<=0;
-                    if(best_area!=0) begin
+                    if(shape_mode)begin
+                        O_valid<=best_area!=0;O_shape_type<=best_kind;O_state<=0;
+                        O_x0<=best_x0;O_y0<=best_y0;O_x1<=best_x1;O_y1<=best_y1;
+                        if(best_area!=0)begin
+                            previous_cx<=best_cx;previous_cy<=best_cy;previous_area<=best_area;locked<=1;misses<=0;
+                        end else if(misses>=LOST_FRAMES-1)begin locked<=0;misses<=0;end
+                        else misses<=misses+1'b1;
+                    end else if(best_area!=0) begin
                         previous_cx<=best_cx;previous_cy<=best_cy;previous_area<=best_area;misses<=0;
                         O_x0<=best_x0;O_y0<=best_y0;O_x1<=best_x1;O_y1<=best_y1;
                         if(locked || (acquire_consistent && confirmations>=CONFIRM_FRAMES-1) || CONFIRM_FRAMES==1) begin
@@ -243,15 +306,15 @@ module red_target_tracker #(
                     state<=ERROR_CALC;
                 end
                 ERROR_CALC: begin
-                    O_error_x<=O_valid ? $signed({1'b0,O_cx})-CENTRE_X : 13'sd0;
-                    O_error_y<=O_valid ? $signed({1'b0,O_cy})-CENTRE_Y : 13'sd0;
+                    O_error_x<=(O_valid && !shape_mode) ? $signed({1'b0,O_cx})-CENTRE_X : 13'sd0;
+                    O_error_y<=(O_valid && !shape_mode) ? $signed({1'b0,O_cy})-CENTRE_Y : 13'sd0;
                     state<=COMMAND;
                 end
                 COMMAND: begin
-                    O_dir_x<=(!O_valid || stop_x) ? 0 : (O_error_x[12] ? 1 : 2);
-                    O_dir_y<=(!O_valid || stop_y) ? 0 : (O_error_y[12] ? 1 : 2);
-                    O_level_x<=(!O_valid || stop_x) ? 0 : ((abs_ex>=LEVEL_X_LARGE) ? 3 : ((abs_ex>=LEVEL_X_MEDIUM) ? 2 : 1));
-                    O_level_y<=(!O_valid || stop_y) ? 0 : ((abs_ey>=LEVEL_Y_LARGE) ? 3 : ((abs_ey>=LEVEL_Y_MEDIUM) ? 2 : 1));
+                    O_dir_x<=(!O_valid || shape_mode || stop_x) ? 0 : (O_error_x[12] ? 1 : 2);
+                    O_dir_y<=(!O_valid || shape_mode || stop_y) ? 0 : (O_error_y[12] ? 1 : 2);
+                    O_level_x<=(!O_valid || shape_mode || stop_x) ? 0 : ((abs_ex>=LEVEL_X_LARGE) ? 3 : ((abs_ex>=LEVEL_X_MEDIUM) ? 2 : 1));
+                    O_level_y<=(!O_valid || shape_mode || stop_y) ? 0 : ((abs_ey>=LEVEL_Y_LARGE) ? 3 : ((abs_ey>=LEVEL_Y_MEDIUM) ? 2 : 1));
                     state<=REPORT_AREA_PERCENT ? PERCENT : FINISH;
                 end
                 PERCENT: begin
@@ -265,4 +328,38 @@ module red_target_tracker #(
             endcase
         end
     end
+endmodule
+
+// Legacy red-only interface; shared core preserves the original behaviour.
+module red_target_tracker #(
+    parameter integer IMG_WIDTH = 1920,
+    parameter integer IMG_HEIGHT = 1080,
+    parameter integer SAMPLE_SHIFT = 4,
+    parameter integer ACQUIRE_PERCENT = 5,
+    parameter integer RETAIN_PERCENT = 3,
+    parameter integer CONFIRM_FRAMES = 3,
+    parameter integer LOST_FRAMES = 5,
+    parameter integer DEAD_X_ENTER = 32,
+    parameter integer DEAD_X_EXIT = 48,
+    parameter integer DEAD_Y_ENTER = 24,
+    parameter integer DEAD_Y_EXIT = 36,
+    parameter integer LEVEL_X_MEDIUM = 160,
+    parameter integer LEVEL_X_LARGE = 400,
+    parameter integer LEVEL_Y_MEDIUM = 120,
+    parameter integer LEVEL_Y_LARGE = 300,
+    // Display-only percentage conversion; raw area still drives association.
+    parameter integer REPORT_AREA_PERCENT = 1
+)(
+    input wire I_clk, I_rst_n, I_enable, I_reacquire,
+    input wire I_user, I_de,
+    input wire [23:0] I_data,
+    output wire O_new_result, O_valid,
+    output wire [1:0] O_state, // 0=search, 1=locked, 2=lost
+    output wire [11:0] O_x0, O_y0, O_x1, O_y1, O_cx, O_cy,
+    output wire signed [12:0] O_error_x, O_error_y,
+    output wire [1:0] O_dir_x, O_dir_y, O_level_x, O_level_y,
+    output wire [6:0] O_area_percent
+);
+    red_shape_tracker #(.SHAPE_SUPPORT(0),.IMG_WIDTH(IMG_WIDTH),.IMG_HEIGHT(IMG_HEIGHT),.SAMPLE_SHIFT(SAMPLE_SHIFT),.ACQUIRE_PERCENT(ACQUIRE_PERCENT),.RETAIN_PERCENT(RETAIN_PERCENT),.CONFIRM_FRAMES(CONFIRM_FRAMES),.LOST_FRAMES(LOST_FRAMES),.DEAD_X_ENTER(DEAD_X_ENTER),.DEAD_X_EXIT(DEAD_X_EXIT),.DEAD_Y_ENTER(DEAD_Y_ENTER),.DEAD_Y_EXIT(DEAD_Y_EXIT),.LEVEL_X_MEDIUM(LEVEL_X_MEDIUM),.LEVEL_X_LARGE(LEVEL_X_LARGE),.LEVEL_Y_MEDIUM(LEVEL_Y_MEDIUM),.LEVEL_Y_LARGE(LEVEL_Y_LARGE),.REPORT_AREA_PERCENT(REPORT_AREA_PERCENT)) core(
+        .I_clk(I_clk),.I_rst_n(I_rst_n),.I_enable(I_enable),.I_reacquire(I_reacquire),.I_user(I_user),.I_de(I_de),.I_data(I_data),.O_new_result(O_new_result),.O_valid(O_valid),.O_state(O_state),.O_x0(O_x0),.O_y0(O_y0),.O_x1(O_x1),.O_y1(O_y1),.O_cx(O_cx),.O_cy(O_cy),.O_error_x(O_error_x),.O_error_y(O_error_y),.O_dir_x(O_dir_x),.O_dir_y(O_dir_y),.O_level_x(O_level_x),.O_level_y(O_level_y),.O_area_percent(O_area_percent),.I_shape_mode(1'b0),.O_shape_type());
 endmodule

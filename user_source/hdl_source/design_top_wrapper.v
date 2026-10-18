@@ -3,6 +3,7 @@
 `include "red_track_mailbox.v"
 `include "video_integrity.v"
 `include "histogram_equalizer.v"
+`include "shape_result_filter.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
@@ -1641,25 +1642,13 @@ isp_top u_isp_top (
     // The current ISP/DDR path remains the source of the display pixels. The
     // recognition branches are parallel consumers and do not alter USB, VCM,
     // MCU, or manual-servo ownership of the video path.
-    shape_recognizer_simple #(
-        .IMG_WIDTH    (`DISPLAY_WIDTH),
-        .IMG_HEIGHT   (`DISPLAY_HEIGHT),
-        .SAMPLE_SHIFT (4),
-        .Y_THRESHOLD  (8'd96)
-    ) u_shape_recognizer_99 (
-        .I_clk      ( S_hdmi_pixel_clk ),
-        .I_rst_n    ( S_hdmi_rst_n ),
-        .I_vsync    ( S_hdmi_vsync ),
-        .I_hsync    ( S_hdmi_hsync ),
-        .I_user     ( S_hdmi_user ),
-        .I_de       ( S_video_dn_de ),
-        .I_data     ( S_shape_input_data ),
-        .I_enable   ( S_dbg_recog_mode && (S_dbg_step == 3'd3) ),
-        .O_valid    ( S_shape_valid ),
-        .O_type     ( S_shape_type ),
-        .O_x0       ( S_shape_x0 ), .O_y0 ( S_shape_y0 ),
-        .O_x1       ( S_shape_x1 ), .O_y1 ( S_shape_y1 )
-    );
+    wire S_shape_mode=S_dbg_recog_mode && (S_dbg_step==3'd3);
+    wire [2:0] S_component_shape;
+    shape_result_filter u_shape_result_filter(
+        .clk(S_hdmi_pixel_clk),.rst_n(S_hdmi_rst_n),.enable(S_shape_mode),
+        .frame_start(S_hdmi_user),.new_result(S_track_new),.raw_valid(S_track_valid),
+        .raw_type(S_component_shape),.x0(S_track_x0),.y0(S_track_y0),.x1(S_track_x1),.y1(S_track_y1),
+        .valid(S_shape_valid),.kind(S_shape_type),.ox0(S_shape_x0),.oy0(S_shape_y0),.ox1(S_shape_x1),.oy1(S_shape_y1));
 
     motion_detect #(
         .IMG_WIDTH      (`DISPLAY_WIDTH),
@@ -1703,7 +1692,7 @@ isp_top u_isp_top (
         .O_x1       ( S_color_x1 ), .O_y1 (S_color_y1)
     );
 
-    red_target_tracker #(
+    red_shape_tracker #(
         .IMG_WIDTH    (`DISPLAY_WIDTH),
         .IMG_HEIGHT   (`DISPLAY_HEIGHT),
         .SAMPLE_SHIFT (4),
@@ -1711,7 +1700,8 @@ isp_top u_isp_top (
     ) u_red_target_tracker_99 (
         .I_clk       ( S_hdmi_pixel_clk ),
         .I_rst_n     ( S_hdmi_rst_n ),
-        .I_enable    ( S_dbg_recog_mode && (S_dbg_step == 3'd5) ),
+        .I_enable    ( S_dbg_recog_mode && ((S_dbg_step == 3'd5) || S_shape_mode) ),
+        .I_shape_mode(S_shape_mode), .O_shape_type(S_component_shape),
         .I_reacquire ( S_track_reacquire ),
         .I_user      ( S_hdmi_user ),
         .I_de        ( S_video_dn_de ),

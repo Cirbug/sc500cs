@@ -24,6 +24,12 @@ static void mcu_menu_text(uint16_t *cells, const char *s)
     unsigned i;
     for(i=0;i<4;i++) cells[8+i]=MENU_ASCII|(unsigned char)s[i];
 }
+/* NUL-terminated shared glyph-ID strings remove repeated/padded labels. */
+static void mcu_menu_label(uint16_t *cells,unsigned offset)
+{
+    const unsigned char *p=mcu_label_pool+offset;
+    while(*p)*cells++=*p++;
+}
 /* Pure row builder is shared by host tests and both firmware targets. */
 static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row,uint16_t cells[12])
 {
@@ -31,14 +37,16 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
     unsigned p=picture_effective(s),kind=0;
     uint32_t attr=s->menu?MENU_VISIBLE:0;
     memset(cells,0,12*sizeof(*cells));
-    if(row==9) {cells[0]=mcu_labels[0][0][0];cells[1]=mcu_labels[0][0][1];return MENU_VISIBLE;}
+    if(row==9) {cells[0]=mcu_label_pool[mcu_labels[0][0]];cells[1]=mcu_label_pool[mcu_labels[0][0]+1];return MENU_VISIBLE;}
     if(row==10) return MENU_VISIBLE|((rec&255u?4u:rec&256u?7u:rec&512u?5u:6u)<<9);
     if(row>8) return 0;
-    for(i=0;i<8;i++)cells[i]=mcu_labels[page][row][i];
+    mcu_menu_label(cells,mcu_labels[page][row]);
     if(row==s->index+1u && (row<=7 || page==0) && (page!=3 || row<=4))
         attr|=(((s->edit && (s->index<4 || s->index==7))?2u:1u)<<12);
     if(page==0) {
-        if(row==1 || row==2) {
+        if(row==1 && s->auto_exposure_available && s->auto_exposure) {
+            mcu_menu_text(cells,"AUTO");
+        } else if(row==1 || row==2) {
             unsigned width=row==1?(camera_display_word(s)>>16):s->gain<=16?0:s->gain>=143?127:s->gain-16;
             attr|=(1u<<14)|(row==2?1u<<15:0)|(width<<16)|((row==1?2u:3u)<<9);
         }
@@ -51,10 +59,10 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
         case 0:kind=0;break;
         case 1:cells[10]=MENU_ASCII|('0'+(p&63)/10);cells[11]=MENU_ASCII|('0'+(p&63)%10);return attr;
         case 2:kind=(p&64)?2:1;break;
-        case 3:mcu_menu_text(cells,((const char*[]) {"1.00","1.12","1.25","1.50"})[(p>>7)&3]);return attr;
-        case 4:mcu_menu_text(cells,((const char*[]) {"1.00","1.25","1.50","1.75","2.00"})[((p>>9)&7)>4?4:(p>>9)&7]);return attr;
-        case 5:kind=((const unsigned char[]) {3,4,5,1})[(p>>12)&3];break;
-        case 6:kind=((const unsigned char[]) {1,6,7,8})[(p>>14)&3];break;
+        case 3:mcu_menu_text(cells,"1.001.121.251.50"+4*((p>>7)&3));return attr;
+        case 4:mcu_menu_text(cells,"1.001.251.501.752.00"+4*(((p>>9)&7)>4?4:(p>>9)&7));return attr;
+        case 5:kind=(0x01050403u>>(8*((p>>12)&3)))&255u;break;
+        case 6:kind=(0x08070601u>>(8*((p>>14)&3)))&255u;break;
         case 7:kind=9;break;
         default:return attr;
         }
@@ -62,7 +70,7 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
     } else if(page==2) {
         switch(row) {
         case 0:case 7:mcu_menu_value(cells,0);break;
-        case 4:mcu_menu_text(cells,((const char*[]) {"  2S","  5S"," 10S"," 30S"," 60S"})[s->record_interval>4?4:s->record_interval]);break;
+        case 4:mcu_menu_text(cells,"  2S  5S 10S 30S 60S"+4*(s->record_interval>4?4:s->record_interval));break;
         case 5:for(i=0;i<4;i++)cells[8+i]=MENU_ASCII|('0'+((rec>>(28-4*i))&15));break;
         case 6:mcu_menu_value(cells,rec&255?12:rec&512?11:rec&256?13:10);break;
         default:break;
@@ -91,17 +99,19 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
     attr=s->menu?MENU_VISIBLE:0;
     /* Empty rows retain the panel background, without stale labels or hit targets. */
     if(row>panel_rows(s))return attr;
-    for(i=0;i<8;i++)cells[i]=mcu_panel_labels[page][row][i];
+    mcu_menu_label(cells,mcu_panel_labels[page][row]);
     if(row==s->index+1)attr|=(s->edit?2u:1u)<<12;
     if(row==0) {
-        if(page==PANEL_EXPOSURE)mcu_panel_value(cells,0); /* Actual firmware is manual AE. */
+        if(page==PANEL_EXPOSURE) {
+            if(s->auto_exposure)mcu_menu_text(cells,"AUTO");else mcu_panel_value(cells,0);
+        }
         else if(page!=PANEL_HOME)mcu_panel_value(cells,5);
         return attr;
     }
     if(page==PANEL_HOME) {
         cells[11]=MENU_ASCII|'>';
         if(row==1 && !s->picture_available)mcu_menu_text(cells,"----");
-        if(row==2)mcu_panel_value(cells,0);
+        if(row==2){if(s->auto_exposure)mcu_menu_text(cells,"AUTO");else mcu_panel_value(cells,0);}
         if(row==3)mcu_panel_value(cells,s->image_step>=2 && s->image_step<=5?s->image_step-1:1);
         if(row==4)mcu_panel_value(cells,s->image_step==5?7:6);
         if(row==5 && !s->record_available)mcu_menu_text(cells,"----");
@@ -175,7 +185,7 @@ static void mcu_menu_poll(const MenuState *s)
     rec=s->record_available?ui_read(0x1060u):0;
     key[0]=s->menu|(s->edit<<1)|(s->index<<4)|(s->picture_page<<8)|(s->record_page<<10)|
            (s->panel_page<<16)|(s->panel_ui<<20)|(s->info<<21)|(s->logo_enable<<22)|
-           (s->record_available<<23)|(s->picture_available<<24);
+           (s->record_available<<23)|(s->picture_available<<24)|(s->auto_exposure<<25);
     key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s);
     key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8)|
                                             (s->image_effect<<16)|(s->image_target<<20);

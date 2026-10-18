@@ -26,7 +26,7 @@ int main(int argc,char **argv) {
     /* Export all pages for independent RTL pixel/theme checks. */
     for(i=0;i<7;i++) {
         panel_open(&s,i);mcu_menu_publish(&s,0);
-        assert(words[0]%256==mcu_panel_labels[i][0][0]);
+        assert(words[0]%256==mcu_label_pool[mcu_panel_labels[i][0]]);
         for(unsigned j=0;j<256;j++)fprintf(f,"%08x\n",words[j]);
     }
     fclose(f);
@@ -101,5 +101,16 @@ int main(int argc,char **argv) {
     tap(&s,330,780);assert(s.vts==1980 && s.exposure==3950);
     e=(TouchEvent){457,700,TOUCH_DOWN};menu_touch(&s,&e);menu_key(&s,4);
     unsigned keep=s.exposure;e=(TouchEvent){330,700,TOUCH_MOVE};menu_touch(&s,&e);assert(s.exposure==keep);
+    /* AE must coexist with the new panel, including unchanged manual values. */
+    panel_open(&s,PANEL_EXPOSURE);s.auto_exposure_available=1;s.auto_exposure=1;
+    menu_key(&s,8);assert(!s.auto_exposure && s.edit);
+    menu_key(&s,4);menu_key(&s,8);assert(s.auto_exposure && !s.edit);
+    tap(&s,100,700);assert(!s.auto_exposure);
+    tap(&s,100,700);assert(s.auto_exposure);
+    s.exposure=3;tap(&s,330,700);assert(!s.auto_exposure && s.exposure==3);
+    s.auto_exposure=1;s.gain=16;tap(&s,330,736);assert(!s.auto_exposure && s.gain==16);
+    mcu_menu_poll(&s);i=commits;s.auto_exposure=1;mcu_menu_poll(&s);assert(commits==i+1);
+    assert(words[8]==(MENU_VISIBLE|MENU_ASCII|'A'|(1u<<9)));
+    puts("PASS panel AE toggle, manual override, dirty key and AUTO header");
     puts("PASS panel pages, keys/touch, exposure limits, mode/effect, tracking, recording, diagnostics, dirty/busy and focus exclusion");
 }

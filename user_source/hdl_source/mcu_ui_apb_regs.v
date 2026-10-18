@@ -69,6 +69,9 @@ module mcu_ui_apb_regs #(
     input wire [63:0] I_video_rx_diag,I_video_capture_diag,
     input wire [31:0] I_video_display_diag,
     input wire [95:0] I_video_fault_details,
+    input wire [23:0] I_ae_rgb,
+    input wire [31:0] I_ae_meta,
+    input wire [1:0] I_ae_sensor_ready,
     output reg         O_lens_cmd,
     output reg         O_lens_retry, O_lens_read_adc,
     output reg  [13:0] O_lens_position,
@@ -103,6 +106,10 @@ module mcu_ui_apb_regs #(
         end
     endgenerate
 
+    (* async_reg="true" *) reg [1:0] ae_ready_meta,ae_ready_sync;
+    always @(posedge I_clk or posedge I_rst)
+        if(I_rst) begin ae_ready_meta<=0;ae_ready_sync<=0;end
+        else begin ae_ready_meta<=I_ae_sensor_ready;ae_ready_sync<=ae_ready_meta;end
     reg [3:0] key_event;
     // MAX3421E INT is asynchronous to APB; poll the synchronized pin level.
     (* async_reg = "true" *) reg usb_int_meta;
@@ -251,6 +258,10 @@ module mcu_ui_apb_regs #(
                 8'hcc: O_prdata = I_video_fault_details[31:0]; // first bad packet header
                 8'hd0: O_prdata = I_video_fault_details[63:32]; // reason/state/remaining
                 8'hd4: O_prdata = I_video_fault_details[95:64]; // first bad line/words
+                8'hdc: O_prdata = 32'h41454d31; // AEM1: normalized software AE metering
+                8'he0: O_prdata = {8'd0,I_ae_rgb};
+                8'he4: O_prdata = I_ae_meta; // frame sequence[23:16], sampled words[13:0]
+                8'he8: O_prdata = {30'd0,ae_ready_sync};
                 8'hd8: O_prdata = 32'h44455431; // DET1: sticky RX failure evidence
                 8'h14: O_prdata = {16'd0, O_gain};
                 8'h18: O_prdata = 32'h0001081e; // Full sensor input, HDMI 1080p30

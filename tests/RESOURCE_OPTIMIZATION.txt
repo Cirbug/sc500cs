@@ -1,0 +1,44 @@
+Gamma 查表资源优化（2026-10-18）
+
+对比基线：ab4917f0be7a1bea3b95460a697c38f1de80b130。
+两版使用同一器件 PH1P35MDG324、同一工程配置和时序约束。
+本次仅修改 isp_top.v 中 rgb96_gamma；其余已合入的优化不计入本次收益。
+
+实现：12 路 Gamma 查表改用同步块 ROM；将旁路像素与 Gamma 曲线分别
+存入同一张 512x8 表，以模式位寻址。保留原 Gamma 数值、亮度算法、
+动态控制采样边界、帧/有效信号及三拍流水。
+
+综合（Optimize-Gate，非最终占用）：
+                       修改前      修改后
+Slice                  20620       20288
+LUT                    25806       25369
+寄存器                 17895       17703
+ERAM                   82          88
+DSP                    14          14
+
+最终布局布线（Route）：
+Slice                  18644       18568
+Slice 占用             87.88%      87.52%
+LUT6                   17996       17703
+寄存器                 17538       17344
+
+功能验证：ModelSim 比较固定基线模块与当前 RTL，逐周期检查像素及控制信号。
+覆盖所有查表值/全部12路、全部亮度与旁路组合、每拍控制变化、间断有效及复位。
+PASS：22057 个周期，48292 个已知像素，0 编译错误，0 仿真错误。
+复现：python tests/run_gamma_equivalence.py --modelsim F:/win64
+构建：td_commands_prompt.exe tests/build_resource_optimized.tcl
+
+最终结果：
+Slice 实际减少 76 个（0.36 个百分点），LUT6 减少 293 个，寄存器减少 194 个。
+这是一次以 6 块 ERAM 换取逻辑资源的局部优化，整体占用下降幅度有限。
+ERAM 使用 88/108（81.48%），DSP 使用 14/40（35.00%）。
+当前约束下两版时序均通过：
+  基线 SWNS 0.119 ns / HWNS 0.020 ns / STNS、HTNS 均为 0。
+  优化 SWNS 0.016 ns / HWNS 0.020 ns / STNS、HTNS 均为 0。
+优化版 STA coverage 为 94.29%，建立时间余量较小；尚未下载到实板验证。
+
+bit：build/resource_optimization/final_optimized/camera_to_dsi_display_resource_optimized.bit
+SHA256：41AD2124E368B76E3D9C356C8485DC502AE31D72A3E7F7FEFA4D0E12D474ACD9
+报告：build/resource_optimization/{current_baseline,final_optimized}/final.area
+时序：build/resource_optimization/{current_baseline,final_optimized}/final_timing.rpt
+仿真：build/resource_optimization/gamma_sim/simulation.log

@@ -9,7 +9,7 @@ static uint32_t rtc_diag_period,rtc_diag_last,rtc_diag_count_tick,rtc_diag_time_
 static uint32_t rtc_diag_count,rtc_diag_time;
 static unsigned rtc_diag_started,rtc_diag_seen;
 #include "rtc_serial.h"
-static unsigned rtc_diag_bcd(unsigned v) {return (v&15)>9 || (v>>4)>9 ? 255 : (v>>4)*10+(v&15);}
+static __attribute__((noinline)) unsigned rtc_diag_bcd(unsigned v) {return (v&15)>9 || (v>>4)>9 ? 255 : (v>>4)*10+(v&15);}
 static void rtc_diag_poll(uintptr_t base) {
     uint32_t now=(uint32_t)AlSys_GetTimerTickCount();
     if(rtc_diag_started) rtc_serial_poll(base,now);

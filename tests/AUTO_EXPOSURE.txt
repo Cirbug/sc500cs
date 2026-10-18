@@ -1,0 +1,83 @@
+自动曝光 / 2026-10-18
+===================
+配套下载：FPGA bit + MCU 固件，旧固件没有自动曝光功能。
+输出路径：
+  build/auto_exposure/fpga/camera_to_dsi_display_auto_exposure.bit
+  build/auto_exposure/firmware_ram/build/anlu_app.elf（RAM 调试版）
+  build/auto_exposure/firmware_flash/build/anlu_app2.elf（Flash 版）
+
+使用
+----
+新 bit 配合新固件时，上电默认启用；曝光行显示 AUTO。
+触摸曝光文字区域可切换自动/手动，拖动曝光或增益条会转手动。
+按键：选中曝光行，OK 从自动转手动并进入编辑；退出编辑后 OK 可重新自动。
+Wi-Fi 手动曝光/增益命令也退出自动模式，包括值未变化的命令。
+自动对焦扫描期间暂停曝光调整；结束后等待新帧再恢复。
+VTS 仍由用户控制，低光照不自动改变帧率。
+
+测光与控制
+----------
+复用 dbg_color_stat 的最终 ISP RGB 均值；位置在显示特效之前。
+原调试均值按固定 8192 个采样字归一化；1080p 实际为 4050 个采样字。
+新增实际采样字数，MCU 按 (R+2G+B)*2048/samples 恢复亮度，限幅 0..255。
+完整 RGB96 帧是 518400 个字，1/128 抽样后为 4050 个字。
+采样不足 4000、超过 8192、帧号不变、读取不一致、传感器未就绪时不调节。
+RGB、采样数、帧号经 held-bundle 握手同步到 APB；两次读元数据保护多寄存器读取。
+目标亮度默认 112，死区 ±8，每次调整至少间隔 150ms，且等待三个新帧稳定。
+大误差曝光单步不超过约 25%，小误差约 6.25%；增益单步 8/2 个索引。
+暗时优先延长曝光，到当前 VTS 的上限再增益；亮时先降增益，再缩短曝光。
+曝光范围 3..(2*VTS-10)，增益索引 16..143。
+调试器可查看 g_auto_exposure（mean、updates 等），调整 g_auto_exposure_config。
+
+APB
+---
+0xdc: AEM1=0x41454d31，新测光接口能力标志。
+0xe0: RGB 调试均值，R[23:16]、G[15:8]、B[7:0]。
+0xe4: 元数据，帧号[23:16]、实际采样字数[13:0]。
+0xe8: 传感器就绪，[1]初始化完成、[0]曝光配置完成，均为1才可调节。
+新增寄存器均只读；使用既有曝光、增益及显示条写接口。
+旧 bit 未提供 AEM1 时，新固件自动降级为原有手动控制。
+
+复现
+----
+python tests/run_auto_exposure.py --gcc F:/Altera/questa_fse/gcc-7.4.0-mingw64vc15/bin/gcc.exe --modelsim F:/win64
+powershell -ExecutionPolicy Bypass -File tests/build_auto_exposure_firmware.ps1 -FdRoot D:/fang
+td_commands_prompt.exe tests/build_auto_exposure.tcl
+
+验证
+----
+通过软件闭环场景、曝光/增益上下限、死区、帧号回绕、旧数据/残帧/忙状态拒绝、
+AF 暂停、按键触摸模式切换、AUTO 菜单内容及旧菜单/触摸/Wi-Fi/AF 回归。
+通过三个完整 1080p 帧的统计、64位跨时钟一致性、APB 只读数据及就绪同步仿真。
+通过既有 APB->相机控制->I2C 分组更新回归。
+两套固件编译成功；RAM 固件通过 GP/TP/SP 启动与 TCM 容量检查。
+实板亮度、收敛速度及室内灯光闪烁表现仍需下载后验证。
+
+最终构建结果
+------------
+Slice 18695/21216（88.12%），ERAM 88/108，DSP 14/40。
+当前约束下时序通过：SWNS 0.020ns，HWNS 0.020ns，STNS/HTNS 为 0。
+STA coverage 94.22%；时序余量较小，仍需实板验证。
+RAM 固件 TCM 占用 47160/49152 字节，保留 2KiB 栈和 1KiB 堆。
+8组软件回归、2组硬件回归通过；构建日志及文件 SHA256 见 build/auto_exposure。
+
+MCU 菜单排查与明确的调试入口
+---------------------------
+菜单仍默认开启，曝光行在自动模式显示 AUTO；整个菜单消失不是预期行为。
+菜单内容、APB 双缓冲发布和约 189 万像素的显示等价回归均通过。
+新增 FDwork/anlu_app/anlu_app_auto_exposure.launch，直接引用
+build/auto_exposure/firmware_ram/build/anlu_app.elf，不停在 main。
+配置使用当前本机绝对路径；移动仓库后需相应更新路径。
+先手动下载 build/auto_exposure/fpga/camera_to_dsi_display_auto_exposure.bit，
+再使用上述配置启动 MCU。该配置不自动重写 FPGA，避免重置刚加载的状态。
+旧配置引用 build/anlu_app.elf，不能凭文件名认定它是隔离目录中的最新固件。
+如仍不显示，检查控制台 UI APB ready / ID mismatch 和 USB/JTAG 通信错误。
+菜单 APB ID 应为 0x4d554931（0x70002000），状态位在 0x70002004。
+截至本次排查，实板读取被 LIBUSB_ERROR_IO 阻断，尚未确认实板根因与恢复。
+
+后续定位：实际 FD 工作区为 D:/FD，anlu_app Debug 配置加载工程
+build/anlu_app.elf。该文件仍是 10 月 17 日 18:43 的旧固件：不含
+mcu_menu_poll，也没有 0x70002000 菜单页的访问；新 bit 启用 MCU_MENU=1，
+旧固件无法提交菜单，导致整个菜单消失。已重新编译工程默认 RAM 固件，
+确认包含菜单发布和 AE，TCM/启动检查通过。配套构建脚本今后也同步工程
+默认 build/ 输出，避免 IDE 再次加载过期固件。实板恢复仍需运行新固件确认。

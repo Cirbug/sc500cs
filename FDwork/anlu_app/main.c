@@ -107,6 +107,7 @@ static uint32_t ui_now_ms(void)
 }
 
 #include "../shared/mcu_menu.h"
+#include "../shared/auto_exposure.h"
 
 /* FD may inspect/adjust these without a serial console. Both automatic axes
  * are reversed after the board test showed motion away from the target. */
@@ -194,6 +195,7 @@ static void lens_diag_report(void)
 /* All inputs commit through this one hardware boundary. */
 static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
 {
+    if(s->exposure!=old->exposure || s->gain!=old->gain) s->auto_exposure=0;
     /* Manual gimbal input cancels AF before changing either PWM target. */
     if(autofocus_active() && (s->servo_pan_us!=old->servo_pan_us ||
                              s->servo_tilt_us!=old->servo_tilt_us))
@@ -288,6 +290,7 @@ static void recorder_service(void) {
         unsigned keys=ui_read(UI_KEY)&15u;
         if(keys) {focus_gesture=(TouchFocus){0};MenuState old=*record_ui;ui_write(UI_KEY,keys);menu_commit(record_ui,&old,menu_key(record_ui,keys));}
         tracking_service(record_ui);
+        if(autofocus_active())auto_exposure_pause();else auto_exposure_poll(record_ui);
     }
 }
 
@@ -374,6 +377,7 @@ AL_S32 main(void)
     /* Publish before USB/Wi-Fi probing so the menu is visible during startup. */
     mcu_menu_available=(ui_read(MCU_MENU_BASE)==MCU_MENU_ID);
     ui.panel_ui=(uint8_t)mcu_menu_available;
+    auto_exposure_init(&ui);
     mcu_menu_poll(&ui);
     g_ui_debug_stage = 4;
     /* USB diagnostics are bounded; the existing menu continues on failure. */
@@ -436,6 +440,7 @@ AL_S32 main(void)
         lens_serial_poll();
         recorder_poll();
         wifi_mcu_poll(0);
+        if(autofocus_active())auto_exposure_pause();else auto_exposure_poll(&ui);
         mcu_menu_poll(&ui);
         g_ui_debug_stage = 6;
         AlSys_MDelay(1);

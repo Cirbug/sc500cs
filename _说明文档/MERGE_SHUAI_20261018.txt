@@ -1,0 +1,33 @@
+shuai -> xiaoheqing0 合并记录（2026-10-18）
+
+合并基线：xiaoheqing0 482cbe3；来源 origin/shuai de948ad。
+保留本分支 MCU 新菜单、数字/滑条触摸、半透明背景、左上 LOGO/安路、
+居中年月日/时间、VCM 诊断、云台跟踪及本机 FD/JTAG 工程配置。
+接入 shuai 的 MCU 自动曝光、ISP 测光快照、Gamma 等价资源优化、延迟统计。
+不引入队友机器的 .fd/.settings/.launch/TD 锁文件和工程 UI 路径。
+
+自动曝光接入：有 AEM1 能力时启动自动曝光。曝光页点击左侧曝光标签或
+选中曝光项按 OK 切换；手动调曝光/增益（含触摸/Wi-Fi）退出自动曝光。
+自动对焦期间暂停 AE；不自动延长 VTS。首页/曝光页标题显示 AUTO/手动。
+菜单 dirty key 的 AE 状态放在 bit25，避免覆盖 panel_page。
+
+MCU 空间：合并最初超出 TCM；对重复菜单文字使用共享字模 ID 字符串池，
+复用步进/页面切换/BCD 校验代码，合并 AE 的对称调整分支；不减堆栈。
+anlu_app TCM：text=40192 data=168 bss=8588，合计48948/49152字节；
+堆末到栈底连续余量144字节，保留1KiB堆和2KiB栈。此余量不是运行时空闲栈。
+anlu_app2 保持原默认 xip_dlm：text=40532 data=160 bss=8572，链接成功。
+附加试验强制 app2 DOWNLOAD=tcm 仍超32字节，不应将此目标切成TCM；
+未修改其默认链接方式。未进行运行时栈水位测量。
+
+已验证：
+- MCU anlu_app TCM 交叉编译及 ELF GP/TP/SP/堆栈布局检查。
+- MCU anlu_app2 默认 XIP 交叉编译。
+- AE 闭环/边界/新帧/就绪/AF暂停、Wi-Fi手动控制、AF恢复和计时测试。
+- UI 新旧菜单、触摸滑条、AE开关/手动退出、dirty更新、日期时间和LOGO像素仿真。
+- 延迟/周期/范围/回绕/CDC及七行统计 OSD 仿真。
+- Gamma 重构逐像素等价测试。
+产物及日志：D:/2026fpga/bank/merge_shuai_20261018/
+
+未进行 FPGA 综合、布局布线、bitgen、烧录或实板测试，按用户要求自行编译。
+LAT/REP 是帧起点估算和无新采集事件计数，并非实际 DDR 帧 ID 测量。
+详细限制见 tests/LATENCY_VIS.txt。

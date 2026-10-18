@@ -34,6 +34,8 @@ module isp_top (
     output wire [7:0]  O_stat_mean_g,
     output wire [7:0]  O_stat_mean_b,
     output wire [7:0]  O_stat_min_r,
+    output wire [13:0] O_stat_samples,
+    output wire [7:0] O_stat_sequence,
     output wire        O_stat_frm_tgl
 );
  
@@ -152,6 +154,7 @@ awb #(
     // 调试探针的帧计数（bit0 每帧翻转，用于跨时钟域握手）
     wire [7:0] S_stat_frm_cnt;
     assign O_stat_frm_tgl = S_stat_frm_cnt[0];
+    assign O_stat_sequence = S_stat_frm_cnt;
 
     // ======================================================================
     // 调试：颜色统计探针（每帧统计平均 R/G/B、最小 R、以及每像素平均饱和度）
@@ -262,6 +265,7 @@ awb #(
         .O_max_g      (),
         .O_max_b      (),
         .O_sat_mean   (O_stat_sat_post),
+        .O_sample_count(O_stat_samples),
         .O_frame_cnt  (S_stat_frm_cnt)   // 8bit 帧计数，其 bit0 每帧翻转 -> 跨时钟域用
     );
 
@@ -765,6 +769,7 @@ module dbg_color_stat (
     output reg  [7:0]  O_max_g,
     output reg  [7:0]  O_max_b,
     output reg  [7:0]  O_sat_mean,      // 每像素平均饱和度
+    output reg [13:0] O_sample_count,
     output reg  [7:0]  O_frame_cnt
 );
 
@@ -986,6 +991,7 @@ module dbg_color_stat (
             O_max_b     <= 8'd0;
             O_sat_mean  <= 8'd0;
             O_frame_cnt <= 8'd0;
+            O_sample_count <= 0;
         end
         else if(I_frame_start) begin
             O_mean_r    <= (S_sum_r   >> MEAN_SHIFT);   // 均值，最大 255
@@ -999,6 +1005,7 @@ module dbg_color_stat (
             O_max_g     <= S_max_g;
             O_max_b     <= S_max_b;
             O_frame_cnt <= O_frame_cnt + 1'b1;
+            O_sample_count <= S_sample_cnt;
         end
     end
 
@@ -1177,270 +1184,275 @@ module rgb96_gamma (
 );
 
     // Exact results of the previous integer gamma curve; keep the same pipeline.
-    // TD rom_style="none" maps this small table to logic without block RAM or DSP.
-    (* rom_style = "none" *) reg [7:0] gamma_table [0:255];
+    // Use synchronous block ROM reads to save LUTs; preserve all three pipeline stages.
+    (* rom_style = "bram" *) reg [7:0] gamma_table [0:511];
+    integer gamma_index;
     initial begin
-        gamma_table[0] = 8'd0;
-        gamma_table[1] = 8'd21;
-        gamma_table[2] = 8'd29;
-        gamma_table[3] = 8'd35;
-        gamma_table[4] = 8'd39;
-        gamma_table[5] = 8'd43;
-        gamma_table[6] = 8'd47;
-        gamma_table[7] = 8'd51;
-        gamma_table[8] = 8'd54;
-        gamma_table[9] = 8'd57;
-        gamma_table[10] = 8'd59;
-        gamma_table[11] = 8'd62;
-        gamma_table[12] = 8'd64;
-        gamma_table[13] = 8'd67;
-        gamma_table[14] = 8'd69;
-        gamma_table[15] = 8'd71;
-        gamma_table[16] = 8'd73;
-        gamma_table[17] = 8'd74;
-        gamma_table[18] = 8'd76;
-        gamma_table[19] = 8'd78;
-        gamma_table[20] = 8'd79;
-        gamma_table[21] = 8'd81;
-        gamma_table[22] = 8'd83;
-        gamma_table[23] = 8'd84;
-        gamma_table[24] = 8'd86;
-        gamma_table[25] = 8'd88;
-        gamma_table[26] = 8'd89;
-        gamma_table[27] = 8'd91;
-        gamma_table[28] = 8'd93;
-        gamma_table[29] = 8'd94;
-        gamma_table[30] = 8'd96;
-        gamma_table[31] = 8'd98;
-        gamma_table[32] = 8'd100;
-        gamma_table[33] = 8'd101;
-        gamma_table[34] = 8'd102;
-        gamma_table[35] = 8'd103;
-        gamma_table[36] = 8'd105;
-        gamma_table[37] = 8'd106;
-        gamma_table[38] = 8'd107;
-        gamma_table[39] = 8'd108;
-        gamma_table[40] = 8'd110;
-        gamma_table[41] = 8'd111;
-        gamma_table[42] = 8'd112;
-        gamma_table[43] = 8'd113;
-        gamma_table[44] = 8'd115;
-        gamma_table[45] = 8'd116;
-        gamma_table[46] = 8'd117;
-        gamma_table[47] = 8'd118;
-        gamma_table[48] = 8'd120;
-        gamma_table[49] = 8'd121;
-        gamma_table[50] = 8'd122;
-        gamma_table[51] = 8'd123;
-        gamma_table[52] = 8'd124;
-        gamma_table[53] = 8'd125;
-        gamma_table[54] = 8'd126;
-        gamma_table[55] = 8'd127;
-        gamma_table[56] = 8'd128;
-        gamma_table[57] = 8'd129;
-        gamma_table[58] = 8'd130;
-        gamma_table[59] = 8'd131;
-        gamma_table[60] = 8'd132;
-        gamma_table[61] = 8'd133;
-        gamma_table[62] = 8'd134;
-        gamma_table[63] = 8'd135;
-        gamma_table[64] = 8'd137;
-        gamma_table[65] = 8'd137;
-        gamma_table[66] = 8'd138;
-        gamma_table[67] = 8'd139;
-        gamma_table[68] = 8'd140;
-        gamma_table[69] = 8'd141;
-        gamma_table[70] = 8'd142;
-        gamma_table[71] = 8'd143;
-        gamma_table[72] = 8'd144;
-        gamma_table[73] = 8'd144;
-        gamma_table[74] = 8'd145;
-        gamma_table[75] = 8'd146;
-        gamma_table[76] = 8'd147;
-        gamma_table[77] = 8'd148;
-        gamma_table[78] = 8'd149;
-        gamma_table[79] = 8'd150;
-        gamma_table[80] = 8'd151;
-        gamma_table[81] = 8'd151;
-        gamma_table[82] = 8'd152;
-        gamma_table[83] = 8'd153;
-        gamma_table[84] = 8'd154;
-        gamma_table[85] = 8'd155;
-        gamma_table[86] = 8'd155;
-        gamma_table[87] = 8'd156;
-        gamma_table[88] = 8'd157;
-        gamma_table[89] = 8'd158;
-        gamma_table[90] = 8'd159;
-        gamma_table[91] = 8'd159;
-        gamma_table[92] = 8'd160;
-        gamma_table[93] = 8'd161;
-        gamma_table[94] = 8'd162;
-        gamma_table[95] = 8'd163;
-        gamma_table[96] = 8'd164;
-        gamma_table[97] = 8'd164;
-        gamma_table[98] = 8'd165;
-        gamma_table[99] = 8'd166;
-        gamma_table[100] = 8'd167;
-        gamma_table[101] = 8'd167;
-        gamma_table[102] = 8'd168;
-        gamma_table[103] = 8'd169;
-        gamma_table[104] = 8'd170;
-        gamma_table[105] = 8'd170;
-        gamma_table[106] = 8'd171;
-        gamma_table[107] = 8'd172;
-        gamma_table[108] = 8'd173;
-        gamma_table[109] = 8'd173;
-        gamma_table[110] = 8'd174;
-        gamma_table[111] = 8'd175;
-        gamma_table[112] = 8'd176;
-        gamma_table[113] = 8'd176;
-        gamma_table[114] = 8'd177;
-        gamma_table[115] = 8'd178;
-        gamma_table[116] = 8'd178;
-        gamma_table[117] = 8'd179;
-        gamma_table[118] = 8'd180;
-        gamma_table[119] = 8'd180;
-        gamma_table[120] = 8'd181;
-        gamma_table[121] = 8'd182;
-        gamma_table[122] = 8'd182;
-        gamma_table[123] = 8'd183;
-        gamma_table[124] = 8'd184;
-        gamma_table[125] = 8'd184;
-        gamma_table[126] = 8'd185;
-        gamma_table[127] = 8'd186;
-        gamma_table[128] = 8'd187;
-        gamma_table[129] = 8'd187;
-        gamma_table[130] = 8'd188;
-        gamma_table[131] = 8'd188;
-        gamma_table[132] = 8'd189;
-        gamma_table[133] = 8'd190;
-        gamma_table[134] = 8'd190;
-        gamma_table[135] = 8'd191;
-        gamma_table[136] = 8'd192;
-        gamma_table[137] = 8'd192;
-        gamma_table[138] = 8'd193;
-        gamma_table[139] = 8'd193;
-        gamma_table[140] = 8'd194;
-        gamma_table[141] = 8'd195;
-        gamma_table[142] = 8'd195;
-        gamma_table[143] = 8'd196;
-        gamma_table[144] = 8'd197;
-        gamma_table[145] = 8'd197;
-        gamma_table[146] = 8'd198;
-        gamma_table[147] = 8'd198;
-        gamma_table[148] = 8'd199;
-        gamma_table[149] = 8'd200;
-        gamma_table[150] = 8'd200;
-        gamma_table[151] = 8'd201;
-        gamma_table[152] = 8'd202;
-        gamma_table[153] = 8'd202;
-        gamma_table[154] = 8'd203;
-        gamma_table[155] = 8'd203;
-        gamma_table[156] = 8'd204;
-        gamma_table[157] = 8'd205;
-        gamma_table[158] = 8'd205;
-        gamma_table[159] = 8'd206;
-        gamma_table[160] = 8'd207;
-        gamma_table[161] = 8'd207;
-        gamma_table[162] = 8'd208;
-        gamma_table[163] = 8'd208;
-        gamma_table[164] = 8'd209;
-        gamma_table[165] = 8'd209;
-        gamma_table[166] = 8'd210;
-        gamma_table[167] = 8'd210;
-        gamma_table[168] = 8'd211;
-        gamma_table[169] = 8'd212;
-        gamma_table[170] = 8'd212;
-        gamma_table[171] = 8'd213;
-        gamma_table[172] = 8'd213;
-        gamma_table[173] = 8'd214;
-        gamma_table[174] = 8'd214;
-        gamma_table[175] = 8'd215;
-        gamma_table[176] = 8'd216;
-        gamma_table[177] = 8'd216;
-        gamma_table[178] = 8'd217;
-        gamma_table[179] = 8'd217;
-        gamma_table[180] = 8'd218;
-        gamma_table[181] = 8'd218;
-        gamma_table[182] = 8'd219;
-        gamma_table[183] = 8'd219;
-        gamma_table[184] = 8'd220;
-        gamma_table[185] = 8'd220;
-        gamma_table[186] = 8'd221;
-        gamma_table[187] = 8'd221;
-        gamma_table[188] = 8'd222;
-        gamma_table[189] = 8'd222;
-        gamma_table[190] = 8'd223;
-        gamma_table[191] = 8'd223;
-        gamma_table[192] = 8'd224;
-        gamma_table[193] = 8'd224;
-        gamma_table[194] = 8'd225;
-        gamma_table[195] = 8'd225;
-        gamma_table[196] = 8'd226;
-        gamma_table[197] = 8'd226;
-        gamma_table[198] = 8'd227;
-        gamma_table[199] = 8'd227;
-        gamma_table[200] = 8'd228;
-        gamma_table[201] = 8'd229;
-        gamma_table[202] = 8'd229;
-        gamma_table[203] = 8'd230;
-        gamma_table[204] = 8'd230;
-        gamma_table[205] = 8'd231;
-        gamma_table[206] = 8'd231;
-        gamma_table[207] = 8'd232;
-        gamma_table[208] = 8'd233;
-        gamma_table[209] = 8'd233;
-        gamma_table[210] = 8'd234;
-        gamma_table[211] = 8'd234;
-        gamma_table[212] = 8'd235;
-        gamma_table[213] = 8'd235;
-        gamma_table[214] = 8'd236;
-        gamma_table[215] = 8'd236;
-        gamma_table[216] = 8'd237;
-        gamma_table[217] = 8'd237;
-        gamma_table[218] = 8'd238;
-        gamma_table[219] = 8'd238;
-        gamma_table[220] = 8'd239;
-        gamma_table[221] = 8'd239;
-        gamma_table[222] = 8'd240;
-        gamma_table[223] = 8'd240;
-        gamma_table[224] = 8'd241;
-        gamma_table[225] = 8'd241;
-        gamma_table[226] = 8'd241;
-        gamma_table[227] = 8'd242;
-        gamma_table[228] = 8'd242;
-        gamma_table[229] = 8'd243;
-        gamma_table[230] = 8'd243;
-        gamma_table[231] = 8'd244;
-        gamma_table[232] = 8'd244;
-        gamma_table[233] = 8'd244;
-        gamma_table[234] = 8'd245;
-        gamma_table[235] = 8'd245;
-        gamma_table[236] = 8'd246;
-        gamma_table[237] = 8'd246;
-        gamma_table[238] = 8'd247;
-        gamma_table[239] = 8'd247;
-        gamma_table[240] = 8'd248;
-        gamma_table[241] = 8'd248;
-        gamma_table[242] = 8'd249;
-        gamma_table[243] = 8'd249;
-        gamma_table[244] = 8'd250;
-        gamma_table[245] = 8'd250;
-        gamma_table[246] = 8'd251;
-        gamma_table[247] = 8'd251;
-        gamma_table[248] = 8'd252;
-        gamma_table[249] = 8'd252;
-        gamma_table[250] = 8'd253;
-        gamma_table[251] = 8'd253;
-        gamma_table[252] = 8'd254;
-        gamma_table[253] = 8'd254;
-        gamma_table[254] = 8'd255;
-        gamma_table[255] = 8'd255;
+        // Lower half is exact bypass, upper half is the existing gamma curve.
+        // The mode bit is part of the ROM address: no bypass mux/register bank.
+        for(gamma_index=0;gamma_index<256;gamma_index=gamma_index+1)
+            gamma_table[gamma_index] = gamma_index[7:0];
+        gamma_table[256] = 8'd0;
+        gamma_table[257] = 8'd21;
+        gamma_table[258] = 8'd29;
+        gamma_table[259] = 8'd35;
+        gamma_table[260] = 8'd39;
+        gamma_table[261] = 8'd43;
+        gamma_table[262] = 8'd47;
+        gamma_table[263] = 8'd51;
+        gamma_table[264] = 8'd54;
+        gamma_table[265] = 8'd57;
+        gamma_table[266] = 8'd59;
+        gamma_table[267] = 8'd62;
+        gamma_table[268] = 8'd64;
+        gamma_table[269] = 8'd67;
+        gamma_table[270] = 8'd69;
+        gamma_table[271] = 8'd71;
+        gamma_table[272] = 8'd73;
+        gamma_table[273] = 8'd74;
+        gamma_table[274] = 8'd76;
+        gamma_table[275] = 8'd78;
+        gamma_table[276] = 8'd79;
+        gamma_table[277] = 8'd81;
+        gamma_table[278] = 8'd83;
+        gamma_table[279] = 8'd84;
+        gamma_table[280] = 8'd86;
+        gamma_table[281] = 8'd88;
+        gamma_table[282] = 8'd89;
+        gamma_table[283] = 8'd91;
+        gamma_table[284] = 8'd93;
+        gamma_table[285] = 8'd94;
+        gamma_table[286] = 8'd96;
+        gamma_table[287] = 8'd98;
+        gamma_table[288] = 8'd100;
+        gamma_table[289] = 8'd101;
+        gamma_table[290] = 8'd102;
+        gamma_table[291] = 8'd103;
+        gamma_table[292] = 8'd105;
+        gamma_table[293] = 8'd106;
+        gamma_table[294] = 8'd107;
+        gamma_table[295] = 8'd108;
+        gamma_table[296] = 8'd110;
+        gamma_table[297] = 8'd111;
+        gamma_table[298] = 8'd112;
+        gamma_table[299] = 8'd113;
+        gamma_table[300] = 8'd115;
+        gamma_table[301] = 8'd116;
+        gamma_table[302] = 8'd117;
+        gamma_table[303] = 8'd118;
+        gamma_table[304] = 8'd120;
+        gamma_table[305] = 8'd121;
+        gamma_table[306] = 8'd122;
+        gamma_table[307] = 8'd123;
+        gamma_table[308] = 8'd124;
+        gamma_table[309] = 8'd125;
+        gamma_table[310] = 8'd126;
+        gamma_table[311] = 8'd127;
+        gamma_table[312] = 8'd128;
+        gamma_table[313] = 8'd129;
+        gamma_table[314] = 8'd130;
+        gamma_table[315] = 8'd131;
+        gamma_table[316] = 8'd132;
+        gamma_table[317] = 8'd133;
+        gamma_table[318] = 8'd134;
+        gamma_table[319] = 8'd135;
+        gamma_table[320] = 8'd137;
+        gamma_table[321] = 8'd137;
+        gamma_table[322] = 8'd138;
+        gamma_table[323] = 8'd139;
+        gamma_table[324] = 8'd140;
+        gamma_table[325] = 8'd141;
+        gamma_table[326] = 8'd142;
+        gamma_table[327] = 8'd143;
+        gamma_table[328] = 8'd144;
+        gamma_table[329] = 8'd144;
+        gamma_table[330] = 8'd145;
+        gamma_table[331] = 8'd146;
+        gamma_table[332] = 8'd147;
+        gamma_table[333] = 8'd148;
+        gamma_table[334] = 8'd149;
+        gamma_table[335] = 8'd150;
+        gamma_table[336] = 8'd151;
+        gamma_table[337] = 8'd151;
+        gamma_table[338] = 8'd152;
+        gamma_table[339] = 8'd153;
+        gamma_table[340] = 8'd154;
+        gamma_table[341] = 8'd155;
+        gamma_table[342] = 8'd155;
+        gamma_table[343] = 8'd156;
+        gamma_table[344] = 8'd157;
+        gamma_table[345] = 8'd158;
+        gamma_table[346] = 8'd159;
+        gamma_table[347] = 8'd159;
+        gamma_table[348] = 8'd160;
+        gamma_table[349] = 8'd161;
+        gamma_table[350] = 8'd162;
+        gamma_table[351] = 8'd163;
+        gamma_table[352] = 8'd164;
+        gamma_table[353] = 8'd164;
+        gamma_table[354] = 8'd165;
+        gamma_table[355] = 8'd166;
+        gamma_table[356] = 8'd167;
+        gamma_table[357] = 8'd167;
+        gamma_table[358] = 8'd168;
+        gamma_table[359] = 8'd169;
+        gamma_table[360] = 8'd170;
+        gamma_table[361] = 8'd170;
+        gamma_table[362] = 8'd171;
+        gamma_table[363] = 8'd172;
+        gamma_table[364] = 8'd173;
+        gamma_table[365] = 8'd173;
+        gamma_table[366] = 8'd174;
+        gamma_table[367] = 8'd175;
+        gamma_table[368] = 8'd176;
+        gamma_table[369] = 8'd176;
+        gamma_table[370] = 8'd177;
+        gamma_table[371] = 8'd178;
+        gamma_table[372] = 8'd178;
+        gamma_table[373] = 8'd179;
+        gamma_table[374] = 8'd180;
+        gamma_table[375] = 8'd180;
+        gamma_table[376] = 8'd181;
+        gamma_table[377] = 8'd182;
+        gamma_table[378] = 8'd182;
+        gamma_table[379] = 8'd183;
+        gamma_table[380] = 8'd184;
+        gamma_table[381] = 8'd184;
+        gamma_table[382] = 8'd185;
+        gamma_table[383] = 8'd186;
+        gamma_table[384] = 8'd187;
+        gamma_table[385] = 8'd187;
+        gamma_table[386] = 8'd188;
+        gamma_table[387] = 8'd188;
+        gamma_table[388] = 8'd189;
+        gamma_table[389] = 8'd190;
+        gamma_table[390] = 8'd190;
+        gamma_table[391] = 8'd191;
+        gamma_table[392] = 8'd192;
+        gamma_table[393] = 8'd192;
+        gamma_table[394] = 8'd193;
+        gamma_table[395] = 8'd193;
+        gamma_table[396] = 8'd194;
+        gamma_table[397] = 8'd195;
+        gamma_table[398] = 8'd195;
+        gamma_table[399] = 8'd196;
+        gamma_table[400] = 8'd197;
+        gamma_table[401] = 8'd197;
+        gamma_table[402] = 8'd198;
+        gamma_table[403] = 8'd198;
+        gamma_table[404] = 8'd199;
+        gamma_table[405] = 8'd200;
+        gamma_table[406] = 8'd200;
+        gamma_table[407] = 8'd201;
+        gamma_table[408] = 8'd202;
+        gamma_table[409] = 8'd202;
+        gamma_table[410] = 8'd203;
+        gamma_table[411] = 8'd203;
+        gamma_table[412] = 8'd204;
+        gamma_table[413] = 8'd205;
+        gamma_table[414] = 8'd205;
+        gamma_table[415] = 8'd206;
+        gamma_table[416] = 8'd207;
+        gamma_table[417] = 8'd207;
+        gamma_table[418] = 8'd208;
+        gamma_table[419] = 8'd208;
+        gamma_table[420] = 8'd209;
+        gamma_table[421] = 8'd209;
+        gamma_table[422] = 8'd210;
+        gamma_table[423] = 8'd210;
+        gamma_table[424] = 8'd211;
+        gamma_table[425] = 8'd212;
+        gamma_table[426] = 8'd212;
+        gamma_table[427] = 8'd213;
+        gamma_table[428] = 8'd213;
+        gamma_table[429] = 8'd214;
+        gamma_table[430] = 8'd214;
+        gamma_table[431] = 8'd215;
+        gamma_table[432] = 8'd216;
+        gamma_table[433] = 8'd216;
+        gamma_table[434] = 8'd217;
+        gamma_table[435] = 8'd217;
+        gamma_table[436] = 8'd218;
+        gamma_table[437] = 8'd218;
+        gamma_table[438] = 8'd219;
+        gamma_table[439] = 8'd219;
+        gamma_table[440] = 8'd220;
+        gamma_table[441] = 8'd220;
+        gamma_table[442] = 8'd221;
+        gamma_table[443] = 8'd221;
+        gamma_table[444] = 8'd222;
+        gamma_table[445] = 8'd222;
+        gamma_table[446] = 8'd223;
+        gamma_table[447] = 8'd223;
+        gamma_table[448] = 8'd224;
+        gamma_table[449] = 8'd224;
+        gamma_table[450] = 8'd225;
+        gamma_table[451] = 8'd225;
+        gamma_table[452] = 8'd226;
+        gamma_table[453] = 8'd226;
+        gamma_table[454] = 8'd227;
+        gamma_table[455] = 8'd227;
+        gamma_table[456] = 8'd228;
+        gamma_table[457] = 8'd229;
+        gamma_table[458] = 8'd229;
+        gamma_table[459] = 8'd230;
+        gamma_table[460] = 8'd230;
+        gamma_table[461] = 8'd231;
+        gamma_table[462] = 8'd231;
+        gamma_table[463] = 8'd232;
+        gamma_table[464] = 8'd233;
+        gamma_table[465] = 8'd233;
+        gamma_table[466] = 8'd234;
+        gamma_table[467] = 8'd234;
+        gamma_table[468] = 8'd235;
+        gamma_table[469] = 8'd235;
+        gamma_table[470] = 8'd236;
+        gamma_table[471] = 8'd236;
+        gamma_table[472] = 8'd237;
+        gamma_table[473] = 8'd237;
+        gamma_table[474] = 8'd238;
+        gamma_table[475] = 8'd238;
+        gamma_table[476] = 8'd239;
+        gamma_table[477] = 8'd239;
+        gamma_table[478] = 8'd240;
+        gamma_table[479] = 8'd240;
+        gamma_table[480] = 8'd241;
+        gamma_table[481] = 8'd241;
+        gamma_table[482] = 8'd241;
+        gamma_table[483] = 8'd242;
+        gamma_table[484] = 8'd242;
+        gamma_table[485] = 8'd243;
+        gamma_table[486] = 8'd243;
+        gamma_table[487] = 8'd244;
+        gamma_table[488] = 8'd244;
+        gamma_table[489] = 8'd244;
+        gamma_table[490] = 8'd245;
+        gamma_table[491] = 8'd245;
+        gamma_table[492] = 8'd246;
+        gamma_table[493] = 8'd246;
+        gamma_table[494] = 8'd247;
+        gamma_table[495] = 8'd247;
+        gamma_table[496] = 8'd248;
+        gamma_table[497] = 8'd248;
+        gamma_table[498] = 8'd249;
+        gamma_table[499] = 8'd249;
+        gamma_table[500] = 8'd250;
+        gamma_table[501] = 8'd250;
+        gamma_table[502] = 8'd251;
+        gamma_table[503] = 8'd251;
+        gamma_table[504] = 8'd252;
+        gamma_table[505] = 8'd252;
+        gamma_table[506] = 8'd253;
+        gamma_table[507] = 8'd253;
+        gamma_table[508] = 8'd254;
+        gamma_table[509] = 8'd254;
+        gamma_table[510] = 8'd255;
+        gamma_table[511] = 8'd255;
     end
 
     function [7:0] gamma_apply;
         input [7:0] v;
-        begin gamma_apply = gamma_table[v]; end
+        begin gamma_apply = gamma_table[{1'b1,v}]; end
     endfunction
 
     // 数字提亮（在 gamma 之后做，纯移位加法，不占 DSP）
@@ -1467,20 +1479,18 @@ module rgb96_gamma (
         S_ctrl_1d <= {I_frame_start, I_valid};
     end
 
-    // ---- 第 2 级：gamma 查表寄存（I_enable=0 时直通）----
+    // Stage 2: synchronous ROM read, with bypass selected by the address
+    // MSB. I_enable is sampled at the original stage-2 boundary, so live
+    // mode changes preserve the exact original pixels and three-cycle latency.
     reg [95:0] S_gam_2d;
-    reg [1:0]  S_ctrl_2d;
+    reg [1:0] S_ctrl_2d;
+    genvar gamma_channel;
+    generate for(gamma_channel=0;gamma_channel<12;gamma_channel=gamma_channel+1) begin: gamma_reads
+        always @(posedge I_clk)
+            S_gam_2d[gamma_channel*8+:8] <= gamma_table[{I_enable,S_data_1d[gamma_channel*8+:8]}];
+    end endgenerate
     always @(posedge I_clk) begin
         S_ctrl_2d <= S_ctrl_1d;
-        if(I_enable)
-            S_gam_2d <= {
-                gamma_apply(S_data_1d[95:88]), gamma_apply(S_data_1d[87:80]), gamma_apply(S_data_1d[79:72]),
-                gamma_apply(S_data_1d[71:64]), gamma_apply(S_data_1d[63:56]), gamma_apply(S_data_1d[55:48]),
-                gamma_apply(S_data_1d[47:40]), gamma_apply(S_data_1d[39:32]), gamma_apply(S_data_1d[31:24]),
-                gamma_apply(S_data_1d[23:16]), gamma_apply(S_data_1d[15:8]),  gamma_apply(S_data_1d[7:0])
-            };
-        else
-            S_gam_2d <= S_data_1d;
     end
 
     // ---- 第 3 级：数字提亮 + 寄存输出 ----

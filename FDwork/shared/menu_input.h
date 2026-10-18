@@ -42,6 +42,7 @@ typedef struct {
     uint8_t panel_ui, panel_page; /* MCU table UI; zero keeps legacy input ABI. */
     uint32_t exposure, gain, servo_pan_us, servo_tilt_us;
     uint32_t vts, vts_available;
+    uint32_t auto_exposure, auto_exposure_available;
     uint32_t servo_menu_available;
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
@@ -85,7 +86,7 @@ static inline void picture_adjust(MenuState *s, int direction)
     s->picture=(s->picture & ~(mask<<shift)) | (value<<shift);
 }
 
-static inline uint32_t menu_step(uint32_t v, int direction,
+static __attribute__((noinline)) uint32_t menu_step(uint32_t v, int direction,
                                uint32_t low, uint32_t high, uint32_t step)
 {
     if(v < low) v = low;
@@ -124,8 +125,8 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
     }
     if(s->picture_page) { picture_adjust(s,direction); return 0; }
     switch(s->index) {
-    case 0: s->exposure = menu_step(s->exposure, direction, 3, camera_exposure_max(s), 120); break;
-    case 1: s->gain = menu_step(s->gain, direction, 16, 143, 8); break;
+    case 0: s->auto_exposure=0; s->exposure = menu_step(s->exposure, direction, 3, camera_exposure_max(s), 120); break;
+    case 1: s->auto_exposure=0; s->gain = menu_step(s->gain, direction, 16, 143, 8); break;
     /* The former PAN status row opens picture settings. Servo position
      * remains controlled by relative dragging outside the menu. */
     case 2: if(s->picture_available) { s->picture_page=1; s->index=0; s->edit=0; } break;
@@ -179,6 +180,9 @@ static inline unsigned menu_key_legacy(MenuState *s, unsigned keys)
         else if(keys & 1) s->index = s->index == 0 ? ((!s->picture_page && !s->record_page && s->vts_available)?7:6) : s->index - 1;
         else if(keys & 2) s->index = s->index == ((!s->picture_page && !s->record_page && s->vts_available)?7:6) ? 0 : s->index + 1;
         else if(keys & 8) {
+            if(!s->picture_page && !s->record_page && s->index==0 && s->auto_exposure_available) {
+                s->auto_exposure=!s->auto_exposure;s->edit=!s->auto_exposure;return 0;
+            }
             if(s->record_page || (!s->picture_page && (s->index>=2 && s->index<=4))) return menu_adjust(s,1);
             if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT; return 0; }
             s->edit = 1; s->info = 0;
@@ -190,6 +194,7 @@ static inline unsigned menu_key_legacy(MenuState *s, unsigned keys)
 static inline void menu_slider(MenuState *s, unsigned row, unsigned x)
 {
     unsigned p = x <= 330 ? 0 : x >= 457 ? 127 : x - 330;
+    if(row<2) s->auto_exposure=0;
     if(row == 0) s->exposure = 3 + (p * (camera_exposure_max(s) - 3) + 63) / 127;
     if(row == 1) s->gain = 16 + p;
 }
@@ -289,6 +294,9 @@ static inline unsigned menu_touch_legacy(MenuState *s, const TouchEvent *e)
         row = (y - 692) / 36;
         if(row==7 && !s->vts_available) return 0;
         s->index = row; s->edit = 1; s->info = 0;
+        if(row==0 && x<306 && s->auto_exposure_available) {
+            s->auto_exposure=!s->auto_exposure;s->edit=0;return 0;
+        }
         if(row < 2 && x >= 306) {
             s->touch_capture = (int)row;
             menu_slider(s, row, x);
@@ -306,13 +314,13 @@ static inline unsigned panel_rows(const MenuState *s)
     static const uint8_t rows[]={6,7,3,5,3,7,2};
     return rows[s->panel_page];
 }
-static inline void panel_open(MenuState *s,unsigned page)
+static __attribute__((noinline)) void panel_open(MenuState *s,unsigned page)
 {
     s->panel_page=(uint8_t)page;s->index=0;s->edit=0;s->touch_capture=-1;
     s->picture_page=page==PANEL_PICTURE?1:page==PANEL_MODE?2:0;
     s->record_page=page==PANEL_RECORD;
 }
-static inline void panel_back(MenuState *s)
+static __attribute__((noinline)) void panel_back(MenuState *s)
 {
     unsigned page=s->panel_page;
     if(page==PANEL_HOME)s->menu=0;
@@ -377,6 +385,9 @@ static inline unsigned menu_key(MenuState *s,unsigned keys)
     else if(keys&1)s->index=s->index?s->index-1:panel_rows(s)-1;
     else if(keys&2)s->index=(s->index+1)%panel_rows(s);
     else if(keys&8) {
+        if(s->panel_page==PANEL_EXPOSURE && s->index==0 && s->auto_exposure_available) {
+            s->auto_exposure=!s->auto_exposure;s->edit=!s->auto_exposure;return 0;
+        }
         if(panel_editable(s))s->edit=1;
         else return panel_adjust(s,1);
     }
@@ -407,6 +418,7 @@ static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
     if(!panel_range(s,row,&v,&lo,&hi))return 0;
     v=lo+(p*(hi-lo)+63)/127;
     if(s->panel_page==PANEL_EXPOSURE) {
+        if(row<2)s->auto_exposure=0;
         if(row==0)s->exposure=v;
         else if(row==1)s->gain=v;
         else {s->vts=v;if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);}
@@ -441,6 +453,9 @@ static inline unsigned menu_touch(MenuState *s,const TouchEvent *e)
     row=(e->y-692)/36;
     if(row>=panel_rows(s))return 0;
     s->index=row;s->edit=panel_editable(s);
+    if(s->panel_page==PANEL_EXPOSURE && row==0 && e->x<306 && s->auto_exposure_available) {
+        s->auto_exposure=!s->auto_exposure;s->edit=0;return 0;
+    }
     if(panel_range(s,row,&v,&lo,&hi)) {
         if(e->x>=306){s->touch_capture=(int)row+16;return panel_slider(s,row,e->x);}
         return 0;

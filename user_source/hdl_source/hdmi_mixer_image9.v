@@ -4,7 +4,7 @@
 //   2) OSD 三层叠加（优先级从高到低）：
 //        L1 安陆 LOGO ：anlogic_logo_rom 160x160 位图，固定左上角
 //        L2 照片图标  ：logo2_rom 16x20 位图，放大为 64x80，每帧移动反弹
-//        L3 安陆字样  ：osd_char_lib 16x16 字模放大 4 倍 -> 64x64，顶部居中
+//        L3 安陆字样  ：16x16 字模放大 4 倍 -> 64x64，固定 LOGO 下方
 //      OSD 只覆盖“不透明”像素（位图 ROM 的 bit24=1），其余位置显示视频。
 //   3) DEBUG_MODE：1=全屏彩条  2=状态色块  3=分区状态（HDMI 链路诊断用）
 //   注：字模放大用“右移”实现（>>2 = /4），没有组合除法，
@@ -20,7 +20,8 @@ module hdmi_mixer_image9 #(
     parameter integer DEBUG_MODE = 0,
     parameter SPRITE_ENABLE = 1'b0, // Compile-time: rebuild bitstream to restore sprite.
     parameter SHAPE_LABEL_ENABLE = 1'b1, // Chinese labels may be drawn by the final UI stage.
-    parameter DBG_UI_EN = 1'b1          // 0 = 关掉右上角 AWB 状态指示灯（做正式版本时用）
+    parameter DBG_UI_EN = 1'b1,         // AWB indicator
+    parameter DIAG_BARS_ENABLE = 1'b0  // Production UI: remove upper-left diagnostic bars.
 )(
     input wire        I_clk,
     input wire        I_rst_n,
@@ -124,8 +125,8 @@ module hdmi_mixer_image9 #(
     // L3 「安陆」字样：字模表只放这 2 个字（anlu_glyph_rom.v，2x16 = 32 项），
     //   显示时用“移位”放大 4 倍（col = 局部x>>2、row = 局部y>>2），不能用除法。
     //   字模表小 → 查表路径短，能在 75MHz 一个像素周期内完成。
-    localparam TXT_X     = 12'd896;    // (1920 - 128) / 2
-    localparam TXT_Y     = 12'd40;
+    localparam TXT_X     = LOG1_X + 12'd16; // Center below the 160-pixel logo.
+    localparam TXT_Y     = LOG1_Y + LOG1_DH + 12'd8;
     localparam TXT_W     = 12'd128;    // 显示宽度 = 2 个字 × (16*4)
     localparam TXT_H     = 12'd64;     // 显示高度 = 16*4
     localparam TXT_CELL  = 12'd64;     // 单个字的显示宽度
@@ -439,7 +440,7 @@ module hdmi_mixer_image9 #(
             end
             // ---- 模式 5：左上角诊断条 ----
             else if(I_dbg_mode == 3'd5) begin
-                if((S_x >= DBG_PANEL_X) && (S_x < (DBG_PANEL_X + DBG_PANEL_W)) &&
+                if(DIAG_BARS_ENABLE && (S_x >= DBG_PANEL_X) && (S_x < (DBG_PANEL_X + DBG_PANEL_W)) &&
                    (S_y_pix >= DBG_PANEL_Y) && (S_y_pix < (DBG_PANEL_Y + DBG_PANEL_H))) begin
                     S_dbg_hit = 1'b1;
                     S_dbg_lx  = S_x - DBG_PANEL_X;

@@ -9,6 +9,7 @@ module ui_osd #(
     parameter integer V_ACTIVE = 1080,
     parameter integer MENU_CHINESE = 1,
     parameter integer MCU_MENU = 0,
+    parameter integer PANEL_STYLE = 1,
     parameter integer RESULT_CHINESE = 0,
     parameter integer PIXEL_CLOCK_HZ = 75000000
 )(
@@ -51,6 +52,7 @@ module ui_osd #(
     input  wire [7:0]  I_rtc_hours,
     input  wire [7:0]  I_rtc_minutes,
     input  wire [7:0]  I_rtc_seconds,
+    input  wire [7:0]  I_rtc_year, I_rtc_month, I_rtc_date,
     input  wire        I_rtc_valid,
     input  wire        I_rtc_error,
     input  wire        I_rtc_osf,
@@ -95,7 +97,8 @@ module ui_osd #(
     reg [31:0] mipi_frames_frame;
     reg [11:0] mipi_fps_frame;
     reg mipi_fps_valid_frame;
-    wire stats_mipi = (y>=96);
+    reg stats_detail_frame;
+    wire stats_mipi = (y >= (stats_detail_frame ? 96 : 60));
     wire [31:0] stats_frames = stats_mipi ? mipi_frames_frame : hdmi_frames;
     wire [11:0] stats_fps = stats_mipi ? mipi_fps_frame : fps_frame;
     wire stats_valid = stats_mipi ? mipi_fps_valid_frame : fps_valid_frame;
@@ -104,7 +107,13 @@ module ui_osd #(
         .frames_bcd(hdmi_frames), .fps_bcd(hdmi_fps), .fps_valid(hdmi_fps_valid));
     reg [22:0] camera_display_frame;
     reg [7:0] rtc_hours_frame, rtc_minutes_frame, rtc_seconds_frame;
+    reg [7:0] rtc_year_frame, rtc_month_frame, rtc_date_frame;
+    reg rtc_date_valid_frame;
     reg rtc_valid_frame;
+    wire rtc_time_good = I_rtc_valid && !I_rtc_error && !I_rtc_osf &&
+                        hour24(I_rtc_hours) != 8'hff &&
+                        I_rtc_minutes <= 8'h59 && I_rtc_minutes[3:0] <= 9 &&
+                        I_rtc_seconds <= 8'h59 && I_rtc_seconds[3:0] <= 9;
     reg [15:0] picture_frame;
     reg [63:0] picture_label;
     reg [31:0] picture_value;
@@ -139,8 +148,8 @@ module ui_osd #(
     wire controls_hit = (I_menu_enable && x>=24 && x<492 && y>=644 && y<1004) ||
                         (x>=24 && x<220 && y>=1016 && y<1076) ||
                         (x>=236 && x<260 && y>=1034 && y<1058) ||
-                        (x>=CLOCK_X0 && x<CLOCK_X0+284 && y>=CLOCK_Y0 && y<CLOCK_Y0+44) ||
-                        (x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<168);
+                        (x>=CLOCK_X0 && x<CLOCK_X0+284 && y>=CLOCK_Y0 && y<CLOCK_Y0+80) ||
+                        (x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<(stats_detail_frame?168:96));
     always @* begin
         label_width=(I_shape_type==4)?12'd104:12'd72;
         anchor_x=(I_shape_x0>H_ACTIVE-label_width)?H_ACTIVE-label_width:I_shape_x0;
@@ -180,7 +189,7 @@ module ui_osd #(
     wire [6:0] render_id;
     wire [4:0] render_row,render_col;
     generate if(MCU_MENU) begin: mcu_menu
-        mcu_menu_table table_renderer(
+        mcu_menu_table #(.PANEL_STYLE(PANEL_STYLE)) table_renderer(
             .apb_clk(I_apb_clk),.rst_n(I_apb_rst_n),.sel(I_menu_sel),
             .enable(I_menu_penable),.write(I_menu_pwrite),.addr(I_menu_paddr),
             .strobe(I_menu_pstrobe),.wdata(I_menu_pwdata),.rdata(O_menu_prdata),
@@ -540,22 +549,45 @@ module ui_osd #(
             end
         end
 
-        // Always-visible RTC clock at the top center. The panel is
+        // Always-visible RTC date/time at the top center. Both lines share
+        // the existing 5x7 digit lookup; scale is a shift, never a divider.
+        // The complete BCD snapshot is frozen at VSYNC, including midnight.
+        // The panel is
         // deliberately independent of the menu so the time remains present
         // while the lower-left controls are hidden.
         if((x >= CLOCK_X0) && (x < CLOCK_X0 + 284) &&
-           (y >= CLOCK_Y0) && (y < CLOCK_Y0 + 44)) begin
+           (y >= CLOCK_Y0) && (y < CLOCK_Y0 + 80)) begin
             pixel = 24'h101820;
-            if((x < CLOCK_X0 + 4) || (x >= CLOCK_X0 + 280) ||
-               (y < CLOCK_Y0 + 4) || (y >= CLOCK_Y0 + 40))
+            text_active=0;
+            if((x < CLOCK_X0 + 2) || (x >= CLOCK_X0 + 282) ||
+               (y < CLOCK_Y0 + 2) || (y >= CLOCK_Y0 + 78))
                 pixel = rtc_valid_frame ?
-                        24'h309060 : 24'h904030;
-            if((x >= CLOCK_X0 + 8) && (x < CLOCK_X0 + 264) &&
-               (y >= CLOCK_Y0 + 8) && (y < CLOCK_Y0 + 36)) begin
-                text_x = x - (CLOCK_X0 + 8);
+                        24'h304652 : 24'h904030;
+            if(x>=CLOCK_X0+65 && x<CLOCK_X0+225 &&
+               y>=CLOCK_Y0+10 && y<CLOCK_Y0+24) begin
+                text_active=1;
+                text_x=x-(CLOCK_X0+65);
+                char_no=text_x[7:4];col=text_x[3:1];row=(y-(CLOCK_Y0+10))>>1;
+                case(char_no)
+                    0:ch=rtc_date_valid_frame?"2":"-";
+                    1:ch=rtc_date_valid_frame?(rtc_month_frame[7]?"1":"0"):"-";
+                    2:ch=rtc_date_valid_frame?("0"+rtc_year_frame[7:4]):"-";
+                    3:ch=rtc_date_valid_frame?("0"+rtc_year_frame[3:0]):"-";
+                    4,7:ch="-";
+                    5:ch=rtc_date_valid_frame?("0"+{3'b0,rtc_month_frame[4]}):"-";
+                    6:ch=rtc_date_valid_frame?("0"+rtc_month_frame[3:0]):"-";
+                    8:ch=rtc_date_valid_frame?("0"+rtc_date_frame[7:4]):"-";
+                    9:ch=rtc_date_valid_frame?("0"+rtc_date_frame[3:0]):"-";
+                    default:ch=" ";
+                endcase
+            end
+            if((x >= CLOCK_X0 + 20) && (x < CLOCK_X0 + 276) &&
+               (y >= CLOCK_Y0 + 42) && (y < CLOCK_Y0 + 70)) begin
+                text_active=1;
+                text_x = x - (CLOCK_X0 + 20);
                 char_no = {1'b0, text_x[7:5]};
                 col = text_x[4:2];
-                row = (y - (CLOCK_Y0 + 8)) >> 2;
+                row = (y - (CLOCK_Y0 + 42)) >> 2;
                 case(char_no)
                     4'd0: ch = rtc_valid_frame ? ("0" + rtc_hours_frame[7:4]) : "-";
                     4'd1: ch = rtc_valid_frame ? ("0" + rtc_hours_frame[3:0]) : "-";
@@ -567,18 +599,21 @@ module ui_osd #(
                     4'd7: ch = rtc_valid_frame ? ("0" + rtc_seconds_frame[3:0]) : "-";
                     default: ch = "-";
                 endcase
+            end
+            // One digit decoder is shared by both date and time scanlines.
+            if(text_active) begin
                 glyph = glyph_bits(ch, row);
                 if((col < 3'd5) && ((glyph & (5'b10000 >> col)) != 0))
-                    pixel = rtc_valid_frame ?
-                            24'hffffff : 24'hffb080;
+                    pixel = y<CLOCK_Y0+32 ? (rtc_date_valid_frame?24'ha6b6c4:24'hffb080) :
+                            (rtc_valid_frame?24'hffffff:24'hffb080);
             end
         end
         // Right-aligned output statistics. Values change only in vertical
         // blanking, keeping all digits of an active frame consistent.
-        if(x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<168) begin
+        if(x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<(stats_detail_frame?168:96)) begin
             pixel=24'h101820;
-            if(x<STATS_X0+4 || x>=STATS_X0+460 || y<20 || y>=164)
-                pixel=24'h306080;
+            if(x<STATS_X0+2 || x>=STATS_X0+462 || y<18 || y>=(stats_detail_frame?166:94))
+                pixel=24'h304652;
             if(x>=STATS_X0+8 && x<STATS_X0+456 &&
                ((y>=24 && y<52) || (y>=60 && y<88) ||
                 (y>=96 && y<124) || (y>=132 && y<160))) begin
@@ -586,7 +621,7 @@ module ui_osd #(
                 char_no=text_x[8:5]; col=text_x[4:2];
                 row=(y<60 ? y-24 : y<96 ? y-60 : y<132 ? y-96 : y-132)>>2;
                 ch=" ";
-                if(y<60 || (y>=96 && y<132)) begin
+                if(!stats_detail_frame || y<60 || (y>=96 && y<132)) begin
                     case(char_no)
                         0:ch=stats_mipi ? "M" : "H"; 1:ch=stats_mipi ? "I" : "D";
                         2:ch=stats_mipi ? "P" : "M"; 3:ch="I";
@@ -619,7 +654,9 @@ module ui_osd #(
             x <= 0; y <= 0; de_d <= 0; vs_d <= 0;
             rec1<=0;rec2<=0;rec_frame<=0;focus_roi_frame<=0;
             rtc_hours_frame <= 0; rtc_minutes_frame <= 0; rtc_seconds_frame <= 0;
+            rtc_year_frame<=0;rtc_month_frame<=0;rtc_date_frame<=0;rtc_date_valid_frame<=0;
             rtc_valid_frame <= 0;
+            stats_detail_frame<=!MCU_MENU || !PANEL_STYLE;
             fps_frame<=0; fps_valid_frame<=0;
             mipi_frames_frame<=0; mipi_fps_frame<=0; mipi_fps_valid_frame<=0;
             camera_display_frame<={7'd127,16'h2000};
@@ -650,6 +687,7 @@ module ui_osd #(
             de_d <= I_de;
             if(I_vsync && !vs_d) begin
                 focus_roi_frame<=I_focus_roi;
+                stats_detail_frame<=!MCU_MENU || !PANEL_STYLE || I_info_enable;
                 fps_frame<=hdmi_fps; fps_valid_frame<=hdmi_fps_valid;
                 mipi_frames_frame<=I_mipi_frames;
                 mipi_fps_frame<=I_mipi_fps;
@@ -664,10 +702,13 @@ module ui_osd #(
                 rtc_hours_frame <= hour24(I_rtc_hours);
                 rtc_minutes_frame <= I_rtc_minutes;
                 rtc_seconds_frame <= I_rtc_seconds;
-                rtc_valid_frame <= I_rtc_valid && !I_rtc_error && !I_rtc_osf &&
-                                   hour24(I_rtc_hours) != 8'hff &&
-                                   I_rtc_minutes <= 8'h59 && I_rtc_minutes[3:0] <= 9 &&
-                                   I_rtc_seconds <= 8'h59 && I_rtc_seconds[3:0] <= 9;
+                rtc_year_frame<=I_rtc_year;rtc_month_frame<=I_rtc_month;rtc_date_frame<=I_rtc_date;
+                rtc_date_valid_frame<=rtc_time_good &&
+                    I_rtc_year[7:4]<=9 && I_rtc_year[3:0]<=9 &&
+                    I_rtc_month[6:5]==0 && I_rtc_month[4:0]>=8'h01 &&
+                    I_rtc_month[4:0]<=8'h12 && I_rtc_month[3:0]<=9 &&
+                    I_rtc_date>=8'h01 && I_rtc_date<=8'h31 && I_rtc_date[3:0]<=9;
+                rtc_valid_frame <= rtc_time_good;
                 // The bars update once per frame.  Shift/add approximations
                 // avoid putting a multiplier/divider in the pixel data path.
                 exposure_bar_width <= {1'b0,I_camera_display[22:16]};

@@ -25,7 +25,7 @@ static void mcu_menu_text(uint16_t *cells, const char *s)
     for(i=0;i<4;i++) cells[8+i]=MENU_ASCII|(unsigned char)s[i];
 }
 /* Pure row builder is shared by host tests and both firmware targets. */
-static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16_t cells[12])
+static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row,uint16_t cells[12])
 {
     unsigned i,page=s->record_page?2:s->picture_page==2?3:s->picture_page?1:0;
     unsigned p=picture_effective(s),kind=0;
@@ -73,6 +73,72 @@ static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16
     }
     return attr;
 }
+static void mcu_panel_value(uint16_t *cells,unsigned kind)
+{
+    unsigned i;for(i=0;i<4;i++)cells[8+i]=mcu_panel_values[0][kind][i];
+}
+static void mcu_panel_number(uint16_t *cells,unsigned value)
+{
+    unsigned i;for(i=0;i<4;i++){cells[11-i]=MENU_ASCII|('0'+value%10);value/=10;}
+}
+static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,uint16_t cells[12])
+{
+    unsigned i,page=s->panel_page;
+    uint32_t attr;
+    if(!s->panel_ui || row>=9 || page==PANEL_PICTURE || page==PANEL_RECORD)
+        return mcu_menu_row_legacy(s,rec,row,cells);
+    memset(cells,0,12*sizeof(*cells));
+    attr=s->menu?MENU_VISIBLE:0;
+    /* Empty rows retain the panel background, without stale labels or hit targets. */
+    if(row>panel_rows(s))return attr;
+    for(i=0;i<8;i++)cells[i]=mcu_panel_labels[page][row][i];
+    if(row==s->index+1)attr|=(s->edit?2u:1u)<<12;
+    if(row==0) {
+        if(page==PANEL_EXPOSURE)mcu_panel_value(cells,0); /* Actual firmware is manual AE. */
+        else if(page!=PANEL_HOME)mcu_panel_value(cells,5);
+        return attr;
+    }
+    if(page==PANEL_HOME) {
+        cells[11]=MENU_ASCII|'>';
+        if(row==1 && !s->picture_available)mcu_menu_text(cells,"----");
+        if(row==2)mcu_panel_value(cells,0);
+        if(row==3)mcu_panel_value(cells,s->image_step>=2 && s->image_step<=5?s->image_step-1:1);
+        if(row==4)mcu_panel_value(cells,s->image_step==5?7:6);
+        if(row==5 && !s->record_available)mcu_menu_text(cells,"----");
+    } else if(page==PANEL_EXPOSURE) {
+        unsigned v=row==1?s->exposure:row==2?s->gain:s->vts;
+        mcu_panel_number(cells,v);
+        if(row==3 && !s->vts_available)mcu_menu_text(cells,"----");
+    } else if(page==PANEL_MODE) {
+        if(row<=4 && s->image_step==row+1)mcu_panel_value(cells,7);
+        else if(row==5) {
+            if(s->image_step==2 && s->image_effect<=5) {
+                if(!s->image_effect)mcu_panel_value(cells,6);
+                else for(i=0;i<4;i++)cells[8+i]=mcu_effects[0][s->image_effect][i];
+            } else if(s->image_step==4)mcu_panel_number(cells,3-s->image_target);
+            else mcu_menu_text(cells,"----");
+        }
+    } else if(page==PANEL_TRACK) {
+        if(row==1)mcu_panel_value(cells,s->image_step==5?7:6);
+        else cells[11]=MENU_ASCII|'>';
+    } else if(page==PANEL_SYSTEM) mcu_panel_value(cells,(row==1?s->logo_enable:s->info)?7:6);
+    return attr;
+}
+/* Bit 24: small numeric value above the bar, within the same four cells.
+ * Old descriptors (bit 24 clear) retain their original rendering. */
+static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16_t cells[12])
+{
+    uint32_t attr=mcu_menu_row_base(s,rec,row,cells);
+    unsigned v,lo,hi,width;
+    if(s->panel_ui && row>=1 && row<=8 && panel_range(s,row-1,&v,&lo,&hi)) {
+        if(v<lo)v=lo;
+        if(v>hi)v=hi;
+        width=((v-lo)*127+(hi-lo)/2)/(hi-lo);
+        if(s->panel_page==PANEL_PICTURE && row==6)mcu_panel_number(cells,v);
+        attr|=(1u<<24)|(1u<<14)|(width<<16)|(2u<<9);
+    }
+    return attr;
+}
 /* Only called when CPU owns the inactive bank; all unused cells are cleared.
  * On invalid/old hardware the caller does not write the new APB page. */
 static void mcu_menu_publish(const MenuState *s,uint32_t rec)
@@ -86,10 +152,11 @@ static void mcu_menu_publish(const MenuState *s,uint32_t rec)
             uint32_t word=attr;
             if(col<12)word|=cells[col];
             /* Bars belong only to value cells; label text remains visible. */
-            if(col<8 || col>=12)word&=~(1u<<14);
+            if(col<8 || col>=12)word&=~((1u<<14)|(1u<<24));
             if(row<9) {
                 word&=~(7u<<9);
                 word|=(col<8?0u:(attr&(1u<<14))?(attr&(7u<<9)):(1u<<9));
+                if(s->panel_ui && col<8 && (attr&(3u<<12)))word|=1u<<9;
                 if(s->picture_page==2 && row>=1 && row<=4 && s->image_step==row+1 && col<8)word|=1u<<9;
             }
             ui_write(MCU_MENU_BASE+12,word);
@@ -106,9 +173,12 @@ static void mcu_menu_poll(const MenuState *s)
     status=ui_read(MCU_MENU_BASE+4);
     if(status&1u)return; /* Never wait for VSYNC or block USB/RTC/SD. */
     rec=s->record_available?ui_read(0x1060u):0;
-    key[0]=s->menu|(s->edit<<1)|(s->index<<4)|(s->picture_page<<8)|(s->record_page<<10);
+    key[0]=s->menu|(s->edit<<1)|(s->index<<4)|(s->picture_page<<8)|(s->record_page<<10)|
+           (s->panel_page<<16)|(s->panel_ui<<20)|(s->info<<21)|(s->logo_enable<<22)|
+           (s->record_available<<23)|(s->picture_available<<24);
     key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s);
-    key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8);
+    key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8)|
+                                            (s->image_effect<<16)|(s->image_target<<20);
     if((status&6u)==2u && !memcmp(key,mcu_menu_previous,sizeof key))return;
     mcu_menu_publish(s,rec);
     memcpy(mcu_menu_previous,key,sizeof key);

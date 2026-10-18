@@ -9,7 +9,9 @@ module tb_mcu_menu;
     reg [31:0] rec=0;
     reg [15:0] picture=16'h108c;
     wire ov,oh,od,rv,rh,rdv;wire [23:0] rgb,ref_rgb;
-    ui_osd #(.MCU_MENU(1),.RESULT_CHINESE(1)) dut(
+    // Keep the pre-theme pixel equivalence test as a compatibility regression.
+    // The production theme is checked separately by tb_panel_ui.
+    ui_osd #(.MCU_MENU(1),.PANEL_STYLE(0),.RESULT_CHINESE(1)) dut(
         .I_apb_clk(apb),.I_apb_rst_n(rst),.I_menu_sel(sel),.I_menu_penable(en),.I_menu_pwrite(wr),
         .I_menu_paddr(addr),.I_menu_pwdata(wd),.I_menu_pstrobe(strb),.O_menu_prdata(rd),
         .I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(hs),.I_de(de),.I_data(24'h526879),

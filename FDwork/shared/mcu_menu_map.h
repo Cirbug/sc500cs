@@ -44,6 +44,28 @@ static const unsigned char mcu_labels[4][9][8] = {
 {},
 },
 };
+static const unsigned char mcu_panel_values[1][8][4] = {
+{
+{118,64},
+{56,57},
+{61,62},
+{63,64},
+{70,71},
+{54,55},
+{72,73},
+{43,74},
+},
+};
+static const unsigned char mcu_effects[1][6][4] = {
+{
+{},
+{78,29},
+{90,68},
+{91,92,93},
+{37,94,68},
+{95,96,65,66},
+},
+};
 static const unsigned char mcu_values[1][14][4] = {
 {
 {54,55},
@@ -62,4 +84,41 @@ static const unsigned char mcu_values[1][14][4] = {
 {11,12},
 },
 };
+static const unsigned char mcu_panel_labels_0[7][8] = {
+{103,104,9,10},
+{7,8,105,106},
+{3,4,107,12},
+{13,14,15,16},
+{69,19,108,71},
+{41,42,11,12},
+{109,110,111,112},
+};
+static const unsigned char mcu_panel_labels_2[4][8] = {
+{3,4,107,12},
+{3,4},
+{5,6},
+{88,89},
+};
+static const unsigned char mcu_panel_labels_3[6][8] = {
+{13,14,15,16},
+{56,57,58,59},
+{7,60,61,62},
+{63,64,65,66},
+{67,68,69,19,70,71},
+{7,8,17,18},
+};
+static const unsigned char mcu_panel_labels_4[4][8] = {
+{69,19,108,71},
+{67,68,69,19,70,71},
+{113,114,61,62},
+{75,64,115,116},
+};
+static const unsigned char mcu_panel_labels_6[3][8] = {
+{109,110,111,112},
+{19,20},
+{110,117,111,112},
+};
+static const unsigned char (*const mcu_panel_labels[7])[8] = {
+mcu_panel_labels_0,mcu_labels[1],mcu_panel_labels_2,mcu_panel_labels_3,
+mcu_panel_labels_4,mcu_labels[2],mcu_panel_labels_6};
 #endif

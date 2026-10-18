@@ -39,13 +39,14 @@ static inline int touch_decode(TouchDecoder *d, const uint8_t *r,
 
 typedef struct {
     uint32_t menu, edit, info, index;
+    uint8_t panel_ui, panel_page; /* MCU table UI; zero keeps legacy input ABI. */
     uint32_t exposure, gain, servo_pan_us, servo_tilt_us;
     uint32_t vts, vts_available;
     uint32_t servo_menu_available;
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
     uint32_t record_page, record_available, record_interval;
-    int touch_capture; /* -1: none, 0..3: slider, 4: toggle, 5: AF, 6: row */
+    int touch_capture; /* -1:none; legacy 0..3:slider,4:toggle,5:AF,6:row; panel 16..23:slider */
     /* A servo drag is relative to the point where the finger went down. */
     uint8_t servo_touch_active;
     uint16_t servo_touch_x0, servo_touch_y0;
@@ -148,7 +149,7 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
     return 0;
 }
 
-static inline unsigned menu_key(MenuState *s, unsigned keys)
+static inline unsigned menu_key_legacy(MenuState *s, unsigned keys)
 {
     /* Physical keys cancel a drag so old touch movement cannot overwrite it. */
     s->touch_capture = -1;
@@ -238,7 +239,7 @@ static inline unsigned touch_servo_apply(MenuState *s, const TouchEvent *e)
     return 0;
 }
 
-static inline unsigned menu_touch(MenuState *s, const TouchEvent *e)
+static inline unsigned menu_touch_legacy(MenuState *s, const TouchEvent *e)
 {
     unsigned x = e->x, y = e->y, row;
     if(e->type == TOUCH_CANCEL || e->type == TOUCH_UP) {
@@ -295,5 +296,155 @@ static inline unsigned menu_touch(MenuState *s, const TouchEvent *e)
         return 0;
     }
     return 0;
+}
+/* All pages reuse the same 16x16 display table and the existing hit rectangles.
+ * These are UI pages, not new camera modes. No AE/HE ownership is introduced. */
+enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
+       PANEL_TRACK, PANEL_RECORD, PANEL_SYSTEM };
+static inline unsigned panel_rows(const MenuState *s)
+{
+    static const uint8_t rows[]={6,7,3,5,3,7,2};
+    return rows[s->panel_page];
+}
+static inline void panel_open(MenuState *s,unsigned page)
+{
+    s->panel_page=(uint8_t)page;s->index=0;s->edit=0;s->touch_capture=-1;
+    s->picture_page=page==PANEL_PICTURE?1:page==PANEL_MODE?2:0;
+    s->record_page=page==PANEL_RECORD;
+}
+static inline void panel_back(MenuState *s)
+{
+    unsigned page=s->panel_page;
+    if(page==PANEL_HOME)s->menu=0;
+    else {panel_open(s,PANEL_HOME);s->index=page-1;}
+    s->edit=0;
+}
+static inline unsigned panel_adjust(MenuState *s,int direction)
+{
+    unsigned action=0,selected=s->index,old;
+    switch(s->panel_page) {
+    case PANEL_HOME:
+        if((selected==0 && !s->picture_available) ||
+           (selected==4 && !s->record_available))break;
+        panel_open(s,selected+1);break;
+    case PANEL_PICTURE:picture_adjust(s,direction);break;
+    case PANEL_EXPOSURE:
+        s->index=selected==2?7:selected;
+        action=menu_adjust(s,direction);s->index=selected;break;
+    case PANEL_MODE:
+        if(selected<4)s->image_step=selected+2;
+        else { /* Reuse effect/target adjustment without interpreting it as a mode. */
+            old=s->picture_page;s->picture_page=0;s->index=5;
+            action=menu_adjust(s,direction);s->index=selected;s->picture_page=old;
+        }
+        break;
+    case PANEL_TRACK:
+        if(selected==0)s->image_step=s->image_step==5?2:5;
+        else if(selected==1 && s->image_step==5)action=MENU_REACQUIRE;
+        else if(selected==2)action=MENU_AF;
+        break;
+    case PANEL_RECORD:
+        if(selected==6)panel_back(s);
+        else action=menu_adjust(s,direction);
+        break;
+    case PANEL_SYSTEM:
+        if(selected==0)s->logo_enable=!s->logo_enable;
+        else s->info=!s->info;
+        break;
+    }
+    return action;
+}
+static inline int panel_editable(const MenuState *s)
+{
+    return s->panel_page==PANEL_EXPOSURE ||
+           (s->panel_page==PANEL_PICTURE && s->index<6) ||
+           (s->panel_page==PANEL_RECORD && s->index==3) ||
+           (s->panel_page==PANEL_MODE && s->index==4);
+}
+static inline unsigned menu_key(MenuState *s,unsigned keys)
+{
+    if(!s->panel_ui)return menu_key_legacy(s,keys);
+    s->touch_capture=-1;s->servo_touch_active=0;
+    if(!s->menu) {
+        if(keys&4)return MENU_AF;
+        if(keys&1)return MENU_FOCUS_UP;
+        if(keys&2)return MENU_FOCUS_DOWN;
+        if(keys&8){s->menu=1;panel_open(s,PANEL_HOME);}
+    } else if(s->edit) {
+        if(keys&12)s->edit=0;
+        else if(keys&3)return panel_adjust(s,(keys&1)?1:-1);
+    } else if(keys&4)panel_back(s);
+    else if(keys&1)s->index=s->index?s->index-1:panel_rows(s)-1;
+    else if(keys&2)s->index=(s->index+1)%panel_rows(s);
+    else if(keys&8) {
+        if(panel_editable(s))s->edit=1;
+        else return panel_adjust(s,1);
+    }
+    return 0;
+}
+/* Scalar sliders share ranges between input and display. Discrete color modes
+ * and switches remain buttons; no invented continuous camera parameters. */
+static unsigned panel_range(const MenuState *s,unsigned row,unsigned *v,unsigned *lo,unsigned *hi)
+{
+    *lo=0;
+    if(s->panel_page==PANEL_EXPOSURE) {
+        if(row==0){*v=s->exposure;*lo=3;*hi=camera_exposure_max(s);return 1;}
+        if(row==1){*v=s->gain;*lo=16;*hi=143;return 1;}
+        if(row==2 && s->vts_available){*v=s->vts;*lo=1980;*hi=2500;return 1;}
+    }
+    if(s->panel_page==PANEL_PICTURE && s->picture_available) {
+        if(row==0){*v=s->picture&63;*hi=63;return 1;}
+        if(row==2){*v=(s->picture>>7)&3;*hi=3;return 1;}
+        if(row==3){*v=(s->picture>>9)&7;*hi=4;return 1;}
+        if(row==5){*v=(s->picture>>14)&3;*hi=3;return 1;}
+    }
+    if(s->panel_page==PANEL_RECORD && row==3){*v=s->record_interval;*hi=4;return 1;}
+    return 0;
+}
+static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
+{
+    unsigned v,lo,hi,p=x<=330?0:x>=457?127:x-330,shift,mask;
+    if(!panel_range(s,row,&v,&lo,&hi))return 0;
+    v=lo+(p*(hi-lo)+63)/127;
+    if(s->panel_page==PANEL_EXPOSURE) {
+        if(row==0)s->exposure=v;
+        else if(row==1)s->gain=v;
+        else {s->vts=v;if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);}
+    } else if(s->panel_page==PANEL_PICTURE) {
+        shift=row==0?0:row==2?7:row==3?9:14;
+        mask=row==0?63:row==3?7:3;
+        s->picture=(s->picture&~(mask<<shift))|(v<<shift);
+    } else {s->record_interval=v;return MENU_INTERVAL;}
+    return 0;
+}
+static inline unsigned menu_touch(MenuState *s,const TouchEvent *e)
+{
+    unsigned row,v,lo,hi;
+    if(!s->panel_ui)return menu_touch_legacy(s,e);
+    if(e->type==TOUCH_UP || e->type==TOUCH_CANCEL){s->touch_capture=-1;return 0;}
+    if(e->type==TOUCH_MOVE) {
+        if(s->menu && s->touch_capture>=16 && s->touch_capture<24) {
+            row=(unsigned)s->touch_capture-16;
+            /* Ownership stays with the pressed slider, including vertical drift. */
+            return panel_slider(s,row,e->x);
+        }
+        return 0;
+    }
+    if(e->type!=TOUCH_DOWN)return 0;
+    s->touch_capture=-1;
+    if(e->x<240 && e->y>=1008) {
+        s->menu=!s->menu;panel_open(s,PANEL_HOME);s->touch_capture=4;return 0;
+    }
+    if(!s->menu || !touch_in_menu_area(s,e))return 0;
+    s->touch_capture=6;
+    if(e->y<692){panel_back(s);return 0;}
+    row=(e->y-692)/36;
+    if(row>=panel_rows(s))return 0;
+    s->index=row;s->edit=panel_editable(s);
+    if(panel_range(s,row,&v,&lo,&hi)) {
+        if(e->x>=306){s->touch_capture=(int)row+16;return panel_slider(s,row,e->x);}
+        return 0;
+    }
+    return panel_adjust(s,e->x<330?-1:1);
 }
 #endif

@@ -20,6 +20,16 @@ LABELS = [
 VALUES = ["返回", "关闭", "开启", "自动", "平滑", "近灰", "低", "中", "高", "恢复", "空闲", "写入", "错误", "录制"]
 EFFECTS = ["", "灰度", "反色", "二值化", "复古色", "边缘检测"]
 SHAPES = ["", "矩形", "梯形", "圆形", "三角形", "菱形"]
+PANEL_LABELS = [
+    ["相机设置", "图像调整", "曝光控制", "显示模式", "目标追踪", "拍照录制", "系统信息"],
+    LABELS[1],
+    ["曝光控制", "曝光", "增益", "帧长"],
+    ["显示模式", "普通画面", "图形识别", "运动检测", "红色目标跟踪", "图像特效"],
+    ["目标追踪", "红色目标跟踪", "重新识别", "自动对焦"],
+    LABELS[2],
+    ["系统信息", "标志", "统计信息"],
+]
+PANEL_VALUES = ["手动", "普通", "识别", "运动", "跟踪", "返回", "关闭", "开启"]
 
 
 def generate(font_path, extend_existing=False):
@@ -29,7 +39,8 @@ def generate(font_path, extend_existing=False):
     prior=None
     if extend_existing:
         prior=json.loads((ROOT/'assets/menu_font/manifest.json').read_text(encoding='utf8'))
-    chars = list(dict.fromkeys("".join(sum(LABELS, []) + VALUES + EFFECTS + SHAPES)))
+    chars = list(dict.fromkeys("".join(sum(LABELS, []) + VALUES + EFFECTS + SHAPES +
+                                     sum(PANEL_LABELS, []) + PANEL_VALUES)))
     old_chars=list(prior['glyph_ids']) if prior else []
     if prior: chars=old_chars+[ch for ch in chars if ch not in old_chars]
     old_words=[int(v,16) for v in (ROOT/'assets/menu_font/rows.hex').read_text().split()] if prior else []
@@ -102,6 +113,7 @@ def generate(font_path, extend_existing=False):
         "size": 32, "raster_size": 28, "threshold": 128,
         "layout": "32 rows per glyph, bit31 leftmost, ID0 blank",
         "labels": LABELS, "values": VALUES, "effects": EFFECTS, "shapes": SHAPES, "glyph_ids": ids,
+        "panel_labels": PANEL_LABELS, "panel_values": PANEL_VALUES,
     }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (out / "rows.hex").write_text("".join(f"{w:08x}\n" for w in words), encoding="ascii")
     (out / "labels.hex").write_text("".join(

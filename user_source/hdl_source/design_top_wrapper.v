@@ -446,6 +446,7 @@ module design_top_wrapper (
     reg [7:0]   S_rtc_hours_p1, S_rtc_hours_p2;
     reg [7:0]   S_rtc_minutes_p1, S_rtc_minutes_p2;
     reg [7:0]   S_rtc_seconds_p1, S_rtc_seconds_p2;
+    reg [23:0]  S_rtc_date_p1, S_rtc_date_p2;
     reg         S_rtc_valid_p1, S_rtc_valid_p2;
     reg         S_rtc_error_p1, S_rtc_error_p2;
     reg         S_rtc_osf_p1, S_rtc_osf_p2;
@@ -850,6 +851,7 @@ module design_top_wrapper (
             S_rtc_minutes_p2 <= 8'd0;
             S_rtc_seconds_p1 <= 8'd0;
             S_rtc_seconds_p2 <= 8'd0;
+            S_rtc_date_p1 <= 0; S_rtc_date_p2 <= 0;
             S_rtc_valid_p1   <= 1'b0;
             S_rtc_valid_p2   <= 1'b0;
             S_rtc_error_p1   <= 1'b0;
@@ -890,6 +892,7 @@ module design_top_wrapper (
             S_rtc_hours_p1   <= S_rtc_hours;
             S_rtc_minutes_p1 <= S_rtc_minutes;
             S_rtc_seconds_p1 <= S_rtc_seconds;
+            S_rtc_date_p1 <= {S_rtc_year,S_rtc_month,S_rtc_date};
             S_rtc_count_p1 <= S_rtc_read_count[15:0];
             S_rtc_count_p2 <= S_rtc_count_p1;
             S_rtc_count_p3 <= S_rtc_count_p2;
@@ -901,6 +904,7 @@ module design_top_wrapper (
                 S_rtc_hours_p2 <= S_rtc_hours_p1;
                 S_rtc_minutes_p2 <= S_rtc_minutes_p1;
                 S_rtc_seconds_p2 <= S_rtc_seconds_p1;
+                S_rtc_date_p2 <= S_rtc_date_p1;
             end
             S_rtc_valid_p1   <= S_rtc_valid;
             S_rtc_valid_p2   <= S_rtc_valid_p1;
@@ -1923,6 +1927,9 @@ isp_top u_isp_top (
         .I_rtc_hours    ( S_rtc_hours_p2 ),
         .I_rtc_minutes  ( S_rtc_minutes_p2 ),
         .I_rtc_seconds  ( S_rtc_seconds_p2 ),
+        .I_rtc_year     ( S_rtc_date_p2[23:16] ),
+        .I_rtc_month    ( S_rtc_date_p2[15:8] ),
+        .I_rtc_date     ( S_rtc_date_p2[7:0] ),
         .I_rtc_valid    ( S_rtc_valid_p2 ),
         .I_rtc_error    ( S_rtc_error_p2 ),
         .I_rtc_osf      ( S_rtc_osf_p2 ),

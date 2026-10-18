@@ -4,6 +4,7 @@
         begin
             glyph_bits = 5'b00000;
             case(c)
+                ">": case(r) 0,6:glyph_bits=5'b10000; 1,5:glyph_bits=5'b01000; 2,4:glyph_bits=5'b00100; 3:glyph_bits=5'b00010; endcase
                 "B": case(r) 0,3,6:glyph_bits=5'b11110; 1,2,4,5:glyph_bits=5'b10001; endcase
                 "H": case(r) 3:glyph_bits=5'b11111; default:glyph_bits=5'b10001; endcase
                 "W": case(r) 0,1,2,6:glyph_bits=5'b10001; 3,4,5:glyph_bits=5'b10101; endcase

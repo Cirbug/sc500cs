@@ -188,6 +188,7 @@ static void lens_diag_report(void)
 }
 
 #include "../shared/autofocus_control.h"
+#include "../shared/lens_serial_diag.h"
 #include "../shared/tracking_service.h"
 
 /* All inputs commit through this one hardware boundary. */
@@ -372,6 +373,7 @@ AL_S32 main(void)
     ui_ctrl(ui.menu, ui.edit, ui.info, ui.picture_page);
     /* Publish before USB/Wi-Fi probing so the menu is visible during startup. */
     mcu_menu_available=(ui_read(MCU_MENU_BASE)==MCU_MENU_ID);
+    ui.panel_ui=(uint8_t)mcu_menu_available;
     mcu_menu_poll(&ui);
     g_ui_debug_stage = 4;
     /* USB diagnostics are bounded; the existing menu continues on failure. */
@@ -431,6 +433,7 @@ AL_S32 main(void)
         tracking_service(&ui);
         rtc_diag_poll((uint32_t)UI_APB_BASE);
         video_diag_poll((uint32_t)UI_APB_BASE);
+        lens_serial_poll();
         recorder_poll();
         wifi_mcu_poll(0);
         mcu_menu_poll(&ui);

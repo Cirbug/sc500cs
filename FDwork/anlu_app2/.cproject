@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
-		<cconfiguration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.1245746061">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.1245746061" moduleId="org.eclipse.cdt.core.settings" name="Debug">
+		<cconfiguration id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.debug.1245746061">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.debug.1245746061" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<macros>
 					<stringMacro name="bsp_loc" type="VALUE_TEXT" value="${workspace_loc:anlu}"/>
 				</macros>
@@ -17,9 +17,9 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="${cross_rm} -rf" description="" id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.1245746061" name="Debug" optionalBuildProperties="" parent="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug">
-					<folderInfo id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.1245746061." name="/" resourcePath="">
-						<toolChain id="ilg.gnumcueclipse.managedbuild.cross.riscv.toolchain.elf.debug.50824609" name="RISC-V Cross GCC" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.toolchain.elf.debug">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="${cross_rm} -rf" description="" id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.debug.1245746061" name="Debug" optionalBuildProperties="" parent="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.debug">
+					<folderInfo id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.debug.1245746061." name="/" resourcePath="">
+						<toolChain id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.toolchain.elf.debug.50824609" name="RISC-V Cross GCC" superClass="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.toolchain.elf.debug">
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createflash.850821010" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createflash" value="true" valueType="boolean"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createlisting.1722233538" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createlisting"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createmif.1335157105" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createmif"/>
@@ -48,10 +48,10 @@
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.assembler.usepreprocessor.1351727228" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.assembler.usepreprocessor" value="true" valueType="boolean"/>
 								<inputType id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.assembler.input.1962725052" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.assembler.input"/>
 							</tool>
-							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.1076517713" name="GNU RISC-V Cross C Compiler" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler">
+							<tool id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.tool.c.compiler.1076517713" name="GNU RISC-V Cross C Compiler" superClass="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.tool.c.compiler">
 								<inputType id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.input.755268409" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.input"/>
 							</tool>
-							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.cpp.compiler.1024721755" name="GNU RISC-V Cross C++ Compiler" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.cpp.compiler"/>
+							<tool id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.tool.cpp.compiler.1024721755" name="GNU RISC-V Cross C++ Compiler" superClass="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.tool.cpp.compiler"/>
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.linker.2068604949" name="GNU RISC-V Cross C Linker" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.linker">
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.c.linker.gcsections.1286545206" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.c.linker.gcsections" value="true" valueType="boolean"/>
 								<inputType id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.linker.input.1028135634" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.linker.input">
@@ -71,18 +71,19 @@
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.linenumbers.1189728694" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.linenumbers" value="true" valueType="boolean"/>
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.wide.224490627" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.wide" value="true" valueType="boolean"/>
 							</tool>
-							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.217880142" name="GNU RISC-V Cross Create Memory Initial File" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif"/>
+							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.217880142" name="GNU RISC-V Cross Create Memory Initial File"/>
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize.2078647780" name="GNU RISC-V Cross Print Size" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize">
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format.446421071" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format"/>
 							</tool>
+							<tool id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.toolchain.tool.createmif.1841581848" name="GNU RISC-V Cross Create Memory Initial File" superClass="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.toolchain.tool.createmif"/>
 						</toolChain>
 					</folderInfo>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
-		<cconfiguration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.release.1937532182">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.release.1937532182" moduleId="org.eclipse.cdt.core.settings" name="Release">
+		<cconfiguration id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.release.1937532182">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.release.1937532182" moduleId="org.eclipse.cdt.core.settings" name="Release">
 				<macros>
 					<stringMacro name="bsp_loc" type="VALUE_TEXT" value="${workspace_loc:anlu}"/>
 				</macros>
@@ -97,9 +98,9 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="${cross_rm} -rf" description="" id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.release.1937532182" name="Release" optionalBuildProperties="" parent="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.release">
-					<folderInfo id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.release.1937532182." name="/" resourcePath="">
-						<toolChain id="ilg.gnumcueclipse.managedbuild.cross.riscv.toolchain.elf.release.842235099" name="RISC-V Cross GCC" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.toolchain.elf.release">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="${cross_rm} -rf" description="" id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.release.1937532182" name="Release" optionalBuildProperties="" parent="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.release">
+					<folderInfo id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.release.1937532182." name="/" resourcePath="">
+						<toolChain id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.toolchain.elf.release.842235099" name="RISC-V Cross GCC" superClass="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.toolchain.elf.release">
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createflash.955945014" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createflash" value="true" valueType="boolean"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createlisting.1954679169" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createlisting"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createmif.908148909" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.addtools.createmif"/>
@@ -128,10 +129,10 @@
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.assembler.usepreprocessor.1459114958" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.assembler.usepreprocessor" value="true" valueType="boolean"/>
 								<inputType id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.assembler.input.1051273436" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.assembler.input"/>
 							</tool>
-							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.559502415" name="GNU RISC-V Cross C Compiler" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler">
+							<tool id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.tool.c.compiler.559502415" name="GNU RISC-V Cross C Compiler" superClass="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.tool.c.compiler">
 								<inputType id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.input.1142722879" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.input"/>
 							</tool>
-							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.cpp.compiler.73292769" name="GNU RISC-V Cross C++ Compiler" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.cpp.compiler"/>
+							<tool id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.tool.cpp.compiler.73292769" name="GNU RISC-V Cross C++ Compiler" superClass="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.tool.cpp.compiler"/>
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.linker.50632405" name="GNU RISC-V Cross C Linker" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.linker">
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.c.linker.gcsections.1711884379" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.c.linker.gcsections" value="true" valueType="boolean"/>
 								<inputType id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.linker.input.1826702935" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.linker.input">
@@ -151,10 +152,11 @@
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.linenumbers.887393832" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.linenumbers" value="true" valueType="boolean"/>
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.wide.1142251130" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.wide" value="true" valueType="boolean"/>
 							</tool>
-							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.285386577" name="GNU RISC-V Cross Create Memory Initial File" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif"/>
+							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.285386577" name="GNU RISC-V Cross Create Memory Initial File"/>
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize.847256845" name="GNU RISC-V Cross Print Size" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize">
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format.535121192" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format"/>
 							</tool>
+							<tool id="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.toolchain.tool.createmif.1765075801" name="GNU RISC-V Cross Create Memory Initial File" superClass="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.toolchain.tool.createmif"/>
 						</toolChain>
 					</folderInfo>
 				</configuration>
@@ -167,10 +169,10 @@
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.release.1937532182;ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.release.1937532182.;ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.559502415;ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.input.1142722879">
+		<scannerConfigBuildInfo instanceId="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.release.1937532182;com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.release.1937532182.;ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.559502415;ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.input.1142722879">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.1245746061;ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.1245746061.;ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.1076517713;ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.input.755268409">
+		<scannerConfigBuildInfo instanceId="com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.debug.1245746061;com.anlogic.sdk.embedcdt.managedbuild.cross.riscv.config.elf.debug.1245746061.;ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.1076517713;ilg.gnumcueclipse.managedbuild.cross.riscv.tool.c.compiler.input.755268409">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>

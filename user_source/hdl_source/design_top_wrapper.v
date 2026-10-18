@@ -1141,6 +1141,7 @@ module design_top_wrapper (
         .video_rd_valid(video_read_valid), .ui_status(rec_ui_status)
     );
 
+    wire [63:0] S_ae_meter_apb;
     mcu_ui_apb_regs u_mcu_ui_apb_regs (
         .I_clk         ( S_mcu_apb_clk ),
         .I_rst         ( ~S_rst_n ),
@@ -1191,6 +1192,8 @@ module design_top_wrapper (
         .I_track_status(S_track_status_apb), .I_track_errors(S_track_errors_apb),
         .I_video_rx_diag(S_rx_diag_apb[63:0]),.I_video_fault_details(S_rx_diag_apb[159:64]),.I_video_capture_diag(S_capture_diag_apb),
         .I_video_display_diag(S_display_diag_apb),
+        .I_ae_rgb(S_ae_meter_apb[23:0]), .I_ae_meta(S_ae_meter_apb[63:32]),
+        .I_ae_sensor_ready({S_cam_cfg_done,S_ae_cfg_done}),
         .O_lens_cmd    ( S_lens_cmd ),
         .O_lens_retry  ( S_lens_retry ),
         .O_lens_read_adc( S_lens_read_adc ),
@@ -1371,6 +1374,8 @@ assign S_raw_tuser  = S_axis_tuser;
 // coring remains in its existing fixed-zero configuration.
 wire [7:0] S_isp_stat_sat_pre;
 wire [7:0] S_isp_stat_sat_post;
+wire [13:0] S_isp_stat_samples;
+wire [7:0] S_isp_stat_sequence;
 wire [7:0] S_isp_stat_mean_r;
 wire [7:0] S_isp_stat_mean_g;
 wire [7:0] S_isp_stat_mean_b;
@@ -1403,6 +1408,7 @@ isp_top u_isp_top (
 .I_denoise       (S_picture_isp[15:14]),
 .O_stat_sat_pre  (S_isp_stat_sat_pre),
 .O_stat_sat_post (S_isp_stat_sat_post),
+.O_stat_samples(S_isp_stat_samples), .O_stat_sequence(S_isp_stat_sequence),
 .O_stat_mean_r   (S_isp_stat_mean_r),
 .O_stat_mean_g   (S_isp_stat_mean_g),
 .O_stat_mean_b   (S_isp_stat_mean_b),
@@ -1410,6 +1416,15 @@ isp_top u_isp_top (
 .O_stat_frm_tgl  (S_isp_stat_frm_tgl),
 .I_tready        ()
   );
+
+    // Coherent per-frame metering. Software normalizes the debug statistics
+    // by their actual sample count, so no new pixel-domain divider is needed.
+    video_diag_cdc #(.WIDTH(64)) u_ae_meter_cdc (
+        .src_clk(S_csi_rx_clk), .dst_clk(S_mcu_apb_clk), .rst_n(S_rst_n),
+        .data({8'd0,S_isp_stat_sequence,2'd0,S_isp_stat_samples,
+               8'd0,S_isp_stat_mean_r,S_isp_stat_mean_g,S_isp_stat_mean_b}),
+        .snapshot(S_ae_meter_apb)
+    );
 
     // ISP statistics are produced in the MIPI clock domain.  Transfer the
     // stable per-frame values with the same toggle protocol used by _9 rather

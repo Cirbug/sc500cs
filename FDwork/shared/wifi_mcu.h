@@ -86,7 +86,7 @@ static int wifi_dispatch(unsigned type,const uint8_t *in,unsigned n,uint8_t *out
         memcpy(wifi_command_highwater,in,16);
         MenuState old=*record_ui;unsigned actions=0;
         if(op==1) actions=MENU_PHOTO;
-        if(op==2) {record_ui->exposure=a;record_ui->gain=b;}
+        if(op==2) {record_ui->auto_exposure=0;record_ui->exposure=a;record_ui->gain=b;}
         if(op==3) {
             static const unsigned intervals[5]={2,5,10,30,60};
             for(unsigned i=0;i<5;i++) if(intervals[i]==seconds) record_ui->record_interval=i;

@@ -41,6 +41,7 @@ typedef struct {
     uint32_t menu, edit, info, index;
     uint32_t exposure, gain, servo_pan_us, servo_tilt_us;
     uint32_t vts, vts_available;
+    uint32_t auto_exposure, auto_exposure_available;
     uint32_t servo_menu_available;
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
@@ -123,8 +124,8 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
     }
     if(s->picture_page) { picture_adjust(s,direction); return 0; }
     switch(s->index) {
-    case 0: s->exposure = menu_step(s->exposure, direction, 3, camera_exposure_max(s), 120); break;
-    case 1: s->gain = menu_step(s->gain, direction, 16, 143, 8); break;
+    case 0: s->auto_exposure=0; s->exposure = menu_step(s->exposure, direction, 3, camera_exposure_max(s), 120); break;
+    case 1: s->auto_exposure=0; s->gain = menu_step(s->gain, direction, 16, 143, 8); break;
     /* The former PAN status row opens picture settings. Servo position
      * remains controlled by relative dragging outside the menu. */
     case 2: if(s->picture_available) { s->picture_page=1; s->index=0; s->edit=0; } break;
@@ -178,6 +179,9 @@ static inline unsigned menu_key(MenuState *s, unsigned keys)
         else if(keys & 1) s->index = s->index == 0 ? ((!s->picture_page && !s->record_page && s->vts_available)?7:6) : s->index - 1;
         else if(keys & 2) s->index = s->index == ((!s->picture_page && !s->record_page && s->vts_available)?7:6) ? 0 : s->index + 1;
         else if(keys & 8) {
+            if(!s->picture_page && !s->record_page && s->index==0 && s->auto_exposure_available) {
+                s->auto_exposure=!s->auto_exposure;s->edit=!s->auto_exposure;return 0;
+            }
             if(s->record_page || (!s->picture_page && (s->index>=2 && s->index<=4))) return menu_adjust(s,1);
             if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT; return 0; }
             s->edit = 1; s->info = 0;
@@ -189,6 +193,7 @@ static inline unsigned menu_key(MenuState *s, unsigned keys)
 static inline void menu_slider(MenuState *s, unsigned row, unsigned x)
 {
     unsigned p = x <= 330 ? 0 : x >= 457 ? 127 : x - 330;
+    if(row<2) s->auto_exposure=0;
     if(row == 0) s->exposure = 3 + (p * (camera_exposure_max(s) - 3) + 63) / 127;
     if(row == 1) s->gain = 16 + p;
 }
@@ -288,6 +293,9 @@ static inline unsigned menu_touch(MenuState *s, const TouchEvent *e)
         row = (y - 692) / 36;
         if(row==7 && !s->vts_available) return 0;
         s->index = row; s->edit = 1; s->info = 0;
+        if(row==0 && x<306 && s->auto_exposure_available) {
+            s->auto_exposure=!s->auto_exposure;s->edit=0;return 0;
+        }
         if(row < 2 && x >= 306) {
             s->touch_capture = (int)row;
             menu_slider(s, row, x);

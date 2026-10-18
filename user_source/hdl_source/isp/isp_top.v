@@ -34,6 +34,8 @@ module isp_top (
     output wire [7:0]  O_stat_mean_g,
     output wire [7:0]  O_stat_mean_b,
     output wire [7:0]  O_stat_min_r,
+    output wire [13:0] O_stat_samples,
+    output wire [7:0] O_stat_sequence,
     output wire        O_stat_frm_tgl
 );
  
@@ -152,6 +154,7 @@ awb #(
     // 调试探针的帧计数（bit0 每帧翻转，用于跨时钟域握手）
     wire [7:0] S_stat_frm_cnt;
     assign O_stat_frm_tgl = S_stat_frm_cnt[0];
+    assign O_stat_sequence = S_stat_frm_cnt;
 
     // ======================================================================
     // 调试：颜色统计探针（每帧统计平均 R/G/B、最小 R、以及每像素平均饱和度）
@@ -262,6 +265,7 @@ awb #(
         .O_max_g      (),
         .O_max_b      (),
         .O_sat_mean   (O_stat_sat_post),
+        .O_sample_count(O_stat_samples),
         .O_frame_cnt  (S_stat_frm_cnt)   // 8bit 帧计数，其 bit0 每帧翻转 -> 跨时钟域用
     );
 
@@ -765,6 +769,7 @@ module dbg_color_stat (
     output reg  [7:0]  O_max_g,
     output reg  [7:0]  O_max_b,
     output reg  [7:0]  O_sat_mean,      // 每像素平均饱和度
+    output reg [13:0] O_sample_count,
     output reg  [7:0]  O_frame_cnt
 );
 
@@ -986,6 +991,7 @@ module dbg_color_stat (
             O_max_b     <= 8'd0;
             O_sat_mean  <= 8'd0;
             O_frame_cnt <= 8'd0;
+            O_sample_count <= 0;
         end
         else if(I_frame_start) begin
             O_mean_r    <= (S_sum_r   >> MEAN_SHIFT);   // 均值，最大 255
@@ -999,6 +1005,7 @@ module dbg_color_stat (
             O_max_g     <= S_max_g;
             O_max_b     <= S_max_b;
             O_frame_cnt <= O_frame_cnt + 1'b1;
+            O_sample_count <= S_sample_cnt;
         end
     end
 

@@ -1,4 +1,4 @@
-Cirbug
-pc
-54288
-D:\2026fpga\lab_hd_1_mipi_hdmi\td_project\.lock.f
+MSI
+21397
+30732
+C:\Users\21397\Desktop\fpga1\sc500cs\td_project\.lock.f

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Project Version="3" Minor="2" Path="D:/2026fpga/lab_hd_1_mipi_hdmi/td_project">
+<Project Version="3" Minor="2" Path="C:/Users/21397/Desktop/fpga1/sc500cs/td_project">
     <Project_Created_Time></Project_Created_Time>
     <TD_Encoding>UTF-8</TD_Encoding>
     <TD_Version>6.2.168116</TD_Version>

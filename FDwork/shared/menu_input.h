@@ -335,7 +335,7 @@ enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
        PANEL_TRACK, PANEL_RECORD, PANEL_SYSTEM };
 static inline unsigned panel_rows(const MenuState *s)
 {
-    static const uint8_t rows[]={6,7,3,5,3,7,2};
+    static const uint8_t rows[]={6,7,4,5,3,7,2};
     return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
 }
 static __attribute__((noinline)) void panel_open(MenuState *s,unsigned page)
@@ -361,6 +361,10 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
         panel_open(s,selected+1);break;
     case PANEL_PICTURE:picture_adjust(s,direction);break;
     case PANEL_EXPOSURE:
+        if(selected==3) {
+            if(s->auto_exposure_available)s->auto_exposure=!s->auto_exposure;
+            s->edit=0;break;
+        }
         s->index=selected==2?7:selected;
         action=menu_adjust(s,direction);s->index=selected;break;
     case PANEL_MODE:
@@ -388,7 +392,7 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
 }
 static inline int panel_editable(const MenuState *s)
 {
-    return s->panel_page==PANEL_EXPOSURE ||
+    return (s->panel_page==PANEL_EXPOSURE && s->index<3) ||
            (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
            (s->panel_page==PANEL_MODE && s->index==4);
@@ -411,9 +415,6 @@ static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned 
     else if(keys&1)s->index=s->index?s->index-1:panel_rows(s)-1;
     else if(keys&2)s->index=(s->index+1)%panel_rows(s);
     else if(keys&8) {
-        if(s->panel_page==PANEL_EXPOSURE && s->index==0 && s->auto_exposure_available) {
-            s->auto_exposure=!s->auto_exposure;s->edit=!s->auto_exposure;return 0;
-        }
         if(panel_editable(s))s->edit=1;
         else return panel_adjust(s,1);
     }
@@ -481,9 +482,6 @@ static inline unsigned menu_touch(MenuState *s,const TouchEvent *e)
     row=(e->y-692)/36;
     if(row>=panel_rows(s))return 0;
     s->index=row;s->edit=panel_editable(s);
-    if(s->panel_page==PANEL_EXPOSURE && row==0 && e->x<306 && s->auto_exposure_available) {
-        s->auto_exposure=!s->auto_exposure;s->edit=0;return 0;
-    }
     if(panel_range(s,row,&v,&lo,&hi)) {
         if(e->x>=306){s->touch_capture=(int)row+16;return panel_slider(s,row,e->x);}
         return 0;

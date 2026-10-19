@@ -25,10 +25,11 @@ def main():
     if not lib.exists():
         subprocess.run([str(a.modelsim/'vlib.exe'), str(lib)], check=True, capture_output=True)
     for bench, extra in [('tb_panel_ui', f'{{+TABLE={vectors.as_posix()}}} {{+FONT={(root/"assets/menu_font/rows.hex").as_posix()}}}'),
-                         ('tb_rtc_osd', ''), ('tb_brand_layout', '')]:
+                         ('tb_rtc_osd', ''), ('tb_brand_layout', ''), ('tb_menu_soften', '')]:
         suffix = '.v' if bench == 'tb_rtc_osd' else '.sv'
         sources = ['ui_osd.v'] if bench != 'tb_brand_layout' else [
             'hdmi_mixer_image9.v', 'anlogic_logo_rom.v', 'logo2_rom.v', 'red_tracking_osd.v']
+        if bench == 'tb_menu_soften': sources = ['mcu_menu_table.v']
         script = out/(bench+'.do')
         log = out/(bench+'.log')
         script.write_text('onerror {quit -code 1 -force}\n' +

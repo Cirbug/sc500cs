@@ -57,11 +57,12 @@ static const unsigned char mcu_panel_labels_0[7] = {
 142,
 147,
 };
-static const unsigned char mcu_panel_labels_2[4] = {
+static const unsigned char mcu_panel_labels_2[5] = {
 132,
 4,
 7,
 33,
+132,
 };
 static const unsigned char mcu_panel_labels_3[6] = {
 20,

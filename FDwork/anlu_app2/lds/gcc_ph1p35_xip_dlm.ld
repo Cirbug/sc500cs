@@ -234,3 +234,6 @@ PROVIDE( __StackTop = . );
 PROVIDE( _sp = . );
 } >DLM AT>DLM
 }
+
+ASSERT(__heap_limit <= __StackLimit, "XIP DLM data/heap overlaps stack")
+ASSERT(LOADADDR(.data) + SIZEOF(.data) <= 0x21000000, "XIP image exceeds reserved 2 MiB tail")

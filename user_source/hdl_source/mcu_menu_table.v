@@ -130,6 +130,29 @@ module mcu_menu_table #(parameter integer PANEL_STYLE=1)(
             color_d<=cn_color;id_d<=cn_id;row_d<=cn_row;cncol_d<=cn_col;active_d<=cn_active;
         end
     end
+    // Horizontal exponential softening, alpha=1/4, Q8.2 history.
+    // No line RAM/DDR; only the background uses it. Foreground and video
+    // outside the panel retain their original pixels and pipeline latency.
+    reg [9:0] blur_r,blur_g,blur_b;
+    reg blur_valid;
+    reg [23:0] blur_pixel_d;
+    wire [9:0] next_r=blur_r-{2'b0,blur_r[9:2]}+{2'b0,pixel[23:16]};
+    wire [9:0] next_g=blur_g-{2'b0,blur_g[9:2]}+{2'b0,pixel[15:8]};
+    wire [9:0] next_b=blur_b-{2'b0,blur_b[9:2]}+{2'b0,pixel[7:0]};
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            blur_r<=0;blur_g<=0;blur_b<=0;blur_valid<=0;blur_pixel_d<=0;
+        end else begin
+            blur_valid<=de && !vs;
+            if(!blur_valid || !de || vs || x==0) begin
+                blur_r<={pixel[23:16],2'b0};blur_g<={pixel[15:8],2'b0};blur_b<={pixel[7:0],2'b0};
+                blur_pixel_d<=pixel;
+            end else begin
+                blur_r<=next_r;blur_g<=next_g;blur_b<=next_b;
+                blur_pixel_d<={next_r[9:2],next_g[9:2],next_b[9:2]};
+            end
+        end
+    end
     function [23:0] palette;
         input [2:0] c;
         begin if(PANEL_STYLE) case(c)
@@ -154,13 +177,13 @@ module mcu_menu_table #(parameter integer PANEL_STYLE=1)(
                 1:out_pixel=PANEL_STYLE?24'h203c50:24'h205080;
                 2:out_pixel=PANEL_STYLE?24'h604020:24'hd08020;default:;
             endcase
-            // Translucent tint, not spatial blur: no line/frame storage.
+            // Softened camera background plus translucent theme tint.
             // Per-channel half camera + half theme; sums cannot overflow.
             tint=out_pixel;
             if(PANEL_STYLE && region_d!=3) begin
-                out_pixel[23:16]={1'b0,pixel_d[23:17]}+{1'b0,tint[23:17]};
-                out_pixel[15:8] ={1'b0,pixel_d[15:9]} +{1'b0,tint[15:9]};
-                out_pixel[7:0]  ={1'b0,pixel_d[7:1]}  +{1'b0,tint[7:1]};
+                out_pixel[23:16]={1'b0,blur_pixel_d[23:17]}+{1'b0,tint[23:17]};
+                out_pixel[15:8] ={1'b0,blur_pixel_d[15:9]} +{1'b0,tint[15:9]};
+                out_pixel[7:0]  ={1'b0,blur_pixel_d[7:1]}  +{1'b0,tint[7:1]};
             end
             if(PANEL_STYLE && region_d==1 && dy_d==35)out_pixel=24'h263540;
             if(PANEL_STYLE && region_d==1 && accent_d && dy_d<35 && desc[13:12]!=0)

@@ -66,6 +66,19 @@ int main(void) {
     for(n=95;n<105;n++) {auto_exposure_pause();sample(&s,n,0,4050);}
     assert(writes==changes);
 
+    /* Re-enable via the actual panel mode row after a manual slider.
+       Require fresh measured frames to drive hardware writes again. */
+    s.panel_ui=1;s.menu=1;panel_open(&s,PANEL_EXPOSURE);
+    TouchEvent mode_event={400,736,TOUCH_DOWN};
+    menu_touch(&s,&mode_event);assert(!s.auto_exposure);
+    changes=writes;
+    for(n=105;n<115;n++)sample(&s,n,0,4050);
+    assert(writes==changes);
+    mode_event.y=808;menu_touch(&s,&mode_event);assert(s.auto_exposure);
+    mode_event.type=TOUCH_UP;menu_touch(&s,&mode_event);
+    for(n=115;n<140;n++)sample(&s,n,0,4050);
+    assert(writes>changes && s.auto_exposure);
+
     /* Closed-loop scene steps with frame-delayed measurements. */
     for(unsigned scene=0;scene<3;scene++) {
         s=state();s.exposure=scene==0?300:3990;s.gain=scene==0?16:80;

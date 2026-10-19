@@ -128,6 +128,12 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
         if(row==4)mcu_panel_value(cells,s->image_step==5?7:6);
         if(row==5 && !s->record_available)mcu_menu_text(cells,"----");
     } else if(page==PANEL_EXPOSURE) {
+        if(row==4) {
+            if(!s->auto_exposure_available)mcu_menu_text(cells,"----");
+            else if(s->auto_exposure)mcu_menu_text(cells,"AUTO");
+            else mcu_panel_value(cells,0);
+            return attr;
+        }
         unsigned v=row==1?s->exposure:row==2?s->gain:s->vts;
         mcu_panel_number(cells,v);
         if(row==3 && !s->vts_available)mcu_menu_text(cells,"----");

@@ -103,14 +103,27 @@ int main(int argc,char **argv) {
     unsigned keep=s.exposure;e=(TouchEvent){330,700,TOUCH_MOVE};menu_touch(&s,&e);assert(s.exposure==keep);
     /* AE must coexist with the new panel, including unchanged manual values. */
     panel_open(&s,PANEL_EXPOSURE);s.auto_exposure_available=1;s.auto_exposure=1;
-    menu_key(&s,8);assert(!s.auto_exposure && s.edit);
-    menu_key(&s,4);menu_key(&s,8);assert(s.auto_exposure && !s.edit);
-    tap(&s,100,700);assert(!s.auto_exposure);
-    tap(&s,100,700);assert(s.auto_exposure);
+    s.index=3;
+    menu_key(&s,8);assert(!s.auto_exposure && !s.edit);
+    menu_key(&s,8);assert(s.auto_exposure && !s.edit);
+    tap(&s,100,808);assert(!s.auto_exposure);
+    tap(&s,100,808);assert(s.auto_exposure);
+    tap(&s,100,700);assert(s.auto_exposure); // Label selection is not a mode switch.
     s.exposure=3;tap(&s,330,700);assert(!s.auto_exposure && s.exposure==3);
     s.auto_exposure=1;s.gain=16;tap(&s,330,736);assert(!s.auto_exposure && s.gain==16);
     mcu_menu_poll(&s);i=commits;s.auto_exposure=1;mcu_menu_poll(&s);assert(commits==i+1);
     assert(words[8]==(MENU_VISIBLE|MENU_ASCII|'A'|(1u<<9)));
+    /* Dedicated mode row: recover AUTO after either manual slider, on any x.
+       A subsequent MOVE/UP must not take ownership and disable AE again. */
+    for(unsigned manual_row=0;manual_row<2;manual_row++) {
+        tap(&s,400,700+36*manual_row);assert(!s.auto_exposure);
+        tap(&s,400,808);assert(s.auto_exposure && !s.edit);
+        e=(TouchEvent){330,700,TOUCH_MOVE};menu_touch(&s,&e);assert(s.auto_exposure);
+    }
+    s.index=3;s.edit=0;menu_key(&s,8);assert(!s.auto_exposure && !s.edit);
+    menu_key(&s,8);assert(s.auto_exposure && !s.edit);
+    s.auto_exposure_available=0;tap(&s,400,808);assert(s.auto_exposure);
+    s.auto_exposure_available=1;
     /* Merged HE row must work in the panel, without taking AE/effect state. */
     panel_open(&s,PANEL_PICTURE);assert(panel_rows(&s)==7);
     s.histogram_available=1;assert(panel_rows(&s)==8);

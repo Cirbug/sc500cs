@@ -197,6 +197,7 @@ static void lens_diag_report(void)
 #include "../shared/autofocus_control.h"
 #include "../shared/lens_serial_diag.h"
 #include "../shared/tracking_service.h"
+#include "xip_serial_diag.h"
 
 /* All inputs commit through this one hardware boundary. */
 static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
@@ -298,6 +299,7 @@ static __attribute__((noinline)) void ui_controls_poll(MenuState *s)
     if(autofocus_active())auto_exposure_pause();else auto_exposure_poll(s);
     histogram_poll(s);
     mcu_menu_poll(s);
+    xip_serial_poll(s);
 }
 
 static MenuState *record_ui;
@@ -327,6 +329,7 @@ AL_S32 main(void)
     };
     uint32_t last_report = 0;
 
+    xip_serial_boot();
     g_ui_debug_stage = 1;
     al_printf("UI boot: USART1 115200; before APB read at 0x%08x\r\n",
               (uint32_t)UI_APB_BASE);

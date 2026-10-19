@@ -46,19 +46,12 @@ static void auto_exposure_decide(MenuState *s,unsigned mean,unsigned target,unsi
     if(s->gain>143u)s->gain=143u;
     error=mean>target?mean-target:target-mean;
     if(error<=deadband)return;
-    if(mean<target) {
-        if(s->exposure<limit) {
-            step=s->exposure>>(error>40u?2:4);
-            if(!step)step=1;
-            s->exposure=menu_step(s->exposure,1,3u,limit,step);
-        } else s->gain=menu_step(s->gain,1,16u,143u,error>40u?8u:2u);
+    if((mean<target && s->exposure==limit) || (mean>target && s->gain>16u)) {
+        s->gain=menu_step(s->gain,mean<target?1:-1,16u,143u,error>40u?8u:2u);
     } else {
-        if(s->gain>16u)s->gain=menu_step(s->gain,-1,16u,143u,error>40u?8u:2u);
-        else {
-            step=s->exposure>>(error>40u?2:4);
-            if(!step)step=1;
-            s->exposure=menu_step(s->exposure,-1,3u,limit,step);
-        }
+        step=s->exposure>>(error>40u?2:4);
+        if(!step)step=1;
+        s->exposure=menu_step(s->exposure,mean<target?1:-1,3u,limit,step);
     }
 }
 
@@ -95,9 +88,8 @@ static void auto_exposure_poll(MenuState *s)
     if(now-c->last_poll<20u)return;
     c->last_poll=now;
     if((ui_read(AE_SENSOR_READY)&3u)!=3u) {c->primed=0;c->settle_frames=3;return;}
-    before=ui_read(AE_METER_META);rgb=ui_read(AE_METER_RGB);after=ui_read(AE_METER_META);
-    if(before!=after)return;
-    samples=after&16383u;sequence=(after>>16)&255u;
+    before=ui_read(AE_METER_META);
+    samples=before&16383u;sequence=(before>>16)&255u;
     /* 1080p RGB96 contains 518400 words, hence 4050 1-in-128 samples.
      * Reject empty/truncated frames instead of brightening a broken stream. */
     if(samples<4000u || samples>8192u) {c->primed=0;c->settle_frames=3;return;}
@@ -112,13 +104,18 @@ static void auto_exposure_poll(MenuState *s)
     interval=g_auto_exposure_config.interval_ms;
     if(interval<100u)interval=100u;
     if(now-c->last_change<interval)return;
+    /* RGB is only needed for a usable new frame after the settling/interval
+     * gates. Recheck metadata around this delayed read to retain coherence. */
+    rgb=ui_read(AE_METER_RGB);after=ui_read(AE_METER_META);
+    if(before!=after)return;
     old_exposure=s->exposure;old_gain=s->gain;
     c->mean=auto_exposure_mean(rgb,samples);
     auto_exposure_decide(s,c->mean,g_auto_exposure_config.target,g_auto_exposure_config.deadband);
     if(s->exposure==old_exposure && s->gain==old_gain)return;
     if(s->exposure!=old_exposure) {ui_write(UI_EXPOSURE,s->exposure);s->exposure=ui_read(UI_EXPOSURE);}
     if(s->gain!=old_gain) {ui_write(UI_GAIN,s->gain);s->gain=ui_read(UI_GAIN);}
-    if(s->vts_available)ui_write(UI_CAMERA_DISPLAY,camera_display_word(s));
+    if(s->vts_available && s->exposure!=old_exposure)
+        ui_write(UI_CAMERA_DISPLAY,camera_display_word(s));
     c->last_change=now;c->settle_frames=3;c->updates++;
 }
 #endif

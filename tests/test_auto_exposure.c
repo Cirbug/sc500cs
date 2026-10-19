@@ -4,13 +4,20 @@
 #include <string.h>
 #define UI_EXPOSURE 0x10u
 #define UI_GAIN 0x14u
-static uint32_t regs[64],now,writes;
+static uint32_t regs[64],now,writes,rgb_reads,display_writes,change_during_rgb;
 static uint32_t ui_now_ms(void) {return now;}
-static uint32_t ui_read(uint32_t off) {return regs[off/4];}
+static uint32_t ui_read(uint32_t off) {
+    if(off==0xe0u) {
+        rgb_reads++;
+        if(change_during_rgb)regs[0xe4u/4]+=1u<<16;
+    }
+    return regs[off/4];
+}
 static void ui_write(uint32_t off,uint32_t value) {
     assert(off==UI_EXPOSURE || off==UI_GAIN || off==0xa4u);
     if(off==UI_EXPOSURE)assert(value>=3 && value<=4990);
     if(off==UI_GAIN)assert(value>=16 && value<=143);
+    if(off==0xa4u)display_writes++;
     regs[off/4]=value;writes++;
 }
 #include "../FDwork/shared/auto_exposure.h"
@@ -46,9 +53,9 @@ int main(void) {
     assert(s.auto_exposure_available && s.auto_exposure);
     regs[AE_SENSOR_READY/4]=3;writes=0;
     for(n=0;n<30;n++)sample(&s,1,20,4050);
-    assert(writes==0); /* old sequence must never drive repeated commands */
+    assert(writes==0 && rgb_reads==0); /* old sequence needs no RGB reads */
     for(n=2;n<12;n++)sample(&s,n,20,100);
-    assert(writes==0); /* no valid full frame */
+    assert(writes==0 && rgb_reads==0); /* no valid full frame */
     for(n=12;n<35;n++)sample(&s,n,20,4050);
     assert(writes>0 && s.exposure>2000);
     changes=writes;regs[AE_SENSOR_READY/4]=2;
@@ -65,6 +72,19 @@ int main(void) {
     changes=writes;
     for(n=95;n<105;n++) {auto_exposure_pause();sample(&s,n,0,4050);}
     assert(writes==changes);
+
+    /* Gain-only updates must not rewrite the unchanged exposure bar. */
+    s=state();s.exposure=3990;auto_exposure_init(&s);
+    regs[AE_SENSOR_READY/4]=3;writes=display_writes=0;
+    for(n=0;n<60;n++)sample(&s,n,0,4050);
+    assert(s.gain>16 && writes>0 && display_writes==0 && s.exposure==3990);
+    /* A frame changing during the deferred RGB read is still rejected. */
+    changes=writes;change_during_rgb=1;old=rgb_reads;
+    for(n=60;n<100;n++)sample(&s,n,255,4050);
+    assert(writes==changes && rgb_reads>old);
+    change_during_rgb=0;s.auto_exposure=0;old=rgb_reads;
+    for(n=100;n<120;n++)sample(&s,n,255,4050);
+    assert(writes==changes && rgb_reads==old);
 
     /* Closed-loop scene steps with frame-delayed measurements. */
     for(unsigned scene=0;scene<3;scene++) {
@@ -87,12 +107,18 @@ int main(void) {
     e.x=400;menu_touch(&s,&e);assert(!s.auto_exposure);
     {
         uint16_t cells[12];uint32_t attr;
-        s.auto_exposure=1;
-        attr=mcu_menu_row(&s,0,1,cells);
-        assert(!(attr&(1u<<14)));
-        assert(cells[8]==(MENU_ASCII|'A') && cells[9]==(MENU_ASCII|'U') &&
-               cells[10]==(MENU_ASCII|'T') && cells[11]==(MENU_ASCII|'O'));
-        s.auto_exposure=0;attr=mcu_menu_row(&s,0,1,cells);assert(attr&(1u<<14));
+        for(unsigned mode=0;mode<2;mode++) {
+            s.auto_exposure=mode;
+            for(unsigned row=1;row<=2;row++) {
+                attr=mcu_menu_row(&s,0,row,cells);
+                assert(attr&(1u<<14)); /* live bars remain visible */
+                const char *label=mode?"AUTO":"MAN ";
+                for(unsigned i=0;i<4;i++)assert(cells[3+i]==(MENU_ASCII|(unsigned)label[i]));
+                assert(cells[0]==mcu_labels[0][row][0] && cells[1]==mcu_labels[0][row][1]);
+            }
+        }
+        s.auto_exposure_available=0;
+        attr=mcu_menu_row(&s,0,1,cells);assert((attr&(1u<<14)) && cells[3]==0);
     }
     puts("PASS AE: normalization, bounds, deadband, stale/invalid/busy gating, settling, scene convergence, AF pause, manual/auto controls");
     return 0;

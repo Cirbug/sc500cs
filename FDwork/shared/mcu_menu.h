@@ -38,10 +38,14 @@ static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16
     if(row==s->index+1u && (row<=7 || page==0) && (page!=3 || row<=4))
         attr|=(((s->edit && (s->index<4 || s->index==7))?2u:1u)<<12);
     if(page==0) {
-        if(row==1 && s->auto_exposure_available && s->auto_exposure) {
-            mcu_menu_text(cells,"AUTO");
-        } else if(row==1 || row==2) {
+        if(row==1 || row==2) {
             unsigned width=row==1?(camera_display_word(s)>>16):s->gain<=16?0:s->gain>=143?127:s->gain-16;
+            /* Keep the live parameter bars in either mode. Both controls share
+             * the same automatic/manual mode, so label both explicitly. */
+            if(s->auto_exposure_available) {
+                const char *mode=s->auto_exposure?"AUTO":"MAN ";
+                for(i=0;i<4;i++)cells[3+i]=MENU_ASCII|(unsigned char)mode[i];
+            }
             attr|=(1u<<14)|(row==2?1u<<15:0)|(width<<16)|((row==1?2u:3u)<<9);
         }
         if(row==8) {
@@ -108,7 +112,7 @@ static void mcu_menu_poll(const MenuState *s)
     status=ui_read(MCU_MENU_BASE+4);
     if(status&1u)return; /* Never wait for VSYNC or block USB/RTC/SD. */
     rec=s->record_available?ui_read(0x1060u):0;
-    key[0]=(s->auto_exposure<<16)|s->menu|(s->edit<<1)|(s->index<<4)|(s->picture_page<<8)|(s->record_page<<10);
+    key[0]=(s->auto_exposure_available<<17)|(s->auto_exposure<<16)|s->menu|(s->edit<<1)|(s->index<<4)|(s->picture_page<<8)|(s->record_page<<10);
     key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s);
     key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8);
     if((status&6u)==2u && !memcmp(key,mcu_menu_previous,sizeof key))return;

@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "width": 320,
+  "height": 180,
+  "analysis_pixels": 57600,
+  "analysis_clock_hz": 40000000,
+  "checks": [
+    "rectangle",
+    "circle",
+    "triangle",
+    "blue_circle",
+    "blank",
+    "diamond",
+    "small_red",
+    "right_red",
+    "dim_red",
+    "noisy_circle",
+    "warm_skin",
+    "shadow_red",
+    "muted_red",
+    "pale_red",
+    "red_speck",
+    "red_guard",
+    "bridge",
+    "capture",
+    "receiver",
+    "recovery",
+    "pair"
+  ],
+  "udp_fcs_and_every_pixel": "PASS"
+}

@@ -1,0 +1,215 @@
+{
+  "samples": [
+    {
+      "magic": 1313166385,
+      "sent": 8586523,
+      "acked": 8585247,
+      "frames": 35769,
+      "timeouts": 1275,
+      "bad": 0,
+      "remote_frames": 1575,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1073741824,
+      "red_min": 8393216,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 469774338,
+      "red_max": 58720448,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T22:40:51.728",
+      "monotonic": 18897.39,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        7168,
+        12290
+      ],
+      "red_diagnostic": {
+        "reject_flags": 7,
+        "largest_strict_component": 12,
+        "strict_samples": 2,
+        "warm_samples": 2,
+        "warm_mean_rgb": [
+          144.0,
+          112.0,
+          96.0
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 8590709,
+      "acked": 8589436,
+      "frames": 35787,
+      "timeouts": 1275,
+      "bad": 0,
+      "remote_frames": 1593,
+      "remote_errors": 0,
+      "state": 177,
+      "dimensions": 20971700,
+      "flags_type": 1073741824,
+      "red_min": 20983040,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 603994117,
+      "red_max": 146801120,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T22:40:53.467",
+      "monotonic": 18899.125,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        9216,
+        14341
+      ],
+      "red_diagnostic": {
+        "reject_flags": 9,
+        "largest_strict_component": 14,
+        "strict_samples": 5,
+        "warm_samples": 5,
+        "warm_mean_rgb": [
+          144.0,
+          112.0,
+          96.0
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 8594923,
+      "acked": 8593647,
+      "frames": 35804,
+      "timeouts": 1275,
+      "bad": 0,
+      "remote_frames": 1610,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1073741824,
+      "red_min": 16786432,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 201339908,
+      "red_max": 117440896,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T22:40:55.058",
+      "monotonic": 18900.718,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        3072,
+        13316
+      ],
+      "red_diagnostic": {
+        "reject_flags": 3,
+        "largest_strict_component": 13,
+        "strict_samples": 4,
+        "warm_samples": 4,
+        "warm_mean_rgb": [
+          144.0,
+          112.0,
+          96.0
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 8598763,
+      "acked": 8597487,
+      "frames": 35820,
+      "timeouts": 1275,
+      "bad": 0,
+      "remote_frames": 1626,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1073741824,
+      "red_min": 20983040,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 201336837,
+      "red_max": 146801120,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T22:40:56.818",
+      "monotonic": 18902.468,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        3072,
+        10245
+      ],
+      "red_diagnostic": {
+        "reject_flags": 3,
+        "largest_strict_component": 10,
+        "strict_samples": 5,
+        "warm_samples": 5,
+        "warm_mean_rgb": [
+          144.0,
+          112.0,
+          96.0
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 8603083,
+      "acked": 8601807,
+      "frames": 35838,
+      "timeouts": 1275,
+      "bad": 0,
+      "remote_frames": 1644,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1073741824,
+      "red_min": 25179648,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 67140614,
+      "red_max": 176161344,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T22:40:58.399",
+      "monotonic": 18904.062,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        1024,
+        31750
+      ],
+      "red_diagnostic": {
+        "reject_flags": 1,
+        "largest_strict_component": 31,
+        "strict_samples": 6,
+        "warm_samples": 6,
+        "warm_mean_rgb": [
+          144.0,
+          112.0,
+          96.0
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "frames": 69,
+    "sent": 16560,
+    "acked": 16560,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 69,
+    "remote_errors": 0,
+    "seconds": 6.672000000002299,
+    "fps": 10.341726618701472
+  }
+}

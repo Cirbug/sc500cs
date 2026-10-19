@@ -1,0 +1,61 @@
+{
+  "recorded": "2026-10-19T23:08:40",
+  "revision": "40 MHz recognition with processing telemetry",
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "6b4fb34e9c4b564279db3530e7947df66dff91623ef753a5eb34ebd626c5b567",
+      "setup_wns_ns": 0.103,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.35%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "7b9d4dc89768323b8cc1240ef662f744791f9bbb06324741c02665c412b516b0",
+      "setup_wns_ns": 0.155,
+      "hold_wns_ns": 0.003,
+      "sta_coverage": "99.91%"
+    }
+  },
+  "download": "ab_new_download.log completed; live 40 MHz telemetry observed",
+  "baseline_25mhz": {
+    "frames": 71,
+    "sent": 17027,
+    "acked": 17024,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 71,
+    "remote_errors": 0,
+    "seconds": 7.047000000002299,
+    "fps": 10.075209308922497,
+    "samples": 6,
+    "exclude_first_samples": 2,
+    "analysis_ms_median": null
+  },
+  "current_40mhz": {
+    "frames": 147,
+    "sent": 35280,
+    "acked": 35280,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 147,
+    "remote_errors": 0,
+    "seconds": 10.140999999999622,
+    "fps": 14.495611872596932,
+    "samples": 8,
+    "exclude_first_samples": 2,
+    "analysis_ms_median": 26.08765
+  },
+  "observed_fps_improvement_percent": 43.874051924259014,
+  "limits": [
+    "Live scenes vary; this is a short sequential A/B observation, not a guaranteed fixed FPS",
+    "Earlier 40 MHz run measured 10.1 FPS in another scene; complex scenes can still remain at about 10 FPS",
+    "No transport compression or resolution increase implemented",
+    "Recognition rules unchanged: hand inclusion and intermittent red detection still require calibration"
+  ],
+  "mcu_auto_tracking_enabled": false,
+  "main_firmware_changed": false,
+  "flash_changed": false,
+  "recognition_simulation": "PASS at 40 MHz including red, shapes, lost ACK, full frame and timer expiry",
+  "visual_acceptance": "Pending red object colour calibration; no claim of fixed hand exclusion"
+}

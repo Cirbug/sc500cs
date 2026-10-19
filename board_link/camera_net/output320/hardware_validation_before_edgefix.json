@@ -1,0 +1,57 @@
+{
+  "recorded": "2026-10-19T22:27:14",
+  "revision": "Shadow red and short-gap association",
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "6b4fb34e9c4b564279db3530e7947df66dff91623ef753a5eb34ebd626c5b567",
+      "setup_wns_ns": 0.103,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.35%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "41851742cf7af77e7f1062cb64f8d6993c06e291b8339fc9757af67a88910515",
+      "setup_wns_ns": 0.018,
+      "hold_wns_ns": 0.021,
+      "sta_coverage": "99.88%"
+    }
+  },
+  "programming": "EG JTAG SRAM download completed; initial link failed to recover, second download restored frame/ACK counters",
+  "mcu_auto_tracking_enabled": false,
+  "network_observation": {
+    "frames": 78,
+    "sent": 18720,
+    "acked": 18720,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 78,
+    "remote_errors": 0,
+    "seconds": 7.421999999998661,
+    "fps": 10.509296685531403
+  },
+  "sampled_red_valid_count": 0,
+  "scene": "Unconfirmed: waiting for user to confirm red object removed. Do not count this as background acceptance.",
+  "visual_acceptance": "Background snapshots PASS; waiting for held red target, movement and shape checks",
+  "main_firmware_changed": false,
+  "flash_changed": false,
+  "background_test": {
+    "recorded": "2026-10-19T22:28:30",
+    "scene": "User confirmed red object removed",
+    "samples": 12,
+    "red_valid_samples": 0,
+    "analysis_failures": 0,
+    "network": {
+      "frames": 156,
+      "sent": 37671,
+      "acked": 37669,
+      "timeouts": 0,
+      "bad": 0,
+      "remote_frames": 156,
+      "remote_errors": 0,
+      "seconds": 15.46900000000096,
+      "fps": 10.084685500031696
+    },
+    "limitation": "Snapshots, not continuous every-frame red-valid monitoring; user visual confirmation not yet collected"
+  }
+}

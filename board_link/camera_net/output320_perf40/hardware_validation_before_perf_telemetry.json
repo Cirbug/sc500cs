@@ -1,0 +1,46 @@
+{
+  "recorded": "2026-10-19T23:03:01",
+  "revision": "40 MHz, recognition rules unchanged",
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "6b4fb34e9c4b564279db3530e7947df66dff91623ef753a5eb34ebd626c5b567",
+      "setup_wns_ns": 0.103,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.35%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "9fb600f0bfe88eb26fc2dff7dc6273dd35e2c4ddbf93364a6daec9c13cfbbc41",
+      "setup_wns_ns": 0.141,
+      "hold_wns_ns": 0.012,
+      "sta_coverage": "99.87%"
+    }
+  },
+  "mcu_auto_tracking_enabled": false,
+  "baseline": {
+    "frames": 162,
+    "sent": 38880,
+    "acked": 38880,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 162,
+    "remote_errors": 0,
+    "seconds": 16.31199999999808,
+    "fps": 9.931338891614706
+  },
+  "after": {
+    "frames": 196,
+    "sent": 46875,
+    "acked": 46873,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 196,
+    "remote_errors": 0,
+    "seconds": 19.375,
+    "fps": 10.116129032258064
+  },
+  "conclusion": "No material end-to-end FPS gain in this scene; frame wait still limits throughput",
+  "visual_acceptance": "Red box including hand remains unresolved; colour calibration pending",
+  "flash_changed": false
+}

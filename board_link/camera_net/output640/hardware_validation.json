@@ -1,0 +1,68 @@
+{
+  "recorded": "2026-10-19T23:55:42",
+  "image": {
+    "width": 640,
+    "height": 360,
+    "format": "RGB565",
+    "bytes_per_frame": 460800,
+    "analysis_pixels": 230400,
+    "secondary_downsampling": false,
+    "analysis_clock_hz": 40000000
+  },
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "1991133e3ca3876d77b8dce8bd65b49de06eb94f2da362c8057c04fd43a48c9e",
+      "setup_wns_ns": 0.123,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.35%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "055cbde39c09946ecfb8d2d86d6e16985e5ab4048879192e51886eea53ce4bfd",
+      "setup_wns_ns": 0.119,
+      "hold_wns_ns": 0.023,
+      "sta_coverage": "99.91%"
+    }
+  },
+  "steady_window": {
+    "frames": 92,
+    "sent": 88320,
+    "acked": 88320,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 92,
+    "remote_errors": 0,
+    "seconds": 18.9529999999977,
+    "fps": 4.8541128053612175
+  },
+  "analysis_ms": {
+    "median": 161.11782499999998,
+    "min": 159.887225,
+    "max": 176.841825
+  },
+  "previous_320_live_scene": {
+    "frames": 116,
+    "sent": 27840,
+    "acked": 27840,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 116,
+    "remote_errors": 0,
+    "seconds": 11.967999999997119,
+    "fps": 9.69251336898629
+  },
+  "packet_count_validation": "88320 / 92 = 960 packets per full image",
+  "visual_acceptance": "Pending user HDMI/red/shape confirmation",
+  "mcu_auto_tracking_enabled": false,
+  "flash_changed": false,
+  "firmware_sha256": "fe3db5d1ff71b4e4e9a489a19790c97e1bece34b204e5b5b8e64c3c3bc924a57",
+  "notes": [
+    "640x360 RGB565 transmitted, all 230400 pixels classified; no secondary spatial downsampling",
+    "Main APB reports 0x02800168; slave returns 40 MHz telemetry and full-frame acknowledgements",
+    "Frame rate is scene dependent; before/after scenes were not controlled identical images",
+    "Absolute error counters include programming/startup transients; stable measurement error increments are all zero",
+    "TD connect_cable printed the same legacy user-argument warning seen in prior working downloads; successful programming is additionally verified by live width/height and 960 packets per frame",
+    "Red/skin separation is not claimed solved; auto motion remains disabled"
+  ]
+}

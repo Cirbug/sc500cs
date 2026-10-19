@@ -1,0 +1,24 @@
+{
+  "recorded": "2026-10-19T22:15:34+08:00",
+  "revision": "Red tracking diagnosis, no sensitivity change yet",
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "6b4fb34e9c4b564279db3530e7947df66dff91623ef753a5eb34ebd626c5b567",
+      "setup_wns_ns": 0.103,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.35%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "67dbfd828482839a824f7ab69324b61b9ada0393c6df69ec82b1be0f784033dd",
+      "setup_wns_ns": 0.104,
+      "hold_wns_ns": 0.023,
+      "sta_coverage": "99.88%"
+    }
+  },
+  "mcu_auto_tracking_enabled": false,
+  "visual_acceptance": "IN_PROGRESS: red target intermittently missing; awaiting held-target color diagnostics",
+  "main_firmware_changed": false,
+  "flash_changed": false
+}

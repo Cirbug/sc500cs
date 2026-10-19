@@ -22,6 +22,7 @@ legalize_phy_inst
 update_timing
 export_db optimized_gate.db
 
+set_param place seed 3
 place
 route
 report_area -io_info -file final.area

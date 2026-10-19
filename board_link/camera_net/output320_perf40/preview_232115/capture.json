@@ -1,0 +1,16 @@
+{
+  "captured": "2026-10-19T23:21:15.315622",
+  "source": "REC1 640x360 RGB888 display snapshot; not a network packet dump",
+  "original_cpu_state": "running",
+  "source_dimensions": [
+    640,
+    360
+  ],
+  "preview_dimensions": [
+    320,
+    180
+  ],
+  "preview_format": "RGB332 bin midpoints",
+  "enlargement": "2x nearest neighbour; no enhancement",
+  "limitation": "REC1 display snapshot may include display-path processing; illustration of sampling and quantization, not captured network payload"
+}

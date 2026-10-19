@@ -1,6 +1,6 @@
 {
-  "recorded": "2026-10-19T21:57:35",
-  "revision": "320x180 saturated-red and three-frame confirmation",
+  "recorded": "2026-10-19T22:38:46",
+  "revision": "Shadow-red + edge target acceptance + pipelined diagnostic counters",
   "boards": {
     "PH1P35": {
       "file": "camera_network.bit",
@@ -11,299 +11,37 @@
     },
     "EG4D20": {
       "file": "eg_image_sink.bit",
-      "sha256": "6c08cfbf784e768f89facdd1c8768c53a6d8704f32f9965147c033a675168bf0",
-      "setup_wns_ns": 0.135,
-      "hold_wns_ns": 0.014,
-      "sta_coverage": "99.91%"
+      "sha256": "3b16ae6f1644fd73a50814cf27e44f90ff98bdc5e39ef1c76124d251b76ed755",
+      "setup_wns_ns": 0.153,
+      "hold_wns_ns": 0.004,
+      "sta_coverage": "99.92%"
     }
   },
-  "download": {
-    "EG4D20": "SUCCESS, 21:56, JTAG SRAM",
-    "PH1P35": "Unchanged, previously programmed and still running"
+  "programming": "EG JTAG SRAM download completed; frame and ACK counters increment after restart",
+  "mcu_auto_tracking_enabled": false,
+  "network_observation": {
+    "frames": 68,
+    "sent": 16320,
+    "acked": 16320,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 68,
+    "remote_errors": 0,
+    "seconds": 6.687999999998283,
+    "fps": 10.167464114835147
   },
-  "dimensions": [
-    320,
-    180
-  ],
+  "sampled_red_valid_count": 0,
+  "scene": "Target removal suggested while compiling; scene not explicitly reconfirmed for this revision",
+  "visual_acceptance": "FAILED: user reports oversized red box including hand; need target-only and hand-only color observations before changing segmentation",
+  "main_firmware_changed": false,
   "flash_changed": false,
-  "mcu_auto_tracking_enabled": true,
-  "background_samples": {
-    "samples": [
-      {
-        "magic": 1313166385,
-        "sent": 2155309,
-        "acked": 2155198,
-        "frames": 8978,
-        "timeouts": 110,
-        "bad": 0,
-        "remote_frames": 32,
-        "remote_errors": 0,
-        "state": 179,
-        "dimensions": 20971700,
-        "flags_type": 0,
-        "red_min": 0,
-        "shape_min": 0,
-        "areas_width": 320,
-        "red_center": 0,
-        "red_max": 0,
-        "shape_max": 0,
-        "timestamp": "2026-10-19T21:56:25.768",
-        "monotonic": 16231.421,
-        "red_valid": false,
-        "shape_valid": false,
-        "failure": false,
-        "shape_id": 0,
-        "red_xy": [
-          0,
-          0
-        ]
-      },
-      {
-        "magic": 1313166385,
-        "sent": 2161160,
-        "acked": 2161052,
-        "frames": 9003,
-        "timeouts": 110,
-        "bad": 0,
-        "remote_frames": 57,
-        "remote_errors": 0,
-        "state": 177,
-        "dimensions": 20971700,
-        "flags_type": 0,
-        "red_min": 0,
-        "shape_min": 0,
-        "areas_width": 320,
-        "red_center": 0,
-        "red_max": 0,
-        "shape_max": 0,
-        "timestamp": "2026-10-19T21:56:27.477",
-        "monotonic": 16233.14,
-        "red_valid": false,
-        "shape_valid": false,
-        "failure": false,
-        "shape_id": 0,
-        "red_xy": [
-          0,
-          0
-        ]
-      },
-      {
-        "magic": 1313166385,
-        "sent": 2166589,
-        "acked": 2166478,
-        "frames": 9025,
-        "timeouts": 110,
-        "bad": 0,
-        "remote_frames": 79,
-        "remote_errors": 0,
-        "state": 179,
-        "dimensions": 20971700,
-        "flags_type": 0,
-        "red_min": 0,
-        "shape_min": 0,
-        "areas_width": 320,
-        "red_center": 0,
-        "red_max": 0,
-        "shape_max": 0,
-        "timestamp": "2026-10-19T21:56:29.185",
-        "monotonic": 16234.843,
-        "red_valid": false,
-        "shape_valid": false,
-        "failure": false,
-        "shape_id": 0,
-        "red_xy": [
-          0,
-          0
-        ]
-      },
-      {
-        "magic": 1313166385,
-        "sent": 2171629,
-        "acked": 2171519,
-        "frames": 9047,
-        "timeouts": 110,
-        "bad": 0,
-        "remote_frames": 101,
-        "remote_errors": 0,
-        "state": 49,
-        "dimensions": 20971700,
-        "flags_type": 0,
-        "red_min": 0,
-        "shape_min": 0,
-        "areas_width": 320,
-        "red_center": 0,
-        "red_max": 0,
-        "shape_max": 0,
-        "timestamp": "2026-10-19T21:56:30.915",
-        "monotonic": 16236.578,
-        "red_valid": false,
-        "shape_valid": false,
-        "failure": false,
-        "shape_id": 0,
-        "red_xy": [
-          0,
-          0
-        ]
-      },
-      {
-        "magic": 1313166385,
-        "sent": 2176669,
-        "acked": 2176559,
-        "frames": 9068,
-        "timeouts": 110,
-        "bad": 0,
-        "remote_frames": 122,
-        "remote_errors": 0,
-        "state": 49,
-        "dimensions": 20971700,
-        "flags_type": 0,
-        "red_min": 0,
-        "shape_min": 0,
-        "areas_width": 320,
-        "red_center": 0,
-        "red_max": 0,
-        "shape_max": 0,
-        "timestamp": "2026-10-19T21:56:32.610",
-        "monotonic": 16238.265,
-        "red_valid": false,
-        "shape_valid": false,
-        "failure": false,
-        "shape_id": 0,
-        "red_xy": [
-          0,
-          0
-        ]
-      },
-      {
-        "magic": 1313166385,
-        "sent": 2181229,
-        "acked": 2181119,
-        "frames": 9087,
-        "timeouts": 110,
-        "bad": 0,
-        "remote_frames": 141,
-        "remote_errors": 0,
-        "state": 49,
-        "dimensions": 20971700,
-        "flags_type": 0,
-        "red_min": 0,
-        "shape_min": 0,
-        "areas_width": 320,
-        "red_center": 0,
-        "red_max": 0,
-        "shape_max": 0,
-        "timestamp": "2026-10-19T21:56:34.295",
-        "monotonic": 16239.953,
-        "red_valid": false,
-        "shape_valid": false,
-        "failure": false,
-        "shape_id": 0,
-        "red_xy": [
-          0,
-          0
-        ]
-      },
-      {
-        "magic": 1313166385,
-        "sent": 2185309,
-        "acked": 2185199,
-        "frames": 9104,
-        "timeouts": 110,
-        "bad": 0,
-        "remote_frames": 158,
-        "remote_errors": 0,
-        "state": 49,
-        "dimensions": 20971700,
-        "flags_type": 0,
-        "red_min": 0,
-        "shape_min": 0,
-        "areas_width": 320,
-        "red_center": 0,
-        "red_max": 0,
-        "shape_max": 0,
-        "timestamp": "2026-10-19T21:56:35.998",
-        "monotonic": 16241.656,
-        "red_valid": false,
-        "shape_valid": false,
-        "failure": false,
-        "shape_id": 0,
-        "red_xy": [
-          0,
-          0
-        ]
-      },
-      {
-        "magic": 1313166385,
-        "sent": 2189543,
-        "acked": 2189435,
-        "frames": 9121,
-        "timeouts": 110,
-        "bad": 0,
-        "remote_frames": 175,
-        "remote_errors": 0,
-        "state": 177,
-        "dimensions": 20971700,
-        "flags_type": 0,
-        "red_min": 0,
-        "shape_min": 0,
-        "areas_width": 320,
-        "red_center": 0,
-        "red_max": 0,
-        "shape_max": 0,
-        "timestamp": "2026-10-19T21:56:37.708",
-        "monotonic": 16243.359,
-        "red_valid": false,
-        "shape_valid": false,
-        "failure": false,
-        "shape_id": 0,
-        "red_xy": [
-          0,
-          0
-        ]
-      }
-    ],
-    "summary": {
-      "frames": 143,
-      "sent": 34234,
-      "acked": 34237,
-      "timeouts": 0,
-      "bad": 0,
-      "remote_frames": 143,
-      "remote_errors": 0,
-      "seconds": 11.938000000000102,
-      "fps": 11.97855587200526
-    }
+  "user_feedback": {
+    "recorded": "2026-10-19T22:42:22",
+    "text": "Red box too large and includes hand",
+    "next_measurement": "Red object resting alone, hand out of image; confirm displayed object colour"
   },
-  "visual_acceptance": "PASS: user confirmed no unwanted box/servo movement without red, tracking when red is present, and stable circle/rectangle/triangle recognition.",
-  "previous_user_observation": "Before this fix: HDMI normal, real red visible, all 3 shapes stable; no-target red false positives reported afterwards.",
-  "resources": {
-    "PH1P35": {
-      "slice_percent": 91.44,
-      "lut_percent": 86.83,
-      "ram_used": 88,
-      "ram_total": 108
-    },
-    "EG4D20": {
-      "lut_percent": 28.62,
-      "ram_used": 49,
-      "ram_total": 64,
-      "dsp_used": 13,
-      "dsp_total": 29
-    }
-  },
-  "detection_accuracy": "User-confirmed functional checks in the current scene; no quantitative accuracy benchmark was performed.",
-  "debugger_released": true,
-  "last_checked": "2026-10-19T21:59:18",
-  "user_observation": {
-    "confirmed_at": "2026-10-19T22:00:36+08:00",
-    "without_red": "No unwanted movement",
-    "with_red": "Tracking works",
-    "shapes": "Circle, rectangle and triangle remain stable"
-  },
-  "followup_issue": {
-    "reported_at": "2026-10-19T22:03:52+08:00",
-    "user_report": "\u73b0\u5728\u7ea2\u8272\u8fd8\u662f\u6709\u70b9\u95ee\u9898",
-    "status": "OPEN_AWAITING_SYMPTOM_DETAILS",
-    "firmware_changed": false
+  "followup_probe": {
+    "file": "edgefix_oversized_box_probe.json",
+    "interpretation": "No valid target in five later snapshots, so the reported oversized box itself was not captured. Do not infer its bbox or target-only colour from these samples."
   }
 }

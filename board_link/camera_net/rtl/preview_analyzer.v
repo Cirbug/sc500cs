@@ -2,7 +2,7 @@
 // Breadth-first component queue is bounded; overflow invalidates the whole result.
 // Completed frames are immutable until analysis finishes (receiver stop-and-wait).
 `include "C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/shape_features320.v"
-module preview_analyzer(
+module preview_analyzer #(parameter integer PROC_HZ=25000000)(
  input clk,proc_clk,rst,write_pixel,input [15:0] write_addr,input [7:0] write_data,
  input start,output reg done,output reg [191:0] result
 );
@@ -12,31 +12,55 @@ module preview_analyzer(
  wire [8:0] r={1'b0,write_data[7:5],5'b10000};
  wire [8:0] g={1'b0,write_data[4:2],5'b10000};
  wire [8:0] b={1'b0,write_data[1:0],6'b100000};
- // Require saturated red, not merely the largest RGB channel (skin/brown).
- wire red=(r>=96 && r>=g+48 && r>=b+48 &&
+ // Keep strong saturation for bright colours; camera shadows need a lower
+ // absolute red/green difference because RGB332 has 32-level R/G bins.
+ wire strong_red=(r>=96 && r>=g+48 && r>=b+48 &&
            {r,2'b0}>=(({2'b0,g}<<3)-{2'b0,g}) &&
            {r,2'b0}>=(({2'b0,b}<<2)+({2'b0,b}<<1)));
+ wire shadow_red=(r>=64 && r<=144 && r>=g+32 && r>=b+16 &&
+           {r,2'b0}>=({g,2'b0}+{2'b0,g}) && {r,2'b0}>=({b,2'b0}+{2'b0,b}));
+ wire red=strong_red || shadow_red;
  wire diagnostic_warm=(r>=64 && r>=g+24 && r>=b+16 &&
            {r,2'b0}>=({g,2'b0}+{2'b0,g}) && {r,2'b0}>=({b,2'b0}+{2'b0,b}));
  // Sample one pixel per 64 for diagnostics only; recognition still uses all pixels.
  // These registers are stable throughout the request/ack analysis handshake.
+ // Align diagnostics with the existing registered mask write. This removes
+ // packet-address arithmetic from the counter-enable path at 125 MHz.
+ reg [2:0] write_tag_q;reg [15:0] write_addr_q;reg write_en_q;
+ reg diagnostic_warm_q;reg [8:0] r_q,g_q,b_q;
+ always @(posedge clk)begin diagnostic_warm_q<=diagnostic_warm;r_q<=r;g_q<=g;b_q<=b;end
+ // Decode sample/reset positions in a separate stage. RAM-address fanout
+ // must not extend through the colour counter enable at 125 MHz.
+ reg diag_first_q2,diag_sample_q2,diag_red_q2,diag_warm_q2;
+ reg [8:0] diag_r_q2,diag_g_q2,diag_b_q2;
+ always @(posedge clk)begin
+  diag_red_q2<=(write_tag_q==2);diag_warm_q2<=diagnostic_warm_q;
+  diag_r_q2<=r_q;diag_g_q2<=g_q;diag_b_q2<=b_q;
+ end
+ always @(posedge clk or posedge rst)
+  if(rst)begin diag_first_q2<=0;diag_sample_q2<=0;end
+  else begin
+   diag_first_q2<=write_en_q && write_addr_q==0;
+   diag_sample_q2<=write_en_q && write_addr_q[5:0]==write_addr_q[11:6];
+  end
  reg [9:0] diag_strong,diag_warm;
  reg [17:0] diag_r,diag_g,diag_b;
  always @(posedge clk or posedge rst)
   if(rst)begin diag_strong<=0;diag_warm<=0;diag_r<=0;diag_g<=0;diag_b<=0;end
-  else if(write_pixel && write_addr==0)begin
-   diag_strong<=red;diag_warm<=diagnostic_warm;
-   diag_r<=diagnostic_warm?r:0;diag_g<=diagnostic_warm?g:0;diag_b<=diagnostic_warm?b:0;
-  end else if(write_pixel && write_addr<N && write_addr[5:0]==0)begin
-   if(red)diag_strong<=diag_strong+1'b1;
-   if(diagnostic_warm)begin diag_warm<=diag_warm+1'b1;diag_r<=diag_r+r;diag_g<=diag_g+g;diag_b<=diag_b+b;end
+  else if(diag_first_q2)begin
+   diag_strong<=diag_red_q2;diag_warm<=diag_warm_q2;
+   diag_r<=diag_warm_q2?diag_r_q2:0;diag_g<=diag_warm_q2?diag_g_q2:0;diag_b<=diag_warm_q2?diag_b_q2:0;
+  end else if(diag_sample_q2)begin
+   if(diag_red_q2)diag_strong<=diag_strong+1'b1;
+   if(diag_warm_q2)begin diag_warm<=diag_warm+1'b1;diag_r<=diag_r+diag_r_q2;diag_g<=diag_g+diag_g_q2;diag_b<=diag_b+diag_b_q2;end
   end
- wire [8:0] hi=r>g?(r>b?r:b):(g>b?g:b),lo=r<g?(r<b?r:b):(g<b?g:b);
  wire [10:0] lum=r+(g<<1)+b;
- wire rh=r+32>=hi,gh=g+32>=hi,bh=b+32>=hi;
- wire [2:0] tag=red?3'd2:((hi-lo<48)?(lum<384?3'd1:(lum>704?3'd7:3'd0)):
-                     (hi<64?3'd0:(rh && gh?3'd5:(rh && bh?3'd6:(gh && bh?3'd7:(rh?3'd5:(gh?3'd3:3'd4)))))));
- reg [2:0] write_tag_q;reg [15:0] write_addr_q;reg write_en_q;
+ // Parallel comparisons are equivalent to max/min channel selection, but
+ // avoid a serial min/max/subtract path in the 125 MHz receiver.
+ wire neutral=r<g+48 && g<r+48 && r<b+48 && b<r+48 && g<b+48 && b<g+48;
+ wire rh=r+32>=g && r+32>=b,gh=g+32>=r && g+32>=b,bh=b+32>=r && b+32>=g;
+ wire [2:0] tag=red?3'd2:(neutral?(lum<384?3'd1:(lum>704?3'd7:3'd0)):
+                     ((r<64 && g<64 && b<64)?3'd0:(rh && gh?3'd5:(rh && bh?3'd6:(gh && bh?3'd7:(rh?3'd5:(gh?3'd3:3'd4)))))));
  always @(posedge clk)begin write_tag_q<=tag;write_addr_q<=write_addr;end
  always @(posedge clk or posedge rst)if(rst)write_en_q<=0;else write_en_q<=write_pixel && write_addr<N;
  always @(posedge clk)if(write_en_q)mask[write_addr_q]<=write_tag_q;
@@ -70,16 +94,17 @@ module preview_analyzer(
  reg [8:0] rx0,rx1,sx0,sx1;
  reg [7:0] ry0,ry1,sy0,sy1;
  reg [2:0] sk;
- reg [24:0] watchdog;
+ reg [$clog2(PROC_HZ+1)-1:0] watchdog;
  reg [22:0] rp,sp;
  reg [6:0] rpercent,spercent;
- // Three spatially consistent frames acquire a target. A miss or a jump
- // clears validity immediately; unconfirmed candidates never drive servos.
- reg [1:0] red_streak;
+ // Three spatially consistent frames acquire a target. Up to two missing
+ // frames preserve association only: validity and servo commands still clear.
+ // A remote jump or longer absence must acquire again.
+ reg [1:0] red_streak,red_misses;
  reg [8:0] prev_rx0,prev_rx1;
  reg [7:0] prev_ry0,prev_ry1;
  reg [15:0] prev_ra;
- reg [23:0] red_age;
+ reg [$clog2(PROC_HZ/2+1)-1:0] red_age;
  reg [15:0] diag_max_area;
  reg [5:0] diag_rejection;
  wire [95:0] diagnostic_payload={diag_rejection,diag_max_area,diag_strong,diag_warm,diag_r,diag_g,diag_b};
@@ -111,6 +136,11 @@ module preview_analyzer(
   (neighbour==2 && cy==0)||(neighbour==3 && cy==H-1)||
   (neighbour==4 && (cx==0||cy==0))||(neighbour==5 && (cx==W-1||cy==0))||
   (neighbour==6 && (cx==0||cy==H-1))||(neighbour==7 && (cx==W-1||cy==H-1));
+ // Edge contact is not itself evidence of background. Require a larger,
+ // two-dimensional component there, and reject a box spanning all four edges.
+ wire touches_edge=minx<2 || miny<2 || maxx>=W-2 || maxy>=H-2;
+ wire border_ok=!touches_edge || (area>=512 && maxx-minx>=11 && maxy-miny>=11 &&
+     !(minx<2 && miny<2 && maxx>=W-2 && maxy>=H-2));
  reg [8:0] tx;reg [7:0] ty;
  always @*begin tx=cx;ty=cy;
   case(neighbour)
@@ -127,11 +157,11 @@ module preview_analyzer(
    minx<=0;maxx<=0;miny<=0;maxy<=0;ma<=0;colour<=0;qp<=0;wp<=0;used<=0;
    area<=0;ra<=0;sa<=0;rx0<=0;rx1<=0;ry0<=0;ry1<=0;sx0<=0;sx1<=0;sy0<=0;sy1<=0;
    sk<=0;neighbour<=0;rp<=0;sp<=0;rpercent<=0;spercent<=0;
-   red_streak<=0;prev_rx0<=0;prev_rx1<=0;prev_ry0<=0;prev_ry1<=0;prev_ra<=0;red_age<=0;
+   red_streak<=0;red_misses<=0;prev_rx0<=0;prev_rx1<=0;prev_ry0<=0;prev_ry1<=0;prev_ra<=0;red_age<=0;
    diag_max_area<=0;diag_rejection<=0;
   end else begin
-   if(red_age<24'd12500000)red_age<=red_age+1'b1;
-   else red_streak<=0;
+   if(red_age<(PROC_HZ/2))red_age<=red_age+1'b1;
+   else begin red_streak<=0;red_misses<=0;end
    if(state!=IDLE)watchdog<=watchdog+1'b1;
    case(state)
     IDLE:if(rq2!=ack)begin
@@ -172,11 +202,11 @@ module preview_analyzer(
       diag_max_area<=area;
       diag_rejection<={2'd0,
        (area*4<({1'b0,maxx}-{1'b0,minx}+1)*({1'b0,maxy}-{1'b0,miny}+1)),
-       (minx<2 || miny<2 || maxx>=W-2 || maxy>=H-2),
+       (!border_ok),
        (maxx-minx<5 || maxy-miny<5),(area<128)};
      end
      if(colour==2 && area>=128 && maxx-minx>=5 && maxy-miny>=5 && area>ra &&
-        minx>=2 && miny>=2 && maxx<W-2 && maxy<H-2 &&
+        border_ok &&
         area*4>=({1'b0,maxx}-{1'b0,minx}+1)*({1'b0,maxy}-{1'b0,miny}+1))begin
       ra<=area;rx0<=minx;rx1<=maxx;ry0<=miny;ry1<=maxy;
      end
@@ -194,8 +224,11 @@ module preview_analyzer(
     end
     FIN:begin
      red_age<=0;
-     if(ra==0)red_streak<=0;
-     else begin
+     if(ra==0)begin
+      if(red_streak==3 && red_misses<2)red_misses<=red_misses+1'b1;
+      else begin red_streak<=0;red_misses<=0;end
+     end else begin
+      red_misses<=0;
       if(!red_match)red_streak<=1;
       else if(red_streak<3)red_streak<=red_streak+1'b1;
       prev_rx0<=rx0;prev_rx1<=rx1;prev_ry0<=ry0;prev_ry1<=ry1;prev_ra<=ra;
@@ -207,12 +240,15 @@ module preview_analyzer(
      // With no red candidate, flag bit6 repurposes only invalid red coordinates
      // for diagnostics. Display and motion still require flag bit0.
      if(ra==0)begin held[190]<=1;held[175:80]<=diagnostic_payload;end
+     // Invalid shape coordinates carry processing-cycle telemetry. Bit5
+     // marks the payload; shape-valid remains clear so it cannot draw a box.
+     if(sa==0)begin held[189]<=1;held[79:48]<=watchdog;held[47:16]<=PROC_HZ;end
      ack<=rq2;state<=IDLE;
     end
-    FAIL:begin held<={8'h80,184'd0};red_streak<=0;ack<=rq2;state<=IDLE;end
+    FAIL:begin held<={8'h80,184'd0};red_streak<=0;red_misses<=0;ack<=rq2;state<=IDLE;end
     default:state<=FAIL;
    endcase
-   if(state!=IDLE && watchdog==25'd24999999)state<=FAIL;
+   if(state!=IDLE && watchdog==(PROC_HZ-1))state<=FAIL;
   end
  end
 endmodule

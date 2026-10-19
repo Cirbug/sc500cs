@@ -1,0 +1,140 @@
+{
+  "recorded": "2026-10-19T22:30:56",
+  "reason": "Held red target now gives large accepted-color components, rejected by blanket border gate",
+  "observations": [
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 6395,
+      "strict_samples": 125,
+      "warm_samples": 125,
+      "warm_mean_rgb": [
+        144.0,
+        98.688,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 13141,
+      "strict_samples": 235,
+      "warm_samples": 235,
+      "warm_mean_rgb": [
+        144.0,
+        98.92765957446808,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 15067,
+      "strict_samples": 241,
+      "warm_samples": 241,
+      "warm_mean_rgb": [
+        144.0,
+        100.97925311203319,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 13606,
+      "strict_samples": 217,
+      "warm_samples": 219,
+      "warm_mean_rgb": [
+        144.29223744292239,
+        104.69406392694064,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 11668,
+      "strict_samples": 198,
+      "warm_samples": 201,
+      "warm_mean_rgb": [
+        144.47761194029852,
+        103.72139303482587,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 13885,
+      "strict_samples": 235,
+      "warm_samples": 235,
+      "warm_mean_rgb": [
+        144.0,
+        100.8340425531915,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 13507,
+      "strict_samples": 229,
+      "warm_samples": 229,
+      "warm_mean_rgb": [
+        144.0,
+        100.82096069868996,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 10456,
+      "strict_samples": 234,
+      "warm_samples": 234,
+      "warm_mean_rgb": [
+        144.0,
+        101.19658119658119,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 10376,
+      "strict_samples": 164,
+      "warm_samples": 164,
+      "warm_mean_rgb": [
+        144.0,
+        104.78048780487805,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 4,
+      "largest_strict_component": 13808,
+      "strict_samples": 234,
+      "warm_samples": 234,
+      "warm_mean_rgb": [
+        144.0,
+        103.38461538461539,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 3,
+      "largest_strict_component": 12,
+      "strict_samples": 2,
+      "warm_samples": 2,
+      "warm_mean_rgb": [
+        144.0,
+        112.0,
+        96.0
+      ]
+    },
+    {
+      "reject_flags": 9,
+      "largest_strict_component": 26,
+      "strict_samples": 2,
+      "warm_samples": 2,
+      "warm_mean_rgb": [
+        144.0,
+        112.0,
+        96.0
+      ]
+    }
+  ],
+  "change": "Allow edge contact if area >=512 pixels, both dimensions >=12, bbox does not span all four edges; keep 128 area for interior targets, fill >=25%, three-frame acquisition",
+  "visual_acceptance": "Pending"
+}

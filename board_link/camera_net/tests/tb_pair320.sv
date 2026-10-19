@@ -1,9 +1,10 @@
 `timescale 1ns/1ps
-module tb_pair320;
+module tb_pair320 #(parameter integer PROC_HZ=25000000);
+ localparam SIM_TIMEOUT=(PROC_HZ>=40000000)?25000000:50000000;
  reg aclk=0,bclk=0,proc_clk=0,rst=1,ready=1;
  always #4 aclk=~aclk;
  always #4.003 bclk=~bclk;
- always #20.015 proc_clk=~proc_clk;
+ always #(500000000.0/PROC_HZ+0.01) proc_clk=~proc_clk;
  wire ab,ar,av,br,bv,bb,arv,brv;
  wire [7:0] ad,bd,ard,brd,agtd,bgtd;
  wire [15:0] al,bl,arl,brl,arp,brp;
@@ -15,11 +16,11 @@ module tb_pair320;
  wire [2:0] state;
  always @(posedge aclk) pixel<=addr[7:0]^8'h5a;
  always @(posedge aclk)if(release_frame)ready<=0;
- preview_sender #(.GAP(1000),.TIMEOUT(50000000)) a(.clk(aclk),.rst(rst),.ready(ready),.chunk_ready(1'b1),.aborted(1'b0),.pixel(pixel),
+ preview_sender #(.GAP(1000),.TIMEOUT(SIM_TIMEOUT)) a(.clk(aclk),.rst(rst),.ready(ready),.chunk_ready(1'b1),.aborted(1'b0),.pixel(pixel),
   .release_frame(release_frame),.rd_addr(addr),.busy(ab),.req(ar),.valid(av),.data(ad),.len(al),
   .rx_valid(arv),.rx_data(ard),.rx_len(arl),.rx_port(arp),.sent(sent),.acked(acked),
   .frames(frames),.timeouts(timeouts),.bad(bad),.remote_frames(rf),.remote_errors(re),.recover(repair_a),.state_out(state));
- preview_receiver #(.TIMEOUT(20000)) b(.clk(bclk),.proc_clk(proc_clk),.rst(rst),.rx_valid(brv),.rx_data(brd),
+ preview_receiver #(.TIMEOUT(20000),.PROC_HZ(PROC_HZ)) b(.clk(bclk),.proc_clk(proc_clk),.rst(rst),.rx_valid(brv),.rx_data(brd),
   .rx_len(brl),.rx_port(brp),.busy(bb),.req(br),.valid(bv),.data(bd),.len(bl),
   .frames(bframes),.errors(berrors),.packets(bpackets),.recover(repair_b));
  wire drop=(sent==1 && timeouts==0);

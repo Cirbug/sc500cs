@@ -1,0 +1,427 @@
+{
+  "samples": [
+    {
+      "magic": 1313166385,
+      "sent": 12646119,
+      "acked": 12644411,
+      "frames": 52681,
+      "timeouts": 1708,
+      "bad": 0,
+      "remote_frames": 257,
+      "remote_errors": 0,
+      "state": 48,
+      "dimensions": 20971700,
+      "flags_type": 1073741824,
+      "red_min": 121685248,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 537256989,
+      "red_max": 583010016,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T23:07:23.027",
+      "monotonic": 20488.687,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        8197,
+        58397
+      ],
+      "red_diagnostic": {
+        "reject_flags": 8,
+        "largest_strict_component": 377,
+        "strict_samples": 29,
+        "warm_samples": 29,
+        "warm_mean_rgb": [
+          108.6896551724138,
+          76.6896551724138,
+          60.689655172413794
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12647813,
+      "acked": 12646090,
+      "frames": 52687,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 6,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 83921920,
+      "shape_min": 1042977,
+      "areas_width": 320,
+      "red_center": 537256980,
+      "red_max": 419431680,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:24.450",
+      "monotonic": 20490.109,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        8197,
+        58388
+      ],
+      "analysis_telemetry": {
+        "cycles": 1042977,
+        "clock_hz": 40000000,
+        "milliseconds": 26.074425
+      },
+      "red_diagnostic": {
+        "reject_flags": 8,
+        "largest_strict_component": 377,
+        "strict_samples": 20,
+        "warm_samples": 20,
+        "warm_mean_rgb": [
+          112.0,
+          80.0,
+          64.0
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12653093,
+      "acked": 12651370,
+      "frames": 52709,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 28,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 96507648,
+      "shape_min": 1037067,
+      "areas_width": 320,
+      "red_center": 537162775,
+      "red_max": 440403232,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:25.909",
+      "monotonic": 20491.562,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        8196,
+        29719
+      ],
+      "analysis_telemetry": {
+        "cycles": 1037067,
+        "clock_hz": 40000000,
+        "milliseconds": 25.926675
+      },
+      "red_diagnostic": {
+        "reject_flags": 8,
+        "largest_strict_component": 285,
+        "strict_samples": 23,
+        "warm_samples": 23,
+        "warm_mean_rgb": [
+          105.04347826086956,
+          73.04347826086956,
+          57.04347826086956
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12658181,
+      "acked": 12656460,
+      "frames": 52731,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 50,
+      "remote_errors": 0,
+      "state": 177,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 96509696,
+      "shape_min": 1060123,
+      "areas_width": 320,
+      "red_center": 537007127,
+      "red_max": 473957792,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:27.323",
+      "monotonic": 20492.984,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        8194,
+        5143
+      ],
+      "analysis_telemetry": {
+        "cycles": 1060123,
+        "clock_hz": 40000000,
+        "milliseconds": 26.503075
+      },
+      "red_diagnostic": {
+        "reject_flags": 8,
+        "largest_strict_component": 133,
+        "strict_samples": 23,
+        "warm_samples": 23,
+        "warm_mean_rgb": [
+          110.6086956521739,
+          78.6086956521739,
+          62.608695652173914
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12663413,
+      "acked": 12661690,
+      "frames": 52752,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 71,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 536870912,
+      "red_min": 16973948,
+      "shape_min": 1045117,
+      "areas_width": 320,
+      "red_center": 18022539,
+      "red_max": 19136667,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:28.723",
+      "monotonic": 20494.375,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        275,
+        139
+      ],
+      "analysis_telemetry": {
+        "cycles": 1045117,
+        "clock_hz": 40000000,
+        "milliseconds": 26.127925
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12668494,
+      "acked": 12666773,
+      "frames": 52774,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 93,
+      "remote_errors": 0,
+      "state": 177,
+      "dimensions": 20971700,
+      "flags_type": 536870912,
+      "red_min": 16777340,
+      "shape_min": 1041895,
+      "areas_width": 320,
+      "red_center": 17957004,
+      "red_max": 19202204,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:30.132",
+      "monotonic": 20495.796,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        274,
+        140
+      ],
+      "analysis_telemetry": {
+        "cycles": 1041895,
+        "clock_hz": 40000000,
+        "milliseconds": 26.047375
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12673674,
+      "acked": 12671954,
+      "frames": 52795,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 114,
+      "remote_errors": 0,
+      "state": 177,
+      "dimensions": 20971700,
+      "flags_type": 536870912,
+      "red_min": 16253049,
+      "shape_min": 1064887,
+      "areas_width": 320,
+      "red_center": 17760386,
+      "red_max": 19333259,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:31.529",
+      "monotonic": 20497.187,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        271,
+        130
+      ],
+      "analysis_telemetry": {
+        "cycles": 1064887,
+        "clock_hz": 40000000,
+        "milliseconds": 26.622175
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12678773,
+      "acked": 12677050,
+      "frames": 52816,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 135,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 25179648,
+      "shape_min": 901733,
+      "areas_width": 320,
+      "red_center": 335625222,
+      "red_max": 176161344,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:32.917",
+      "monotonic": 20498.578,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        5121,
+        15366
+      ],
+      "analysis_telemetry": {
+        "cycles": 901733,
+        "clock_hz": 40000000,
+        "milliseconds": 22.543325
+      },
+      "red_diagnostic": {
+        "reject_flags": 5,
+        "largest_strict_component": 79,
+        "strict_samples": 6,
+        "warm_samples": 6,
+        "warm_mean_rgb": [
+          144.0,
+          112.0,
+          96.0
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12683161,
+      "acked": 12681440,
+      "frames": 52835,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 154,
+      "remote_errors": 0,
+      "state": 177,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 176230912,
+      "shape_min": 1444453,
+      "areas_width": 320,
+      "red_center": 268861482,
+      "red_max": 796920128,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:34.333",
+      "monotonic": 20499.984,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        4102,
+        32810
+      ],
+      "analysis_telemetry": {
+        "cycles": 1444453,
+        "clock_hz": 40000000,
+        "milliseconds": 36.111325
+      },
+      "red_diagnostic": {
+        "reject_flags": 4,
+        "largest_strict_component": 416,
+        "strict_samples": 42,
+        "warm_samples": 42,
+        "warm_mean_rgb": [
+          104.38095238095238,
+          72.38095238095238,
+          56.38095238095238
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12688373,
+      "acked": 12686650,
+      "frames": 52856,
+      "timeouts": 1722,
+      "bad": 0,
+      "remote_frames": 175,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 0,
+      "shape_min": 445323,
+      "areas_width": 320,
+      "red_center": 201329664,
+      "red_max": 0,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:07:36.040",
+      "monotonic": 20501.703,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        3072,
+        3072
+      ],
+      "analysis_telemetry": {
+        "cycles": 445323,
+        "clock_hz": 40000000,
+        "milliseconds": 11.133075
+      },
+      "red_diagnostic": {
+        "reject_flags": 3,
+        "largest_strict_component": 3,
+        "strict_samples": 0,
+        "warm_samples": 0,
+        "warm_mean_rgb": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "frames": 175,
+    "sent": 42254,
+    "acked": 42239,
+    "timeouts": 14,
+    "bad": 0,
+    "remote_frames": 4294967214,
+    "remote_errors": 0,
+    "seconds": 13.015999999999622,
+    "fps": 13.444990780578141
+  }
+}

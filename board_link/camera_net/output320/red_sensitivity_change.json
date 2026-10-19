@@ -1,0 +1,37 @@
+{
+  "recorded": "2026-10-19T22:22:28",
+  "revision": "shadow-red threshold and short-gap association",
+  "before": {
+    "samples": 10,
+    "red_valid_samples": 0,
+    "network": {
+      "frames": 153,
+      "sent": 36720,
+      "acked": 36720,
+      "timeouts": 0,
+      "bad": 0,
+      "remote_frames": 153,
+      "remote_errors": 0,
+      "seconds": 15.515999999999622,
+      "fps": 9.860788863109288
+    },
+    "largest_red_components": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0
+    ]
+  },
+  "changes": [
+    "Keep bright-red saturation checks; allow shadow R=64..144, R-G>=32, R-B>=16 and R>=1.25*G/B",
+    "Three consistent frames required to acquire; preserve association for at most two misses, but never output a valid red result on a miss",
+    "Main FPGA/MCU and 320x180 full-pixel input unchanged"
+  ],
+  "test_semantics": "0x44 was previously a negative dark-warm test. Hardware diagnostics indicate the failing target occupies this dark red/brown RGB332 range, so it is now explicitly tested as positive shadow_red. Bright 0xac remains a negative warm-color test. Real background test is required; RGB332 alone cannot universally distinguish dark red from brown."
+}

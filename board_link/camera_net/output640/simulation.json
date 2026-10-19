@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "width": 640,
+  "height": 360,
+  "format": "RGB565",
+  "analysis_pixels": 230400,
+  "analysis_clock_hz": 40000000,
+  "checks": [
+    "rectangle",
+    "circle",
+    "triangle",
+    "blue_circle",
+    "blank",
+    "diamond",
+    "small_red",
+    "right_red",
+    "warm_skin",
+    "shadow_red",
+    "pale_red",
+    "large_area",
+    "bridge",
+    "capture",
+    "receiver",
+    "recovery",
+    "pair"
+  ],
+  "udp_fcs_and_every_pixel": "PASS",
+  "native_memory_and_temporal_guard": "PASS",
+  "received_rgb565_and_packed_address_scoreboard": "PASS",
+  "real_background_reference": {
+    "status": "PASS",
+    "analysis_cycles": 4842814,
+    "analysis_ms": 121.07035,
+    "red_target": false
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "status": "BUILD_AND_SIMULATION_PASS",
+  "generated": "2026-10-19T23:06:00",
+  "image": {
+    "width": 320,
+    "height": 180,
+    "format": "RGB332",
+    "analysis_pixels": 57600,
+    "secondary_downsampling": false,
+    "analysis_clock_hz": 40000000
+  },
+  "protocol": {
+    "format_version": 2,
+    "chunks": 240,
+    "pixels_per_chunk": 240,
+    "ack_bytes": 48,
+    "result_bytes": 24
+  },
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "6b4fb34e9c4b564279db3530e7947df66dff91623ef753a5eb34ebd626c5b567",
+      "setup_wns_ns": 0.103,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.35%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "7b9d4dc89768323b8cc1240ef662f744791f9bbb06324741c02665c412b516b0",
+      "setup_wns_ns": 0.155,
+      "hold_wns_ns": 0.003,
+      "sta_coverage": "99.91%"
+    }
+  },
+  "simulation": {
+    "status": "PASS",
+    "width": 320,
+    "height": 180,
+    "analysis_pixels": 57600,
+    "analysis_clock_hz": 40000000,
+    "checks": [
+      "rectangle",
+      "circle",
+      "triangle",
+      "blue_circle",
+      "blank",
+      "diamond",
+      "small_red",
+      "right_red",
+      "dim_red",
+      "noisy_circle",
+      "warm_skin",
+      "shadow_red",
+      "muted_red",
+      "pale_red",
+      "red_speck",
+      "red_guard",
+      "bridge",
+      "capture",
+      "receiver",
+      "recovery",
+      "pair"
+    ],
+    "udp_fcs_and_every_pixel": "PASS"
+  },
+  "main_source_unchanged": true,
+  "hardware_validation": "LINK_PASS; sequential A/B 10.075 -> 14.496 FPS; scene dependent; red visual tuning pending"
+}

@@ -1,0 +1,269 @@
+{
+  "samples": [
+    {
+      "magic": 1313166385,
+      "sent": 12466638,
+      "acked": 12465132,
+      "frames": 51935,
+      "timeouts": 1506,
+      "bad": 0,
+      "remote_frames": 3527,
+      "remote_errors": 0,
+      "state": 48,
+      "dimensions": 20971700,
+      "flags_type": 1073741824,
+      "red_min": 104905984,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 805521433,
+      "red_max": 583010080,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T23:06:09.495",
+      "monotonic": 20415.156,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        12291,
+        18457
+      ],
+      "red_diagnostic": {
+        "reject_flags": 12,
+        "largest_strict_component": 210,
+        "strict_samples": 25,
+        "warm_samples": 25,
+        "warm_mean_rgb": [
+          120.96,
+          88.96,
+          72.96
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12469736,
+      "acked": 12468217,
+      "frames": 51947,
+      "timeouts": 1520,
+      "bad": 0,
+      "remote_frames": 12,
+      "remote_errors": 0,
+      "state": 177,
+      "dimensions": 20971700,
+      "flags_type": 553648128,
+      "red_min": 19136638,
+      "shape_min": 1244440,
+      "areas_width": 16777536,
+      "red_center": 19988632,
+      "red_max": 20906163,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:06:11.252",
+      "monotonic": 20416.906,
+      "red_valid": true,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        305,
+        152
+      ],
+      "analysis_telemetry": {
+        "cycles": 1244440,
+        "clock_hz": 40000000,
+        "milliseconds": 31.111
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12476012,
+      "acked": 12474491,
+      "frames": 51973,
+      "timeouts": 1520,
+      "bad": 0,
+      "remote_frames": 38,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 83922944,
+      "shape_min": 1237959,
+      "areas_width": 320,
+      "red_center": 604100628,
+      "red_max": 436208960,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:06:13.005",
+      "monotonic": 20418.656,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        9217,
+        55316
+      ],
+      "analysis_telemetry": {
+        "cycles": 1237959,
+        "clock_hz": 40000000,
+        "milliseconds": 30.948975
+      },
+      "red_diagnostic": {
+        "reject_flags": 9,
+        "largest_strict_component": 118,
+        "strict_samples": 20,
+        "warm_samples": 20,
+        "warm_mean_rgb": [
+          115.2,
+          83.2,
+          67.2
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12482492,
+      "acked": 12480971,
+      "frames": 52000,
+      "timeouts": 1520,
+      "bad": 0,
+      "remote_frames": 65,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 96515840,
+      "shape_min": 1213827,
+      "areas_width": 320,
+      "red_center": 805499927,
+      "red_max": 574621472,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:06:14.787",
+      "monotonic": 20420.437,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        12290,
+        62487
+      ],
+      "analysis_telemetry": {
+        "cycles": 1213827,
+        "clock_hz": 40000000,
+        "milliseconds": 30.345675
+      },
+      "red_diagnostic": {
+        "reject_flags": 12,
+        "largest_strict_component": 189,
+        "strict_samples": 23,
+        "warm_samples": 23,
+        "warm_mean_rgb": [
+          127.30434782608695,
+          95.30434782608695,
+          79.30434782608695
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12488972,
+      "acked": 12487451,
+      "frames": 52027,
+      "timeouts": 1520,
+      "bad": 0,
+      "remote_frames": 92,
+      "remote_errors": 0,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 62944000,
+      "shape_min": 1230517,
+      "areas_width": 320,
+      "red_center": 805473295,
+      "red_max": 356516960,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:06:16.231",
+      "monotonic": 20421.89,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        12290,
+        35855
+      ],
+      "analysis_telemetry": {
+        "cycles": 1230517,
+        "clock_hz": 40000000,
+        "milliseconds": 30.762925
+      },
+      "red_diagnostic": {
+        "reject_flags": 12,
+        "largest_strict_component": 163,
+        "strict_samples": 15,
+        "warm_samples": 15,
+        "warm_mean_rgb": [
+          122.66666666666667,
+          90.66666666666667,
+          74.66666666666667
+        ]
+      }
+    },
+    {
+      "magic": 1313166385,
+      "sent": 12494080,
+      "acked": 12492561,
+      "frames": 52049,
+      "timeouts": 1520,
+      "bad": 0,
+      "remote_frames": 114,
+      "remote_errors": 0,
+      "state": 177,
+      "dimensions": 20971700,
+      "flags_type": 1610612736,
+      "red_min": 121683200,
+      "shape_min": 1226197,
+      "areas_width": 320,
+      "red_center": 872516637,
+      "red_max": 549455456,
+      "shape_max": 40000000,
+      "timestamp": "2026-10-19T23:06:17.657",
+      "monotonic": 20423.312,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        13313,
+        35869
+      ],
+      "analysis_telemetry": {
+        "cycles": 1226197,
+        "clock_hz": 40000000,
+        "milliseconds": 30.654925
+      },
+      "red_diagnostic": {
+        "reject_flags": 13,
+        "largest_strict_component": 99,
+        "strict_samples": 29,
+        "warm_samples": 29,
+        "warm_mean_rgb": [
+          104.27586206896552,
+          72.27586206896552,
+          56.275862068965516
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "frames": 114,
+    "sent": 27442,
+    "acked": 27429,
+    "timeouts": 14,
+    "bad": 0,
+    "remote_frames": 4294963883,
+    "remote_errors": 0,
+    "seconds": 8.156000000002678,
+    "fps": 13.977439921525573
+  }
+}

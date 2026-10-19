@@ -1,0 +1,87 @@
+{
+  "status": "BUILD_AND_SIMULATION_PASS",
+  "generated": "2026-10-19T23:53:05",
+  "image": {
+    "width": 640,
+    "height": 360,
+    "format": "RGB565",
+    "bytes_per_frame": 460800,
+    "analysis_pixels": 230400,
+    "secondary_downsampling": false,
+    "analysis_clock_hz": 40000000
+  },
+  "protocol": {
+    "version": 3,
+    "chunks": 960,
+    "pixels_per_chunk": 240,
+    "payload_bytes_per_chunk": 480,
+    "udp_payload_bytes": 496,
+    "ack_bytes": 48,
+    "result_bytes": 24,
+    "wire_pixel_order": "RGB565 high byte first"
+  },
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "1991133e3ca3876d77b8dce8bd65b49de06eb94f2da362c8057c04fd43a48c9e",
+      "setup_wns_ns": 0.123,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.35%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "055cbde39c09946ecfb8d2d86d6e16985e5ab4048879192e51886eea53ce4bfd",
+      "setup_wns_ns": 0.119,
+      "hold_wns_ns": 0.023,
+      "sta_coverage": "99.91%"
+    }
+  },
+  "simulation": {
+    "status": "PASS",
+    "width": 640,
+    "height": 360,
+    "format": "RGB565",
+    "analysis_pixels": 230400,
+    "analysis_clock_hz": 40000000,
+    "checks": [
+      "rectangle",
+      "circle",
+      "triangle",
+      "blue_circle",
+      "blank",
+      "diamond",
+      "small_red",
+      "right_red",
+      "warm_skin",
+      "shadow_red",
+      "pale_red",
+      "large_area",
+      "bridge",
+      "capture",
+      "receiver",
+      "recovery",
+      "pair"
+    ],
+    "udp_fcs_and_every_pixel": "PASS",
+    "native_memory_and_temporal_guard": "PASS",
+    "received_rgb565_and_packed_address_scoreboard": "PASS",
+    "real_background_reference": {
+      "status": "PASS",
+      "analysis_cycles": 4842814,
+      "analysis_ms": 121.07035,
+      "red_target": false
+    }
+  },
+  "extra_validation": [
+    "native EG_PHY_BRAM32K bank/adjacent-pixel test",
+    "native RAM red acquisition/miss/expiry/border test",
+    "every received RGB565 pixel/address checked"
+  ],
+  "hardware_validation": "PASS: 640x360 RGB565, 4.854 fps in measured scene, 0 new transport errors; visual acceptance pending",
+  "limitations": [
+    "No video compression added",
+    "Red/skin discrimination requires real-target validation",
+    "Auto tracking remains disabled during validation",
+    "SRAM downloads are volatile; Flash unchanged"
+  ]
+}

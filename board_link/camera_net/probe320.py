@@ -36,6 +36,14 @@ with socket.create_connection(('127.0.0.1',6666),5) as s:
   r['shape_valid']=bool(words[10]&0x02000000);r['failure']=bool(words[10]&0x80000000)
   r['shape_id']=(words[10]>>16)&255
   r['red_xy']=[words[14]>>16,words[14]&65535]
+  if words[10]&0x20000000:
+   r['analysis_telemetry']={'cycles':words[12],'clock_hz':words[16],'milliseconds':1000*words[12]/words[16] if words[16] else None}
+  if words[10]&0x40000000:
+   d=(words[14]<<64)|(words[11]<<32)|words[15]
+   warm=(d>>54)&1023
+   r['red_diagnostic']={'reject_flags':d>>90,'largest_strict_component':(d>>74)&65535,
+    'strict_samples':(d>>64)&1023,'warm_samples':warm,
+    'warm_mean_rgb':[((d>>shift)&262143)/warm if warm else 0 for shift in [36,18,0]]}
   records.append(r);print(json.dumps(r),flush=True)
  if len(records)>1:
   dt=records[-1]['monotonic']-records[0]['monotonic']

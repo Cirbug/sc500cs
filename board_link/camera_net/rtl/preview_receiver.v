@@ -1,6 +1,6 @@
 // EG4D20: assemble a complete image, recognize red targets and shapes,
 // return a 40-byte ACK/status/result packet without returning image pixels.
-module preview_receiver #(parameter TIMEOUT=125000000)(
+module preview_receiver #(parameter TIMEOUT=125000000, parameter integer PROC_HZ=25000000)(
  input clk,proc_clk,rst,rx_valid,input [7:0] rx_data,input [15:0] rx_len,rx_port,
  input busy,output req,valid,output reg [7:0] data,output [15:0] len,
  output reg [31:0] frames,errors,packets,
@@ -28,7 +28,7 @@ module preview_receiver #(parameter TIMEOUT=125000000)(
  wire analysis_done;
  reg analysis_start;
  wire [15:0] pixel_addr=({chunk[7:0],8'd0}-{4'd0,chunk[7:0],4'd0})+count-16;
- preview_analyzer u_analyzer(.clk(clk),.proc_clk(proc_clk),.rst(rst),
+ preview_analyzer #(.PROC_HZ(PROC_HZ)) u_analyzer(.clk(clk),.proc_clk(proc_clk),.rst(rst),
   .write_pixel(rx_valid && state==0 && count>=16 && count<256 && chunk<240 &&
     packet_port==6001 && packet_len==256 && good_header && image && ordered && !duplicate),
   .write_addr(pixel_addr),.write_data(rx_data),.start(analysis_start),.done(analysis_done),.result(result));

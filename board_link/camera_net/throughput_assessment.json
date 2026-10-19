@@ -1,0 +1,38 @@
+{
+  "created": "2026-10-19T22:56:24",
+  "objective": "Increase actual two-board image throughput",
+  "baseline": {
+    "frames": 72,
+    "sent": 17208,
+    "acked": 17211,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 72,
+    "remote_errors": 0,
+    "seconds": 7.015999999999622,
+    "fps": 10.262257696693826
+  },
+  "current_image": {
+    "width": 320,
+    "height": 180,
+    "bits_per_pixel": 8,
+    "bytes_per_frame": 57600
+  },
+  "protocol_budget": {
+    "chunks": 240,
+    "image_udp_payload_bytes": 256,
+    "ack_udp_payload_bytes": 48,
+    "wire_bytes_per_image_including_ack_preamble_ifg": 104640,
+    "image_payload_mbps_at_10fps": 4.608
+  },
+  "observed_code_constraint": "Last-chunk ACK is delayed until analysis_done; next image waits for final ACK. Recognition walks every component at 25 MHz. Compression cannot remove this per-frame processing wait.",
+  "first_optimization": {
+    "analysis_clock_before_hz": 25000000,
+    "analysis_clock_target_hz": 40000000,
+    "network_clock_hz": 125000000,
+    "preserve_timeouts_seconds": true,
+    "new_video_compression": false,
+    "resolution_changed": false
+  },
+  "larger_images": "Requires a separate memory/address-width redesign; compression of transport bytes does not reduce the current per-pixel recognition mask or work."
+}

@@ -1,0 +1,66 @@
+{
+  "status": "BUILD_AND_SIMULATION_PASS",
+  "generated": "2026-10-19T21:56:14",
+  "image": {
+    "width": 320,
+    "height": 180,
+    "format": "RGB332",
+    "analysis_pixels": 57600,
+    "secondary_downsampling": false
+  },
+  "protocol": {
+    "format_version": 2,
+    "chunks": 240,
+    "pixels_per_chunk": 240,
+    "ack_bytes": 48,
+    "result_bytes": 24
+  },
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "6b4fb34e9c4b564279db3530e7947df66dff91623ef753a5eb34ebd626c5b567",
+      "setup_wns_ns": 0.103,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.35%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "6c08cfbf784e768f89facdd1c8768c53a6d8704f32f9965147c033a675168bf0",
+      "setup_wns_ns": 0.135,
+      "hold_wns_ns": 0.014,
+      "sta_coverage": "99.91%"
+    }
+  },
+  "simulation": {
+    "status": "PASS",
+    "width": 320,
+    "height": 180,
+    "analysis_pixels": 57600,
+    "checks": [
+      "rectangle",
+      "circle",
+      "triangle",
+      "blue_circle",
+      "blank",
+      "diamond",
+      "small_red",
+      "right_red",
+      "dim_red",
+      "noisy_circle",
+      "warm_skin",
+      "dark_warm",
+      "red_speck",
+      "red_guard",
+      "bridge",
+      "capture",
+      "receiver",
+      "recovery",
+      "pair"
+    ],
+    "udp_fcs_and_every_pixel": "PASS"
+  },
+  "main_source_unchanged": true,
+  "hardware_validation": "PASS: 320x180 full-resolution analysis, red false-positive fix and shape recognition confirmed on both boards by live diagnostics and user observation.",
+  "user_acceptance_time": "2026-10-19T22:00:36+08:00",
+  "followup_issue": "OPEN: user reports a remaining red-tracking problem after prior functional acceptance; symptom clarification pending."
+}

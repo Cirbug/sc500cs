@@ -72,7 +72,7 @@
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.linenumbers.1888396706" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.linenumbers" value="true" valueType="boolean"/>
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.wide.905629436" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.wide" value="true" valueType="boolean"/>
 							</tool>
-							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.618778593" name="GNU RISC-V Cross Create Memory Initial File" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif"/>
+							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.618778593" name="GNU RISC-V Cross Create Memory Initial File"/>
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize.172523416" name="GNU RISC-V Cross Print Size" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize">
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format.948764686" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format"/>
 							</tool>
@@ -153,7 +153,7 @@
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.linenumbers.1716488973" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.linenumbers" value="true" valueType="boolean"/>
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.wide.988490925" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.createlisting.wide" value="true" valueType="boolean"/>
 							</tool>
-							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.1057197847" name="GNU RISC-V Cross Create Memory Initial File" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif"/>
+							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.1057197847" name="GNU RISC-V Cross Create Memory Initial File"/>
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize.533241137" name="GNU RISC-V Cross Print Size" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize">
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format.950864077" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format"/>
 							</tool>

@@ -1,0 +1,102 @@
+{
+  "samples": [
+    {
+      "magic": 1313166385,
+      "sent": 537390,
+      "acked": 537360,
+      "frames": 2239,
+      "timeouts": 30,
+      "bad": 0,
+      "remote_frames": 2239,
+      "remote_errors": 4,
+      "state": 49,
+      "dimensions": 20971700,
+      "flags_type": 0,
+      "red_min": 0,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 0,
+      "red_max": 0,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T21:46:45.998",
+      "monotonic": 15651.656,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        0,
+        0
+      ]
+    },
+    {
+      "magic": 1313166385,
+      "sent": 539310,
+      "acked": 539279,
+      "frames": 2246,
+      "timeouts": 30,
+      "bad": 0,
+      "remote_frames": 2246,
+      "remote_errors": 4,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 0,
+      "red_min": 0,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 0,
+      "red_max": 0,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T21:46:47.024",
+      "monotonic": 15652.687,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        0,
+        0
+      ]
+    },
+    {
+      "magic": 1313166385,
+      "sent": 541230,
+      "acked": 541199,
+      "frames": 2254,
+      "timeouts": 30,
+      "bad": 0,
+      "remote_frames": 2254,
+      "remote_errors": 4,
+      "state": 179,
+      "dimensions": 20971700,
+      "flags_type": 0,
+      "red_min": 0,
+      "shape_min": 0,
+      "areas_width": 320,
+      "red_center": 0,
+      "red_max": 0,
+      "shape_max": 0,
+      "timestamp": "2026-10-19T21:46:48.069",
+      "monotonic": 15653.734,
+      "red_valid": false,
+      "shape_valid": false,
+      "failure": false,
+      "shape_id": 0,
+      "red_xy": [
+        0,
+        0
+      ]
+    }
+  ],
+  "summary": {
+    "frames": 15,
+    "sent": 3840,
+    "acked": 3839,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 15,
+    "remote_errors": 0,
+    "seconds": 2.07799999999952,
+    "fps": 7.218479307027654
+  }
+}

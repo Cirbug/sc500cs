@@ -1,0 +1,61 @@
+>>
+RUN-1002 : start command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-f 12 -i 0} -open"
+RUN-1003 : finish command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-f 12 -i 0} -open" in  0.003046s wall, 0.000000s user + 0.015625s system = 0.015625s CPU (513.0%)
+
+RUN-1004 : used memory is 96 MB, reserved memory is 58 MB, peak memory is 96 MB
+RUN-1002 : start command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-f 12 -i 0} -open"
+RUN-1003 : finish command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-f 12 -i 0} -open" in  0.001814s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 151 MB, reserved memory is 75 MB, peak memory is 152 MB
+RUN-1002 : start command "download -bit ..\..\..\..\Users\21397\Desktop\fpga1\sc500cs\board_link\ph1_udp_selftest\output\ph1_udp_selftest.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit ..\..\..\..\Users\21397\Desktop\fpga1\sc500cs\board_link\ph1_udp_selftest\output\ph1_udp_selftest.bit -mode jtag -spd 7 -cable 0" in  7.903588s wall, 0.484375s user + 0.125000s system = 0.609375s CPU (7.7%)
+
+RUN-1004 : used memory is 151 MB, reserved memory is 76 MB, peak memory is 218 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "connect_cable -allink"
+RUN-1003 : finish command "connect_cable -allink" in  0.000132s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 152 MB, reserved memory is 76 MB, peak memory is 218 MB
+RUN-1002 : start command "download -bit ..\..\..\..\Users\21397\Desktop\fpga1\sc500cs\board_link\ph1_udp_selftest\output\eg4d20_udp_loop.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: EG4D20EG176
+RUN-1002 : start command "bit_to_vec -chip EG4D20EG176 -m jtag_burst -freq 5.000000 -bit ../../../../Users/21397/Desktop/fpga1/sc500cs/board_link/ph1_udp_selftest/output/eg4d20_udp_loop.bit"
+RUN-1003 : finish command "bit_to_vec -chip EG4D20EG176 -m jtag_burst -freq 5.000000 -bit ../../../../Users/21397/Desktop/fpga1/sc500cs/board_link/ph1_udp_selftest/output/eg4d20_udp_loop.bit" in  0.114839s wall, 0.125000s user + 0.015625s system = 0.140625s CPU (122.5%)
+
+RUN-1004 : used memory is 174 MB, reserved memory is 98 MB, peak memory is 218 MB
+RUN-1002 : start command "program -cable 0 -mode svf -spd 7 -p"
+RUN-1003 : finish command "program -cable 0 -mode svf -spd 7 -p" in  6.365646s wall, 0.531250s user + 0.546875s system = 1.078125s CPU (16.9%)
+
+RUN-1004 : used memory is 161 MB, reserved memory is 85 MB, peak memory is 218 MB
+RUN-1003 : finish command "download -bit ..\..\..\..\Users\21397\Desktop\fpga1\sc500cs\board_link\ph1_udp_selftest\output\eg4d20_udp_loop.bit -mode jtag -spd 7 -cable 0" in  6.565878s wall, 0.687500s user + 0.593750s system = 1.281250s CPU (19.5%)
+
+RUN-1004 : used memory is 161 MB, reserved memory is 85 MB, peak memory is 218 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-f 12 -i 0} -open"
+RUN-1003 : finish command "connect_cable -host_name 127.0.0.1:5555 -usr_args {-f 12 -i 0} -open" in  0.003650s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 160 MB, reserved memory is 85 MB, peak memory is 218 MB
+RUN-1002 : start command "download -bit ..\..\..\..\Users\21397\Desktop\fpga1\sc500cs\board_link\ph1_udp_selftest\output\ph1_udp_selftest.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: PH1P35MDG324
+RUN-1003 : finish command "download -bit ..\..\..\..\Users\21397\Desktop\fpga1\sc500cs\board_link\ph1_udp_selftest\output\ph1_udp_selftest.bit -mode jtag -spd 7 -cable 0" in  8.053676s wall, 1.031250s user + 0.937500s system = 1.968750s CPU (24.4%)
+
+RUN-1004 : used memory is 160 MB, reserved memory is 85 MB, peak memory is 226 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "connect_cable -allink"
+RUN-1003 : finish command "connect_cable -allink" in  0.000163s wall, 0.000000s user + 0.000000s system = 0.000000s CPU (n/a%)
+
+RUN-1004 : used memory is 93 MB, reserved memory is 86 MB, peak memory is 226 MB
+RUN-1002 : start command "download -bit ..\..\..\..\Users\21397\Desktop\fpga1\sc500cs\board_link\camera_net\output\eg_image_sink.bit -mode jtag -spd 7 -cable 0"
+PRG-2014 : Chip validation success: EG4D20EG176
+RUN-1002 : start command "bit_to_vec -chip EG4D20EG176 -m jtag_burst -freq 5.000000 -bit ../../../../Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/output/eg_image_sink.bit"
+RUN-1003 : finish command "bit_to_vec -chip EG4D20EG176 -m jtag_burst -freq 5.000000 -bit ../../../../Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/output/eg_image_sink.bit" in  0.121544s wall, 0.140625s user + 0.062500s system = 0.203125s CPU (167.1%)
+
+RUN-1004 : used memory is 113 MB, reserved memory is 101 MB, peak memory is 226 MB
+RUN-1002 : start command "program -cable 0 -mode svf -spd 7 -p"
+RUN-1003 : finish command "program -cable 0 -mode svf -spd 7 -p" in  6.533938s wall, 0.718750s user + 0.593750s system = 1.312500s CPU (20.1%)
+
+RUN-1004 : used memory is 99 MB, reserved memory is 86 MB, peak memory is 226 MB
+RUN-1003 : finish command "download -bit ..\..\..\..\Users\21397\Desktop\fpga1\sc500cs\board_link\camera_net\output\eg_image_sink.bit -mode jtag -spd 7 -cable 0" in  6.740208s wall, 0.921875s user + 0.656250s system = 1.578125s CPU (23.4%)
+
+RUN-1004 : used memory is 99 MB, reserved memory is 87 MB, peak memory is 226 MB
+GUI-1001 : Downloading succeeded!

@@ -1,0 +1,72 @@
+
+set_pin_assignment	{ I_sys_clk }			{ LOCATION = C4; IOSTANDARD  = LVCMOS33; PULLTYPE = PULLUP; }
+
+# MAX3421E module on GPIOB (3.3 V logic).
+set_pin_assignment { O_usb_sclk }  { LOCATION = K2;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
+set_pin_assignment { I_usb_miso }  { LOCATION = B10;  IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment { O_usb_mosi }  { LOCATION = C8;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
+set_pin_assignment { O_usb_ss_n }  { LOCATION = A5;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+set_pin_assignment { I_usb_int_n } { LOCATION = L4;  IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment { O_usb_res_n } { LOCATION = M1; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
+
+# Lens actuator I2C (separate from SC500 camera configuration I2C on K3/J3).
+set_pin_assignment { O_lens_scl } { LOCATION = R6; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+set_pin_assignment { IO_lens_sda } { LOCATION = R7; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+
+# DS3231 RTC I2C. SCL=D15, SDA=C18; both FPGA pins are open-drain and the
+# module must provide (or be connected to) 3.3 V pull-ups.
+set_pin_assignment { IO_rtc_scl } { LOCATION = D15; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+set_pin_assignment { IO_rtc_sda } { LOCATION = C18; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+
+# Servo signal outputs. Use an external servo supply and share ground with FPGA.
+set_pin_assignment { O_servo_pan }  { LOCATION = V6; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLDOWN; }
+set_pin_assignment { O_servo_tilt } { LOCATION = V4; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLDOWN; }
+
+# Board USB-UART bridge.
+# ATK-ESP-01, independent USART0. Module and FPGA share GND; 3.3V logic.
+set_pin_assignment { I_wifi_uart_rx } { LOCATION = E12; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment { O_wifi_uart_tx } { LOCATION = E16; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+set_pin_assignment { IO_wifi_reset_n } { LOCATION = F13; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+set_pin_assignment { IO_wifi_gpio0 } { LOCATION = E17; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+set_pin_assignment	{ I_mcu_uart_rx }		{ LOCATION = J1; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ O_mcu_uart_tx }		{ LOCATION = H1; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+
+set_pin_assignment	{ O_cam_scl }		{ LOCATION = K3; IOSTANDARD  = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+set_pin_assignment	{ IO_cam_sda }		{ LOCATION = J3; IOSTANDARD  = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+set_pin_assignment	{ O_cam_24m }	{ LOCATION = L3; IOSTANDARD  = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+set_pin_assignment	{ O_cam_rst }		{ LOCATION = L2; IOSTANDARD  = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
+
+set_pin_assignment	{ I_button[0] }			{ LOCATION = D5; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ I_button[1] }			{ LOCATION = A9; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ I_button[2] }			{ LOCATION = B9; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ I_button[3] }			{ LOCATION = C7; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+
+set_pin_assignment	{ O_tmds_ch0_p }		{ LOCATION = G16; IOSTANDARD = TMDS33; PULLTYPE = NONE; }
+set_pin_assignment	{ O_tmds_ch1_p }		{ LOCATION = F17; IOSTANDARD = TMDS33; PULLTYPE = NONE; }
+set_pin_assignment	{ O_tmds_ch2_p }		{ LOCATION = H14; IOSTANDARD = TMDS33; PULLTYPE = NONE; }
+set_pin_assignment	{ O_tmds_clk_p }		{ LOCATION = C17; IOSTANDARD = TMDS33; PULLTYPE = NONE; }
+
+
+
+# Onboard TF socket, dedicated SPI mode. DAT1/DAT2 are unused inputs.
+set_pin_assignment { O_sd_clk }  { LOCATION = A7; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
+set_pin_assignment { O_sd_mosi } { LOCATION = A8; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+set_pin_assignment { I_sd_miso } { LOCATION = E8; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment { O_sd_cs }   { LOCATION = B12; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+set_pin_assignment { O_phy_rst } { LOCATION = V8; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { I_a_rgmii_rxc } { LOCATION = V3; IOSTANDARD = LVCMOS33; }
+set_pin_assignment { I_a_rgmii_rx_ctl } { LOCATION = N8; IOSTANDARD = LVCMOS33; }
+set_pin_assignment { O_a_rgmii_txc } { LOCATION = U9; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; OUTDEL = 3; }
+set_pin_assignment { O_a_rgmii_tx_ctl } { LOCATION = R10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { I_a_rgmii_rxd[0] } { LOCATION = N9; IOSTANDARD = LVCMOS33; }
+set_pin_assignment { I_a_rgmii_rxd[1] } { LOCATION = T7; IOSTANDARD = LVCMOS33; }
+set_pin_assignment { I_a_rgmii_rxd[2] } { LOCATION = T8; IOSTANDARD = LVCMOS33; }
+set_pin_assignment { I_a_rgmii_rxd[3] } { LOCATION = T9; IOSTANDARD = LVCMOS33; }
+set_pin_assignment { O_a_rgmii_txd[0] } { LOCATION = R11; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { O_a_rgmii_txd[1] } { LOCATION = P11; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { O_a_rgmii_txd[2] } { LOCATION = T10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { O_a_rgmii_txd[3] } { LOCATION = R12; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { O_net_led[0] } { LOCATION = D10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { O_net_led[1] } { LOCATION = E10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { O_net_led[2] } { LOCATION = C6; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }
+set_pin_assignment { O_net_led[3] } { LOCATION = D6; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; }

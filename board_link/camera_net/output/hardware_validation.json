@@ -1,0 +1,41 @@
+{
+  "recorded": "2026-10-19T20:56:27",
+  "downloads": [
+    {
+      "board": "EG4D20EG176",
+      "bit": "eg_image_sink.bit",
+      "sha256": "4f638e2c53d3dea14425051fe0bd978023147d9498b477bdbd2986b24c6516e8",
+      "mode": "PROGRAM_SRAM",
+      "download": "SUCCESS",
+      "evidence": "eg_sram_download.txt"
+    },
+    {
+      "board": "PH1P35MDG324",
+      "bit": "camera_network.bit",
+      "sha256": "6382d25467845ad0c54d2a7b91d365485c48727e41e1ee9b4950c3ef98f7c92c",
+      "mode": "PROGRAM_SRAM",
+      "download": "SUCCESS",
+      "evidence": "main_sram_download.txt"
+    }
+  ],
+  "flash_changed": false,
+  "image_recognition_verified_on_hardware": false,
+  "display_observation": "USER_CONFIRMED_NORMAL_CAMERA_VIDEO_BUT_NO_RECOGNITION",
+  "serial": "COM6 startup capture had no new main-program messages; not proof of MCU boot or network failure.",
+  "mcu_firmware": {
+    "mcu_download": "SUCCESS_VIA_FD",
+    "target_state": "running",
+    "elf": "C:\\Users\\21397\\Desktop\\fpga1\\sc500cs\\FDwork\\anlu_app\\build\\anlu_app.elf",
+    "sha256": "fe3db5d1ff71b4e4e9a489a19790c97e1bece34b204e5b5b8e64c3c3bc924a57",
+    "evidence": "FD Logger: 2026-10-19 21:06:51 load ELF done; Execute launch session done",
+    "config": "anlu_app_camera_net.launch",
+    "target_config": "camera_net_ram.cfg",
+    "fixes": [
+      "INIT_PARM forced to 0x104: PAD CPU IR5 + FPGA IR8",
+      "USB location 3-1 overridden with observed libusb location 1-13",
+      "released stale BitWriter hwserver PID 13516"
+    ],
+    "program_fpga": false,
+    "flash_changed": false
+  }
+}

@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.debug.1387869197/COMPILE_PREFIX/delimiter=;
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.debug.1387869197/COMPILE_PREFIX/operation=replace
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.debug.1387869197/COMPILE_PREFIX/value=${IDE_ROOT_PATH}/toolchain/gcc/riscv/ph1p35/bin/riscv64-unknown-elf-
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.debug.1387869197/append=true
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.debug.1387869197/appendContributed=true
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.release.95982441/COMPILE_PREFIX/delimiter=;
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.release.95982441/COMPILE_PREFIX/operation=replace
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.release.95982441/COMPILE_PREFIX/value=${IDE_ROOT_PATH}/toolchain/gcc/riscv/ph1p35/bin/riscv64-unknown-elf-
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.release.95982441/append=true
+environment/project/ilg.gnumcueclipse.managedbuild.cross.riscv.config.lib.release.95982441/appendContributed=true

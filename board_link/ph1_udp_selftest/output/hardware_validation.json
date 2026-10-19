@@ -1,0 +1,41 @@
+{
+  "verified_at": "2026-10-19T20:09:34.1474641+08:00",
+  "status": "PASS: physical PH1P35 -> EG4D20 -> PH1P35 UDP round trip",
+  "connection": "Board RJ45 to board RJ45 directly; PC wired adapter disconnected",
+  "ph1": {
+    "device": "PH1P35MDG324",
+    "ip": "192.168.50.1",
+    "udp_port": 6001,
+    "mac": "02:00:00:00:00:01",
+    "program_mode": "SRAM",
+    "bit_sha256": "0eb925970943063d5cda3e800c358ba35cdf095d806d7811576b8c808c8d70ca"
+  },
+  "eg4": {
+    "device": "EG4D20EG176",
+    "ip": "192.168.50.2",
+    "udp_port": 6002,
+    "mac": "02:00:00:00:00:02",
+    "program_mode": "SRAM",
+    "bit_sha256": "cfe5971a60ad69ee6baa8e0de320342600648d2423046d23efd88a0a9a914e0a"
+  },
+  "serial": "COM6 / 115200 / 8N1; DTR and RTS disabled",
+  "payload_bytes": 64,
+  "consecutive_pass": 20,
+  "first_sequence": "00000000",
+  "last_sequence": "00000013",
+  "fail_events": 0,
+  "timeout_events": 0,
+  "acceptance_window": "After direct cable connection and successful PH1 SRAM reload; earlier no-output/timeout sessions retained separately",
+  "payload_validation": "PH1 checks full payload, length, sequence and source UDP port after EG echo",
+  "image_hash_note": "Hashes identify selected programming files, not independently read-back SRAM contents",
+  "limitations": [
+    "Independent network test; camera integration not performed",
+    "Both SRAM programs require reloading after power loss",
+    "Only this stop-and-wait 64-byte round-trip case was measured; no throughput measurement"
+  ],
+  "logs": [
+    "hardware_pass_20.txt",
+    "successful_sram_downloads.txt",
+    "ph1_reload_success.txt"
+  ]
+}

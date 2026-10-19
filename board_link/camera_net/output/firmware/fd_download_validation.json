@@ -1,0 +1,16 @@
+{
+  "mcu_download": "SUCCESS_VIA_FD",
+  "target_state": "running",
+  "elf": "C:\\Users\\21397\\Desktop\\fpga1\\sc500cs\\FDwork\\anlu_app\\build\\anlu_app.elf",
+  "sha256": "fe3db5d1ff71b4e4e9a489a19790c97e1bece34b204e5b5b8e64c3c3bc924a57",
+  "evidence": "FD Logger: 2026-10-19 21:06:51 load ELF done; Execute launch session done",
+  "config": "anlu_app_camera_net.launch",
+  "target_config": "camera_net_ram.cfg",
+  "fixes": [
+    "INIT_PARM forced to 0x104: PAD CPU IR5 + FPGA IR8",
+    "USB location 3-1 overridden with observed libusb location 1-13",
+    "released stale BitWriter hwserver PID 13516"
+  ],
+  "program_fpga": false,
+  "flash_changed": false
+}

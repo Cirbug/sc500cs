@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "image_pixels": 14400,
+  "forward_udp": 62,
+  "return_udp": 62,
+  "return_payload_bytes": 40,
+  "retries": 1,
+  "complete_frames": 1,
+  "checks": [
+    "actual two UDP/MAC stacks",
+    "FCS every frame",
+    "IP checksum",
+    "ports and addresses",
+    "every image byte",
+    "lost ACK and duplicate frame suppression",
+    "recognition result return",
+    "heartbeat without video",
+    "LOGO_PASS",
+    "RECOVERY_PASS",
+    "RECEIVER_PASS",
+    "CAPTURE_PASS",
+    "BRIDGE_PASS",
+    "rectangle",
+    "circle",
+    "triangle",
+    "blue_circle",
+    "blank",
+    "diamond"
+  ]
+}

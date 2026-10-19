@@ -1,0 +1,28 @@
+﻿FD 手动下载（主板 PH1P35）
+
+1. 两块板保持供电，网线直连。关闭 BitWriter 的下载连接，避免占用主板下载线。
+2. 启动 D:\fang\fd.exe，选择工作区：
+   C:\Users\21397\Desktop\fpga1\sc500cs\FDwork
+3. 在 anlu_app 工程右键 Refresh（刷新），打开 Run → Debug Configurations。
+4. 选择 anlu_app_camera_net。若列表未出现，右键工程内同名 .launch 文件 → Debug As。
+5. 主程序 ELF 应为：
+   C:\Users\21397\Desktop\fpga1\sc500cs\FDwork\anlu_app\build\anlu_app.elf
+   此程序已经编译检查，无需先执行 Clean/Rebuild。
+6. Debugger 页面刷新并选择主板下载线。当前已实测 USB 位置为 1-13，camera_net_ram.cfg 会覆盖旧的 3-1。换 USB 插口后需重新核对位置。
+   保持 Program FPGA 关闭；Load image、Load symbols 开启。
+   使用新配置已有的 camera_net_ram.cfg，不要改用旧 D 盘工程路径。
+7. 点击 Debug，下载完成后确认程序正在运行；如果停在断点，按 F8（Resume）。
+8. 在主板菜单进入“红色跟踪”或“形状识别”，用较大的清楚目标停留两秒观察。
+
+这次只下载主板 MCU 到 RAM；从板仍使用 eg_image_sink.bit。
+若两块板曾断电，需先重新下载配套 FPGA：主板 camera_network.bit，从板 eg_image_sink.bit，再加载主板 MCU。
+目前仅确认 HDMI 摄像头正常，尚未确认实机识别成功。若下载报错，请保留 FD 控制台日志。
+
+2026-10-19 21:06：已在 FD 实际下载成功，MCU 状态 running。调试链参数固定为已验证的 0x104。
+
+2026-10-19 21:47：320×180 新版已下载两板，MCU ELF 已加载并逐段校验。用户确认 HDMI 正常、红色有框、圆/矩形/三角形均能稳定识别。
+新 FPGA 文件位于 output320（不要使用旧 output），实测图像处理约8帧/秒；调试连接已释放，可继续使用 FD。
+
+2026-10-19 21:56：从板进一步更新红色防误检版本（连续三帧确认、小噪点过滤、目标丢失立即停止命令）。主板 bit 和 MCU ELF 不变。背景8次采样均未误报，自动跟踪已恢复；本次实物复测反馈待确认。
+
+2026-10-19T22:00:36+08:00：用户确认防误检修正版实测通过：无红色不乱动，放入红色能跟踪，圆形/矩形/三角形仍能稳定识别。配套文件位于 output320。

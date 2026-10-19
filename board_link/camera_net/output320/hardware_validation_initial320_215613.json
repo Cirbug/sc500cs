@@ -1,0 +1,82 @@
+{
+  "recorded": "2026-10-19T21:44:06",
+  "downloads": [
+    {
+      "board": "PH1P35MDG324",
+      "file": "camera_network.bit",
+      "sha256": "6b4fb34e9c4b564279db3530e7947df66dff91623ef753a5eb34ebd626c5b567",
+      "mode": "JTAG_SRAM",
+      "evidence": "main320_download.log",
+      "verified_by": "download completed and live matching v2 image/48-byte result exchange"
+    },
+    {
+      "board": "EG4D20EG176",
+      "file": "eg_image_sink.bit",
+      "sha256": "88c5b0c7156a0de214307594001243cbea0a29738f5de1c0bffaf2c9ebd82c07",
+      "mode": "JTAG_SRAM",
+      "evidence": "eg320_download.log",
+      "verified_by": "download completed and live matching v2 image/48-byte result exchange"
+    }
+  ],
+  "flash_changed": false,
+  "mcu": {
+    "elf": "firmware/anlu_app.elf",
+    "all_load_sections_verified": true,
+    "sha256": "fe3db5d1ff71b4e4e9a489a19790c97e1bece34b204e5b5b8e64c3c3bc924a57",
+    "state_before_debugger_release": "running"
+  },
+  "measured": {
+    "frames": 66,
+    "sent": 15840,
+    "acked": 15840,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 66,
+    "remote_errors": 0,
+    "seconds": 8.67200000000048,
+    "fps": 7.610701107010649
+  },
+  "dimensions": [
+    320,
+    180
+  ],
+  "secondary_downsampling": false,
+  "red_result_valid_samples": 8,
+  "shape_result_valid_samples": 1,
+  "processing_failure_samples": 0,
+  "visual_acceptance": "PASS: user confirmed normal HDMI, visible red tracking box, and stable circle/rectangle/triangle recognition.",
+  "detection_accuracy": "Functional target check passed by user observation; no quantitative accuracy benchmark was performed.",
+  "initial_counter_note": "Before sample: 30 timeout/drop events and 4 remote errors; none increased during measured interval.",
+  "downloader_note": "Main connect_cable emitted an option-parser warning but launched hwserver and completed download. The live 0x014000b4 dimensions and v2 matching-frame counters verify the new design is running.",
+  "user_observation": {
+    "timestamp": "2026-10-19T21:45:38",
+    "hdmi_camera": "NORMAL",
+    "red_tracking_box": "VISIBLE",
+    "shape_recognition": "Circle, rectangle and triangle all stable, confirmed by user",
+    "shape_confirmation_time": "2026-10-19T21:47:02"
+  },
+  "stability": {
+    "frames": 187,
+    "sent": 44880,
+    "acked": 44880,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 187,
+    "remote_errors": 0,
+    "seconds": 24.28099999999904,
+    "fps": 7.7014949960877805
+  },
+  "extended_run": {
+    "frames": 470,
+    "sent": 112750,
+    "acked": 112751,
+    "timeouts": 0,
+    "bad": 0,
+    "remote_frames": 470,
+    "remote_errors": 0,
+    "seconds": 58.20300000000134,
+    "fps": 8.075185127914184
+  },
+  "extended_shape_valid_samples": 0,
+  "debugger_released": true
+}

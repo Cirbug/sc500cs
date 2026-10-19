@@ -1,0 +1,61 @@
+{
+  "status": "BUILD_AND_SIMULATION_PASS",
+  "generated": "2026-10-19T20:52:54",
+  "mode": "PH1 camera + HDMI; EG red tracking and rectangle/circle/triangle recognition; 40-byte replies",
+  "image": {
+    "width": 160,
+    "height": 90,
+    "format": "RGB332",
+    "interval_seconds": 1
+  },
+  "boards": {
+    "PH1P35": {
+      "file": "camera_network.bit",
+      "sha256": "6382d25467845ad0c54d2a7b91d365485c48727e41e1ee9b4950c3ef98f7c92c",
+      "setup_wns_ns": 0.116,
+      "hold_wns_ns": 0.02,
+      "sta_coverage": "94.41%"
+    },
+    "EG4D20": {
+      "file": "eg_image_sink.bit",
+      "sha256": "4f638e2c53d3dea14425051fe0bd978023147d9498b477bdbd2986b24c6516e8",
+      "setup_wns_ns": 0.104,
+      "hold_wns_ns": 0.011,
+      "sta_coverage": "99.94%"
+    }
+  },
+  "simulation": {
+    "status": "PASS",
+    "image_pixels": 14400,
+    "forward_udp": 62,
+    "return_udp": 62,
+    "return_payload_bytes": 40,
+    "retries": 1,
+    "complete_frames": 1,
+    "checks": [
+      "actual two UDP/MAC stacks",
+      "FCS every frame",
+      "IP checksum",
+      "ports and addresses",
+      "every image byte",
+      "lost ACK and duplicate frame suppression",
+      "recognition result return",
+      "heartbeat without video",
+      "LOGO_PASS",
+      "RECOVERY_PASS",
+      "RECEIVER_PASS",
+      "CAPTURE_PASS",
+      "BRIDGE_PASS",
+      "rectangle",
+      "circle",
+      "triangle",
+      "blue_circle",
+      "blank",
+      "diamond"
+    ]
+  },
+  "pin_check": "PASS",
+  "main_source_unchanged": true,
+  "hardware_validation": "BOTH_SRAM_DOWNLOADS_SUCCESS; CAMERA_AND_RECOGNITION_CONFIRMATION_PENDING",
+  "previous_hardware_pass": "Old standalone 64-byte echo only; not image recognition evidence"
+}

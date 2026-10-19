@@ -1,0 +1,14 @@
+{
+  "elf": "C:\\Users\\21397\\Desktop\\fpga1\\sc500cs\\FDwork\\anlu_app\\build\\anlu_app.elf",
+  "sha256": "fe3db5d1ff71b4e4e9a489a19790c97e1bece34b204e5b5b8e64c3c3bc924a57",
+  "build": "PASS",
+  "static_startup_and_capacity_check": "PASS",
+  "tcm_section_bytes": 49096,
+  "tcm_capacity": 49152,
+  "stack_bytes": 2048,
+  "heap_bytes": 1024,
+  "heap_to_stack_gap": 0,
+  "mcu_download": "SUCCESS_VIA_FD",
+  "new_network_logging_added": false,
+  "target_state": "running"
+}

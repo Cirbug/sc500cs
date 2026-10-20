@@ -1,6 +1,7 @@
 `include "video_params.vh"
 // Keep the mailbox reachable from existing TD GUI/generated source lists.
 `include "red_track_mailbox.v"
+`include "red_track_display.v"
 `include "video_integrity.v"
 `include "capture_display_latency.v"
 `include "histogram_equalizer.v"
@@ -242,6 +243,10 @@ module design_top_wrapper (
     wire signed [12:0] S_track_ex, S_track_ey;
     wire [6:0]  S_track_area;
     wire [31:0] S_track_status_apb, S_track_errors_apb;
+    wire S_track_display_valid, S_track_x_negative, S_track_y_negative;
+    wire [11:0] S_track_display_x0,S_track_display_y0,S_track_display_x1,S_track_display_y1;
+    wire [11:0] S_track_display_cx,S_track_display_cy;
+    wire [15:0] S_track_x_bcd,S_track_y_bcd;
     wire [23:0] S_hdmi_base_data;
     wire        S_hdmi_overlay_valid;
     wire        S_effect_vsync, S_effect_hsync, S_effect_de;
@@ -1737,6 +1742,19 @@ isp_top u_isp_top (
         .O_area_percent (S_track_area)
     );
 
+    red_track_display #(.IMG_WIDTH(`HDMI_H_ACTIVE),.IMG_HEIGHT(`HDMI_V_ACTIVE)) u_red_track_display(
+        .clk(S_hdmi_pixel_clk),.rst_n(S_hdmi_rst_n),
+        .enable(S_dbg_recog_mode && S_dbg_step==3'd5),.reacquire(S_track_reacquire),
+        .frame_start(S_hdmi_user),.new_result(S_track_new),.valid(S_track_valid),
+        .x0(S_track_x0),.y0(S_track_y0),.x1(S_track_x1),.y1(S_track_y1),
+        .cx(S_track_cx),.cy(S_track_cy),
+        .out_valid(S_track_display_valid),
+        .out_x0(S_track_display_x0),.out_y0(S_track_display_y0),
+        .out_x1(S_track_display_x1),.out_y1(S_track_display_y1),
+        .out_cx(S_track_display_cx),.out_cy(S_track_display_cy),
+        .x_negative(S_track_x_negative),.y_negative(S_track_y_negative),
+        .x_bcd(S_track_x_bcd),.y_bcd(S_track_y_bcd));
+
     red_track_mailbox u_red_track_mailbox (
         .pixel_clk(S_hdmi_pixel_clk), .apb_clk(S_mcu_apb_clk),
         .rst_n(S_hdmi_rst_n && S_rst_n),
@@ -1795,13 +1813,13 @@ isp_top u_isp_top (
         .I_color_count  ( S_color_count ),
         .I_color_x0 (S_color_x0), .I_color_y0 (S_color_y0),
         .I_color_x1 (S_color_x1), .I_color_y1 (S_color_y1),
-        .I_track_new (S_track_new), .I_track_valid (S_track_valid),
+        .I_track_new (S_track_new), .I_track_valid (S_track_display_valid),
         .I_track_state (S_track_state),
         .I_track_dx (S_track_dx), .I_track_dy (S_track_dy),
         .I_track_lx (S_track_lx), .I_track_ly (S_track_ly),
-        .I_track_x0 (S_track_x0), .I_track_y0 (S_track_y0),
-        .I_track_x1 (S_track_x1), .I_track_y1 (S_track_y1),
-        .I_track_cx (S_track_cx), .I_track_cy (S_track_cy),
+        .I_track_x0 (S_track_display_x0), .I_track_y0 (S_track_display_y0),
+        .I_track_x1 (S_track_display_x1), .I_track_y1 (S_track_display_y1),
+        .I_track_cx (S_track_display_cx), .I_track_cy (S_track_display_cy),
         .I_track_ex (S_track_ex), .I_track_ey (S_track_ey),
         .I_track_area (S_track_area),
         .O_video_rd_en   ( S_hdmi_window_rd_en),
@@ -1957,6 +1975,12 @@ isp_top u_isp_top (
         .I_shape_x0     ( S_shape_x0 ),
         .I_shape_y0     ( S_shape_y0 ),
         .I_shape_y1     ( S_shape_y1 ),
+        .I_track_valid  ( S_track_display_valid ),
+        .I_track_x0     ( S_track_display_x0 ),
+        .I_track_y0     ( S_track_display_y0 ),
+        .I_track_y1     ( S_track_display_y1 ),
+        .I_track_x_negative(S_track_x_negative),.I_track_y_negative(S_track_y_negative),
+        .I_track_x_bcd(S_track_x_bcd),.I_track_y_bcd(S_track_y_bcd),
         .I_picture_ctrl ( S_picture_pixel ),
         .I_exposure     ( S_ui_ae_p2 ),
         .I_gain         ( S_ui_ag_p2 ),

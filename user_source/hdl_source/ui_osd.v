@@ -44,6 +44,10 @@ module ui_osd #(
     input  wire        I_shape_valid,
     input  wire [2:0]  I_shape_type,
     input  wire [11:0] I_shape_x0, I_shape_y0, I_shape_y1,
+    // Frame-coherent display metadata from red_track_display.
+    input  wire        I_track_valid,I_track_x_negative,I_track_y_negative,
+    input  wire [11:0] I_track_x0,I_track_y0,I_track_y1,
+    input  wire [15:0] I_track_x_bcd,I_track_y_bcd,
     input  wire [15:0] I_picture_ctrl,
     input  wire [15:0] I_exposure,
     input  wire [15:0] I_gain,
@@ -151,11 +155,29 @@ module ui_osd #(
     reg result_hit;
     reg [11:0] result_dx, result_dy;
     reg [11:0] anchor_x, anchor_y, label_width;
+    // Two 32-pixel coordinate rows beside the existing 32x32 "red" glyphs.
+    // Reuse the font ROM and ASCII pixel path; no extra ERAM or MCU work.
+    localparam integer TRACK_LABEL_W=304, TRACK_LABEL_H=72;
     wire controls_hit = (I_menu_enable && x>=24 && x<492 && y>=644 && y<1004) ||
                         (x>=24 && x<220 && y>=1016 && y<1076) ||
                         (x>=236 && x<260 && y>=1034 && y<1058) ||
                         (x>=CLOCK_X0 && x<CLOCK_X0+284 && y>=CLOCK_Y0 && y<CLOCK_Y0+80) ||
                         (x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<(stats_detail_frame?276:96));
+    wire track_label_enable=RESULT_CHINESE && MENU_CHINESE &&
+                           I_image_step==5 && I_track_valid;
+    wire [11:0] track_label_x=(I_track_x0>H_ACTIVE-TRACK_LABEL_W)?
+                              H_ACTIVE-TRACK_LABEL_W:I_track_x0;
+    wire [11:0] track_label_y=(I_track_y1<=V_ACTIVE-TRACK_LABEL_H-6)?
+                              I_track_y1+12'd6:
+                              (I_track_y0>=TRACK_LABEL_H+4)?
+                              I_track_y0-TRACK_LABEL_H-4:12'd0;
+    wire track_label_hit=track_label_enable && !controls_hit &&
+                         x>=track_label_x && x<track_label_x+TRACK_LABEL_W &&
+                         y>=track_label_y && y<track_label_y+TRACK_LABEL_H;
+    wire [11:0] track_text_x=x-track_label_x-12'd76;
+    wire [11:0] track_text_y=y-track_label_y-12'd6;
+    wire [15:0] track_value=track_text_y[5]?I_track_y_bcd:I_track_x_bcd;
+    wire track_negative=track_text_y[5]?I_track_y_negative:I_track_x_negative;
     always @* begin
         label_width=(I_shape_type==4)?12'd104:12'd72;
         anchor_x=(I_shape_x0>H_ACTIVE-label_width)?H_ACTIVE-label_width:I_shape_x0;
@@ -231,6 +253,13 @@ module ui_osd #(
                 0:cn_id=result_chars[6:0];1:cn_id=result_chars[13:7];
                 2:cn_id=result_chars[20:14];3:cn_id=result_chars[27:21];
             endcase
+        end
+        if(track_label_hit && x>=track_label_x+4 && x<track_label_x+68 &&
+           y>=track_label_y+20 && y<track_label_y+52) begin
+            cn_dx=x-track_label_x-12'd4;cn_dy=y-track_label_y-12'd20;
+            cn_active=1;cn_col=cn_dx[4:0];cn_row=cn_dy[4:0];cn_color=24'hff4040;
+            // Existing "red target tracking" menu text supplies both glyph IDs.
+            cn_id=cn_label_id(2'd3,4'd4,{2'b0,cn_dx[5]});
         end
         if(y>=658 && y<690) begin cn_line_active=1; cn_line=0; cn_dy=y-658; end
         else if(y>=694 && y<726) begin cn_line_active=1; cn_line=1; cn_dy=y-694; end
@@ -361,6 +390,26 @@ module ui_osd #(
         // A compact dark backing keeps the result legible on every effect,
         // including white binary/edge pixels; other picture pixels pass through.
         if(result_hit) pixel=24'h101820;
+        if(track_label_hit) begin
+            pixel=24'h101820;
+            if(x>=track_label_x+76 && x<track_label_x+300 &&
+               y>=track_label_y+6 && y<track_label_y+66) begin
+                char_no={1'b0,track_text_x[7:5]};
+                col=track_text_x[4:2];row=track_text_y[4:2];
+                case(char_no)
+                    0:ch=track_text_y[5]?"Y":"X";
+                    1:ch=":";
+                    2:ch=track_negative?"-":"+";
+                    3:ch={4'h3,track_value[15:12]};
+                    4:ch={4'h3,track_value[11:8]};
+                    5:ch={4'h3,track_value[7:4]};
+                    6:ch={4'h3,track_value[3:0]};
+                    default:ch=" ";
+                endcase
+                glyph=glyph_bits(ch,row);
+                if(row<7 && col<5 && glyph[4-col]) pixel=24'hff4040;
+            end
+        end
         // A thin 160x120 focus frame. Draw before menu controls so the UI
         // keeps priority even when the ROI reaches the edge of the panel.
         if(focus_roi_frame[31] === 1'b1 && x>=focus_x && x<focus_x+160 &&

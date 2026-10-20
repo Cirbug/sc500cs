@@ -1,4 +1,4 @@
-Cirbug
-pc
-39416
-D:\2026fpga\lab_hd_1_mipi_hdmi\td_project\.lock.f
+LAPTOP-T95VR7F4
+XIAOXIAO
+8412
+C:\Users\XIAOXIAO\Desktop\fpga\sc500cs\sc500cs\td_project\.lock.f

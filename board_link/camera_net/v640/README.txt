@@ -20,7 +20,10 @@ and association distances are scaled to preserve prior screen coverage.
 The RGB565 classifier uses R5/G6/B5 bin midpoints. More colour precision
 does not itself prove that red/skin discrimination is fixed.
 
-Build projects: camera_network640.al / eg_image_sink640.al in parent.
+Current build projects: ../../../../td_project/camera_to_dsi_display.al (PH1P35)
+and ../eg_image_sink640.al (EG4D20). The older camera_network*.al and
+eg_image_sink*.al project files were removed; use build_main640.tcl and
+build_eg640.tcl only.
 Build scripts: build_main640.tcl / build_eg640.tcl in parent.
 Test runner: v640/tests/run640.py. Additional native EG_PHY_BRAM32K tests
 are tb_packed_ram640.sv and tb_guard640.sv; compile the vendor primitive

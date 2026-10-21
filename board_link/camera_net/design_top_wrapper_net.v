@@ -1642,21 +1642,6 @@ isp_top u_isp_top (
             S_video_de_1d <= S_hdmi_window_rd_en;
     end
 
-    rgb24_denoise u_rgb24_denoise_9 (
-        .I_clk         (S_hdmi_pixel_clk),
-        .I_rst_n       (S_hdmi_rst_n),
-        .I_sel         (S_dbg_recog_mode ? 4'd9 : 4'd0),
-        .I_tone        (2'd0),
-        .I_vsync       (S_hdmi_vsync),
-        .I_de          (S_video_de_1d),
-        .I_data        (S_video_rd_data),
-        .O_de          (S_video_dn_de),
-        .O_data        (S_video_dn_data),
-        .O_noise       (S_dn_noise),
-        .O_mean_y      (S_dn_mean_y),
-        .O_smooth_data (S_shape_input_data)
-    );
-
     // Image mode/effect/target/logo are supplied by the MCU APB menu.  The
     // former FPGA-side dbg_ctrl and its second key debouncer are intentionally
     // removed so all four physical buttons have one owner.
@@ -1668,47 +1653,26 @@ isp_top u_isp_top (
     wire [2:0] S_component_shape;
 
 
-    motion_detect #(
-        .IMG_WIDTH      (`DISPLAY_WIDTH),
-        .IMG_HEIGHT     (`DISPLAY_HEIGHT),
-        .BLOCK_SHIFT    (5),
-        .DIFF_THRESHOLD (8'd20),
-        .MIN_BLOCKS     (16'd4)
-    ) u_motion_detect_99 (
-        .I_clk      ( S_hdmi_pixel_clk ),
-        .I_rst_n    ( S_hdmi_rst_n ),
-        .I_user     ( S_hdmi_user ),
-        .I_de       ( S_video_dn_de ),
-        .I_data     ( S_video_dn_data ),
-        .I_enable   ( S_dbg_recog_mode && (S_dbg_step == 3'd4) ),
-        .I_target_mode ( S_motion_target ),
-        .O_valid    ( S_motion_valid ), .O_count ( S_motion_count ),
-        .O_tvalid   ( S_motion_tvalid ),
-        .O_x0_0 (S_motion_x0_0), .O_y0_0 (S_motion_y0_0),
-        .O_x1_0 (S_motion_x1_0), .O_y1_0 (S_motion_y1_0),
-        .O_x0_1 (S_motion_x0_1), .O_y0_1 (S_motion_y0_1),
-        .O_x1_1 (S_motion_x1_1), .O_y1_1 (S_motion_y1_1),
-        .O_x0_2 (S_motion_x0_2), .O_y0_2 (S_motion_y0_2),
-        .O_x1_2 (S_motion_x1_2), .O_y1_2 (S_motion_y1_2)
-    );
-
-    color_detect #(
-        .IMG_WIDTH    (`DISPLAY_WIDTH),
-        .IMG_HEIGHT   (`DISPLAY_HEIGHT),
-        .SAMPLE_SHIFT (4),
-        .MIN_SAMPLES  (16'd16)
-    ) u_color_detect_99 (
-        .I_clk      ( S_hdmi_pixel_clk ),
-        .I_rst_n    ( S_hdmi_rst_n ),
-        .I_user     ( S_hdmi_user ),
-        .I_de       ( S_video_dn_de ),
-        .I_data     ( S_video_dn_data ),
-        .I_enable   ( S_dbg_recog_mode && (S_dbg_step == 3'd4) ),
-        .O_valid    ( S_color_valid ), .O_color ( S_color_code ),
-        .O_count    ( S_color_count ),
-        .O_x0       ( S_color_x0 ), .O_y0 (S_color_y0),
-        .O_x1       ( S_color_x1 ), .O_y1 (S_color_y1)
-    );
+    // Recognition is executed on EG4D20 in the network build. Keep the HDMI
+    // mixer interface deterministic while the remote result bridge is idle.
+    assign S_video_dn_de = 1'b0;
+    assign S_video_dn_data = 24'd0;
+    assign S_shape_input_data = 24'd0;
+    assign S_dn_noise = 8'd0;
+    assign S_dn_mean_y = 8'd0;
+    assign S_motion_valid = 1'b0;
+    assign S_motion_count = 16'd0;
+    assign S_motion_tvalid = 3'd0;
+    assign S_motion_x0_0 = 12'd0; assign S_motion_y0_0 = 12'd0;
+    assign S_motion_x1_0 = 12'd0; assign S_motion_y1_0 = 12'd0;
+    assign S_motion_x0_1 = 12'd0; assign S_motion_y0_1 = 12'd0;
+    assign S_motion_x1_1 = 12'd0; assign S_motion_y1_1 = 12'd0;
+    assign S_motion_x0_2 = 12'd0; assign S_motion_y0_2 = 12'd0;
+    assign S_motion_x1_2 = 12'd0; assign S_motion_y1_2 = 12'd0;
+    assign S_color_valid = 1'b0; assign S_color_code = 3'd0;
+    assign S_color_count = 16'd0;
+    assign S_color_x0 = 12'd0; assign S_color_y0 = 12'd0;
+    assign S_color_x1 = 12'd0; assign S_color_y1 = 12'd0;
 
 
     wire [223:0] net_video_snapshot;

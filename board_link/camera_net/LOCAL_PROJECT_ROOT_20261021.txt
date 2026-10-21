@@ -1,0 +1,4 @@
+All EG sources are local to this camera_net directory.
+No build script or .al should reference D:\2026fpga\EG4D20.
+Copied EG dependencies: eg_local/rgmii_interface.v, eg_local/uiphyrst.v, eg_local/PLL2.v, eg_local/fpga_pin.adc.
+EG project: eg_image_sink640.al; timing: timing_eg_perf40.sdc.

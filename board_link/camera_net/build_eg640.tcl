@@ -1,19 +1,17 @@
-# Standalone build; all generated artifacts stay outside the source project.
-set root {C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net}
-set out {C:/Users/21397/Desktop/bank/camera_net_20261019/eg_640}
+# EG4D20 640x360 receiver build. All sources and constraints are local to this checkout.
+set root {D:/2026fpga/lab_hd_1_mipi_hdmi/board_link/camera_net}
+set out {D:/2026fpga/lab_hd_1_mipi_hdmi/board_link/camera_net/output640/eg_640_local_20261021}
 file mkdir $out
-# Preserve a previous image under a different name before a new attempt.
-# A failed build must not leave a stale image at the advertised download path.
-set bitpath [file join $out eg_image_sink.bit]
+set bitpath [file join $out eg_image_sink_640_20261021.bit]
 if {[file exists $bitpath]} {
-    file rename $bitpath [file join $out eg_image_sink_previous_[clock seconds].bit]
+    file rename $bitpath [file join $out eg_image_sink_640_previous_[clock seconds].bit]
 }
 cd $root
-open_project C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/eg_image_sink640.al -single_run
+open_project D:/2026fpga/lab_hd_1_mipi_hdmi/board_link/camera_net/eg_image_sink640.al -single_run
 import_device eagle_s20.db -package EG4D20EG176
 elaborate -top eg_image_sink
-read_adc C:/Users/21397/Desktop/EG4D20/uisrc/04_pin/fpga_pin.adc
-read_sdc C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/timing_eg_perf40.sdc
+read_adc D:/2026fpga/lab_hd_1_mipi_hdmi/board_link/camera_net/eg_local/fpga_pin.adc
+read_sdc D:/2026fpga/lab_hd_1_mipi_hdmi/board_link/camera_net/timing_eg_perf40.sdc
 cd $out
 optimize_rtl
 report_area -file rtl.area
@@ -21,7 +19,6 @@ optimize_gate -packarea gate.area
 legalize_phy_inst
 update_timing
 export_db optimized_gate.db
-
 set_param place seed 3
 place
 route
@@ -40,6 +37,7 @@ if {![regexp {SWNS:\s*([-0-9.]+)ns, STNS:\s*([-0-9.]+)ns} $timing _ sw st] ||
 if {$sw < 0 || $hw < 0 || $st != 0 || $ht != 0} {
     error "Timing failed: setup=$sw hold=$hw; no bit generated"
 }
-bitgen -bit eg_image_sink.bit
-puts EG_IMAGE_SINK_BUILD_COMPLETE
+bitgen -bit eg_image_sink_640_20261021.bit
+puts EG_IMAGE_SINK640_BUILD_COMPLETE
 exit
+

@@ -1,7 +1,7 @@
 // Full 640x360 recognition. One 3-bit class per received pixel, no spatial decimation.
 // Breadth-first component queue is bounded; overflow invalidates the whole result.
 // Completed frames are immutable until analysis finishes (receiver stop-and-wait).
-`include "C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/v640/shape_features640.v"
+`include "../shape_features640.v"
 module preview_analyzer #(parameter integer PROC_HZ=25000000)(
  input clk,proc_clk,rst,write_pixel,input [17:0] write_addr,input [15:0] write_data,input [15:0] write_word,input [2:0] write_lane,
  input start,output reg done,output reg [191:0] result

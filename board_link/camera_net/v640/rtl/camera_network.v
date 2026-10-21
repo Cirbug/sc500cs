@@ -1,5 +1,5 @@
 module camera_network(
- input sys_clk,main_rst_n,pixel_clk,vs,de,input [23:0] rgb,
+ input sys_clk,main_rst_n,pixel_clk,vs,frame_start,de,input [23:0] rgb,
  input [3:0] rxd,input rx_ctl,rxc,
  output [3:0] txd,output tx_ctl,txc,phy_rst_n,
  output net_clk,output [3:0] leds,output [447:0] diagnostics
@@ -26,7 +26,7 @@ module camera_network(
   if(rst)repair<=0;else if(recover)repair<=255;else if(repair!=0)repair<=repair-1'b1;
  wire stack_reset=rst || repair!=0;
  preview_capture u_capture(.pclk(pixel_clk),.nclk(clk),.rst_n(main_rst_n && locked),
-  .vs(vs),.de(de),.rgb(rgb),.release_frame(release_frame),.consume_chunk(consume_chunk),.rd_addr(addr),.rd_data(pixel),.ready(ready),.chunk_ready(chunk_ready),.aborted(aborted));
+  .vs(vs),.frame_start(frame_start),.de(de),.rgb(rgb),.release_frame(release_frame),.consume_chunk(consume_chunk),.rd_addr(addr),.rd_data(pixel),.ready(ready),.chunk_ready(chunk_ready),.aborted(aborted));
  preview_sender u_sender(.clk(clk),.rst(rst),.ready(ready),.chunk_ready(chunk_ready),.aborted(aborted),.pixel(pixel),
   .release_frame(release_frame),.consume_chunk(consume_chunk),.rd_addr(addr),.busy(busy),.req(req),.valid(valid),.data(data),.len(len),
   .rx_valid(rv),.rx_data(rd),.rx_len(rlen),.rx_port(rport),

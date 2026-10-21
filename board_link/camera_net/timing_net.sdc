@@ -38,6 +38,18 @@ set_clock_groups -asynchronous \
     -group [get_clocks {sys_clk_50m pll_clk_100m pll_clk_24m HDMI_PIXEL_CLK HDMI_SERIAL_CLK}] \
     -group [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/ddr_clk u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
 
+# REC1 read mailbox: read_index is held in the APB clock domain from the
+# read_request toggle until the DDR-domain acknowledgement returns.  It is a
+# bundled-data CDC, so constrain the held bus to the destination capture
+# clock and remove only the artificial hold check; the request synchronizer
+# remains timed.
+set_max_delay -datapath_only 8.000 \
+    -through [get_nets {u_recorder/read_index*}] \
+    -to [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
+set_false_path -hold \
+    -through [get_nets {u_recorder/read_index*}] \
+    -to [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
+
 # u_camera_settings: held bundle is sampled only after 3 request stages and held until ack.
 set_max_delay -datapath_only 8.000 -through [get_nets {u_camera_settings/held* u_camera_settings/req}] -to [get_clocks {pll_clk_24m}]
 set_false_path -hold -through [get_nets {u_camera_settings/held* u_camera_settings/req}] -to [get_clocks {pll_clk_24m}]

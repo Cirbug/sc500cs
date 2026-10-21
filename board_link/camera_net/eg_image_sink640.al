@@ -1,282 +1,303 @@
-<?xml version='1.0' encoding='utf-8'?>
-<Project Version="3" Minor="2" Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net">
-    <Project_Created_Time />
+<?xml version="1.0" encoding="UTF-8"?>
+<Project Version="3" Minor="2" Path="D:/2026fpga/lab_hd_1_mipi_hdmi/board_link/camera_net">
+    <Project_Created_Time></Project_Created_Time>
     <TD_Encoding>UTF-8</TD_Encoding>
     <TD_Version>6.2.168116</TD_Version>
     <Name>eg_image_sink640</Name>
     <HardWare>
         <Family>EG4</Family>
         <Device>EG4D20EG176</Device>
-        <Speed />
+        <Speed></Speed>
     </HardWare>
     <Source_Files>
         <Verilog>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/crc32_check.v">
+            <File Path="vendor/crc32_check.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="1" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="1"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/crc32_gen.v">
+            <File Path="vendor/crc32_gen.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="2" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="2"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/mac_cache.v">
+            <File Path="vendor/mac_cache.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="3" />
+                    <Attr Name="AutoExcluded" Val="true"/>
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="3"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/EG4D20/uisrc/03_ip/uiudp_stack/rgmii_interface.v">
+            <File Path="eg_local/rgmii_interface.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="4" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="4"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiarp_layer.v">
+            <File Path="vendor/uiarp_layer.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="5" />
+                    <Attr Name="AutoExcluded" Val="true"/>
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="5"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiarp_rx.v">
+            <File Path="vendor/uiarp_rx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="6" />
+                    <Attr Name="AutoExcluded" Val="true"/>
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="6"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiarp_tx.v">
+            <File Path="vendor/uiarp_tx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="7" />
+                    <Attr Name="AutoExcluded" Val="true"/>
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="7"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiicmp_pkg_ctrl.v">
+            <File Path="vendor/uiicmp_pkg_ctrl.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="8" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="8"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiicmp_pkg_tx.v">
+            <File Path="vendor/uiicmp_pkg_tx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="9" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="9"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiip_arp_tx.v">
+            <File Path="vendor/uiip_arp_tx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="10" />
+                    <Attr Name="AutoExcluded" Val="true"/>
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="10"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiip_header_checksum.v">
+            <File Path="vendor/uiip_header_checksum.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="11" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="11"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiip_layer.v">
+            <File Path="vendor/uiip_layer.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="12" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="12"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiip_rx.v">
+            <File Path="vendor/uiip_rx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="13" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="13"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiip_tx.v">
+            <File Path="vendor/uiip_tx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="14" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="14"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uimac_layer.v">
+            <File Path="vendor/uimac_layer.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="15" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="15"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uimac_rx.v">
+            <File Path="vendor/uimac_rx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="16" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="16"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uimac_tx.v">
+            <File Path="vendor/uimac_tx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="17" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="17"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uimac_tx_frame_ctrl.v">
+            <File Path="vendor/uimac_tx_frame_ctrl.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="18" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="18"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uimac_tx_pause_ctrl.v">
+            <File Path="vendor/uimac_tx_pause_ctrl.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="19" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="19"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiudp_layer.v">
+            <File Path="vendor/uiudp_layer.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="20" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="20"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiudp_rx.v">
+            <File Path="vendor/uiudp_rx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="21" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="21"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiudp_stack.v">
+            <File Path="vendor/uiudp_stack.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="22" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="22"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiudp_tx.v">
+            <File Path="vendor/uiudp_tx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="23" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="23"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/EG4D20/uisrc/03_ip/uiphyrst/uiphyrst.v">
+            <File Path="eg_local/uiphyrst.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="24" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="24"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/eg_image_sink_perf40.v">
+            <File Path="eg_image_sink_perf40.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="25" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="25"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/udp_pkg_buf.v">
+            <File Path="vendor/udp_pkg_buf.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="26" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="26"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/uiip_arp_rx.v">
+            <File Path="vendor/uiip_arp_rx.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="27" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="27"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/vendor/shift_ram_8bit.v">
+            <File Path="vendor/shift_ram_8bit.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="28" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="28"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/rtl/eg_recognition_pll40.v">
+            <File Path="rtl/eg_recognition_pll40.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="29" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="29"/>
                 </FileInfo>
             </File>
-            <File Path="C:/Users/21397/Desktop/EG4D20/al_ip/PLL2.v">
+            <File Path="eg_local/PLL2.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="30" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="30"/>
                 </FileInfo>
             </File>
-        <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/v640/rtl/preview_receiver.v"><FileInfo><Attr Name="UsedInSyn" Val="true" /><Attr Name="UsedInP&amp;R" Val="true" /><Attr Name="BelongTo" Val="design_1" /><Attr Name="CompileOrder" Val="31" /></FileInfo></File><File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/v640/rtl/preview_analyzer.v"><FileInfo><Attr Name="UsedInSyn" Val="true" /><Attr Name="UsedInP&amp;R" Val="true" /><Attr Name="BelongTo" Val="design_1" /><Attr Name="CompileOrder" Val="32" /></FileInfo></File><File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/v640/rtl/packed_tag_ram640.v">
+            <File Path="v640/rtl/preview_receiver.v">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="design_1" />
-                    <Attr Name="CompileOrder" Val="1" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="31"/>
                 </FileInfo>
             </File>
-            </Verilog>
+            <File Path="v640/rtl/preview_analyzer.v">
+                <FileInfo>
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="32"/>
+                </FileInfo>
+            </File>
+            <File Path="v640/rtl/packed_tag_ram640.v">
+                <FileInfo>
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="design_1"/>
+                    <Attr Name="CompileOrder" Val="33"/>
+                </FileInfo>
+            </File>
+        </Verilog>
         <ADC_FILE>
-            <File Path="C:/Users/21397/Desktop/EG4D20/uisrc/04_pin/fpga_pin.adc">
+            <File Path="eg_local/fpga_pin.adc">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="constraint_1" />
-                    <Attr Name="CompileOrder" Val="1" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="constraint_1"/>
+                    <Attr Name="CompileOrder" Val="1"/>
                 </FileInfo>
             </File>
         </ADC_FILE>
         <SDC_FILE>
-            <File Path="C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/timing_eg.sdc">
+            <File Path="timing_eg_perf40.sdc">
                 <FileInfo>
-                    <Attr Name="UsedInSyn" Val="true" />
-                    <Attr Name="UsedInP&amp;R" Val="true" />
-                    <Attr Name="BelongTo" Val="constraint_1" />
-                    <Attr Name="CompileOrder" Val="2" />
+                    <Attr Name="UsedInSyn" Val="true"/>
+                    <Attr Name="UsedInP&R" Val="true"/>
+                    <Attr Name="BelongTo" Val="constraint_1"/>
+                    <Attr Name="CompileOrder" Val="2"/>
                 </FileInfo>
             </File>
         </SDC_FILE>

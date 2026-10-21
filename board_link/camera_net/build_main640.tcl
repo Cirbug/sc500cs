@@ -1,30 +1,33 @@
 # Main integration: tracking/resource optimizations plus retained MIPI/HDMI telemetry.
-set root {C:/Users/21397/Desktop/fpga1/sc500cs}
+# Keep this script tied to the checked-out project.  The previous Desktop path
+# could silently build a stale copy of camera_network640.al.
+set root {D:/2026fpga/lab_hd_1_mipi_hdmi}
+set project [file join $root td_project camera_to_dsi_display.al]
 source [file join $root tests check_mcu_pad_jtag.tcl]
 check_mcu_pad_jtag $root
-set out {C:/Users/21397/Desktop/bank/camera_net_20261019/fpga_640}
+set out {D:/2026fpga/bank/camera_net_20261021_640}
 if {[info exists ::env(CAMERA_NET_BUILD_DIR)]} {set out [file normalize $::env(CAMERA_NET_BUILD_DIR)]}
 file mkdir $out
-cd {C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net}
+cd [file dirname $project]
 import_device ph1_35p.db -package PH1P35MDG324 -speed 3
 if {[info exists ::env(CAMERA_NET_ROUTE_DB)]} {
-open_project C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/camera_network640.al -single_run -noanalyze
+open_project $project -single_run -noanalyze
 import_db [file normalize $::env(CAMERA_NET_ROUTE_DB)]
 cd $out
 } elseif {[info exists ::env(CAMERA_NET_GATE_DB)]} {
-open_project C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/camera_network640.al -single_run -noanalyze
+open_project $project -single_run -noanalyze
 import_db [file normalize $::env(CAMERA_NET_GATE_DB)]
 cd $out
 } else {
-open_project C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/camera_network640.al -single_run
+open_project $project -single_run
 load_run_param -run syn_1
 elaborate -top design_top_wrapper
-read_adc C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/pin_net.adc
-read_ip_adc -ip ddr2 -file C:/Users/21397/Desktop/fpga1/sc500cs/user_source/hdl_source/ph1p35_ddr/ddr2/src/adc/ddr2.adc
-read_sdc C:/Users/21397/Desktop/fpga1/sc500cs/board_link/camera_net/timing_net.sdc
-read_sdc -ip RISCV_F6F1D1P0_0 C:/Users/21397/Desktop/fpga1/sc500cs/td_project/al_ip/RISCV_F6F1D1P0_0/RISCV_F6F1D1P0_0.tcl
-read_sdc -ip ddr2 C:/Users/21397/Desktop/fpga1/sc500cs/user_source/hdl_source/ph1p35_ddr/ddr2/src/sdc/ddr2.sdc
-read_sdc -ip w128_d512_fifo C:/Users/21397/Desktop/fpga1/sc500cs/user_source/ip_source/w128_d512_fifo/w128_d512_fifo.tcl
+read_adc [file join $root board_link camera_net pin_net.adc]
+read_ip_adc -ip ddr2 -file [file join $root user_source hdl_source ph1p35_ddr ddr2 src adc ddr2.adc]
+read_sdc [file join $root td_project camera_to_dsi_display.sdc]
+read_sdc -ip RISCV_F6F1D1P0_0 [file join $root td_project al_ip RISCV_F6F1D1P0_0 RISCV_F6F1D1P0_0.tcl]
+read_sdc -ip ddr2 [file join $root user_source hdl_source ph1p35_ddr ddr2 src sdc ddr2.sdc]
+read_sdc -ip w128_d512_fifo [file join $root user_source ip_source w128_d512_fifo w128_d512_fifo.tcl]
 cd $out
 optimize_rtl
 report_area -file rtl.area

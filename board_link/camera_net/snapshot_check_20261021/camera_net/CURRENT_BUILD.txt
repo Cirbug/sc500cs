@@ -1,0 +1,9 @@
+Current programmed EG4D20 SRAM image: output320_perf40/eg_image_sink.bit
+EG SHA256: 7b9d4dc89768323b8cc1240ef662f744791f9bbb06324741c02665c412b516b0
+PH1P35 image unchanged: output320_perf40/camera_network.bit
+320x180 RGB332, protocol v2, 40 MHz recognition, no JPEG/H264 or new transport compression.
+Download script: download_eg320_perf40.tcl
+Rollback 25 MHz image and script: output320/eg_image_sink.bit, download_eg320.tcl
+MCU auto-tracking remains disabled in RAM (0x08009d2f = 0) while hand/target segmentation is unresolved.
+SRAM programming is volatile; Flash was not changed.
+Details: output320_perf40/hardware_validation.json

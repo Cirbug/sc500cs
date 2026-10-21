@@ -76,6 +76,7 @@
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize.172523416" name="GNU RISC-V Cross Print Size" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize">
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format.948764686" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format"/>
 							</tool>
+							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.348734514" name="GNU RISC-V Cross Create Memory Initial File" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif"/>
 						</toolChain>
 					</folderInfo>
 				</configuration>
@@ -157,6 +158,7 @@
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize.533241137" name="GNU RISC-V Cross Print Size" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.printsize">
 								<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format.950864077" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.printsize.format"/>
 							</tool>
+							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif.1090858536" name="GNU RISC-V Cross Create Memory Initial File" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.createmif"/>
 						</toolChain>
 					</folderInfo>
 				</configuration>

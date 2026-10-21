@@ -8,21 +8,23 @@
 #include <stdint.h>
 #include "al_core.h"
 #include <stdlib.h>
+
+/* Keep the Flash/XIP image's PC port reserved for compact network status. */
+#define UI_QUIET_SERIAL 1
+#if UI_QUIET_SERIAL
+#define al_printf(...) ((void)0)
+#endif
+
 #include "max3421e_diag.h"
 #include "../shared/touch_focus.h"
 #include "../shared/sd_recorder.h"
 #include "../shared/rtc_diag.h"
 #include "../shared/video_diag.h"
+#include "../shared/network_diag.h"
 #include "../shared/red_track_control.h"
 
 /* Match the RAM application's compact UI/AF control code. */
 #pragma GCC optimize ("Os")
-
-/* Suppress periodic UI/lens diagnostics; USART1 carries SD and RTC diagnostics. */
-#define UI_QUIET_SERIAL 1
-#if UI_QUIET_SERIAL
-#define al_printf(...) ((void)0)
-#endif
 
 #ifndef UI_APB_BASE
 /* PH1P MCU APB window.  The APB bridge exports the low 20 address bits as
@@ -462,6 +464,7 @@ AL_S32 main(void)
         touchscreen_handle(&ui);
         rtc_diag_poll((uint32_t)UI_APB_BASE);
         video_diag_poll((uint32_t)UI_APB_BASE);
+        network_diag_poll((uint32_t)UI_APB_BASE);
         lens_serial_poll();
         recorder_poll();
         wifi_mcu_poll(0);

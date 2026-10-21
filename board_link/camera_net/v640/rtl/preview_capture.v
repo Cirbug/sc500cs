@@ -2,13 +2,13 @@
 // transmitted chunk immutable until its ACK, including retries. Gray counters
 // cross clock domains. Overrun aborts the frame; partial frames never publish.
 module preview_capture #(parameter W=1920,H=1080,STEP=3)(
- input pclk,nclk,rst_n,vs,de,input [23:0] rgb,
+ input pclk,nclk,rst_n,vs,frame_start,de,input [23:0] rgb,
  input release_frame,consume_chunk,input [17:0] rd_addr,output reg [15:0] rd_data,
  output ready,chunk_ready,aborted
 );
  localparam SIZE=(W/STEP)*(H/STEP);
  reg [15:0] mem[0:4095];
- reg pub,rel,active,bad,finished,vd,dd;
+ reg pub,rel,active,bad,finished,vd,dd,fd;
  reg [11:0] x,y;
  reg [3:0] xm,ym;
  reg [17:0] count,committed,reclaimed,wgray,rgray;
@@ -35,12 +35,16 @@ module preview_capture #(parameter W=1920,H=1080,STEP=3)(
   end
  always @(posedge pclk or negedge rst_n)
   if(!rst_n)begin
-   pub<=0;rel1<=0;rel2<=0;rg1<=0;rg2<=0;active<=0;bad<=0;finished<=0;vd<=0;dd<=0;
+   pub<=0;rel1<=0;rel2<=0;rg1<=0;rg2<=0;active<=0;bad<=0;finished<=0;vd<=0;dd<=0;fd<=0;
    x<=0;y<=0;xm<=0;ym<=0;count<=0;wgray<=0;
   end else begin
-   rel1<=rel;rel2<=rel1;rg1<=rgray;rg2<=rg1;vd<=vs;dd<=de;
+   rel1<=rel;rel2<=rel1;rg1<=rgray;rg2<=rg1;vd<=vs;dd<=de;fd<=frame_start;
    if(!active && pub==rel2)begin count<=0;wgray<=0;end
-   if(vs && !vd)begin
+   // Use the VTC's one-cycle frame-start marker.  The mixer delays its
+   // generated VS/DE signals, and using that delayed VS made capture remain
+   // idle on some PH1 builds.  frame_start is in the same pixel clock domain
+   // and precedes the delayed mixer DE by only the pipeline latency.
+   if(frame_start && !fd)begin
     if(active)begin if(count!=SIZE || y!=H)bad<=1;finished<=1;active<=0;end
     else if(pub==rel2 && count==0)begin
      // Publish ownership at frame start, data becomes available chunk by chunk.

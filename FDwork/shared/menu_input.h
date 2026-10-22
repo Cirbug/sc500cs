@@ -53,7 +53,7 @@ typedef struct {
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
     uint32_t record_page, record_available, record_interval;
-    uint32_t histogram_mode, histogram_available; /* 0 off, 1 half, 2 full */
+    uint32_t histogram_mode, histogram_available; /* 0 off, 1 half, 2 full, 3 auto */
     int touch_capture; /* -1:none; panel 16..23:slider */
     /* A servo drag is relative to the point where the finger went down. */
     uint8_t servo_touch_active;
@@ -85,7 +85,8 @@ static inline void picture_adjust(MenuState *s, int direction)
     case 5: shift=14; mask=3; high=3; break;
     case 7:
         if(s->histogram_available)
-            s->histogram_mode=direction>0?(s->histogram_mode+1)%3:(s->histogram_mode+2)%3;
+            /* OFF -> 50% -> 100% -> AUTO (1%..99% percentile stretch). */
+            s->histogram_mode=direction>0?(s->histogram_mode+1)%4:(s->histogram_mode+3)%4;
         return;
     default: s->picture=PICTURE_DEFAULT;s->histogram_mode=0;return;
     }

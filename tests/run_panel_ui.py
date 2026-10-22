@@ -1,5 +1,6 @@
 """UI host inputs and actual RTL pixels; no FPGA implementation or programming."""
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
@@ -8,18 +9,24 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--modelsim', type=Path, default=Path('F:/modelsim/win64'))
+    ap.add_argument('--gcc', type=Path, default=Path('gcc'))
     a = ap.parse_args()
     root = Path(__file__).resolve().parents[1]
     out = a.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     vectors = out/'panel_vectors.hex'
+    env = os.environ.copy()
+    if a.gcc.parent != Path('.'):
+        env['PATH'] = str(a.gcc.parent) + os.pathsep + env['PATH']
     for name in ['test_panel_ui', 'test_picture_menu', 'test_record_menu', 'test_vts_menu', 'test_touch_focus']:
         for compat in ([1,0] if name == 'test_panel_ui' else [1]):
             exe = out/(name+f'_compat{compat}.exe')
-            subprocess.run(['gcc', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
+            # GCC 4.x warns about valid C99 aggregate {0} initializers.
+            subprocess.run([str(a.gcc), '-std=c99', '-O2', '-Wall', '-Wextra', '-Werror',
+                            '-Wno-missing-field-initializers',
                             f'-DMENU_LEGACY_COMPAT={compat}',
-                            str(root/'tests'/(name+'.c')), '-o', str(exe)], check=True)
-            subprocess.run([str(exe)] + ([str(vectors)] if name == 'test_panel_ui' else []), check=True)
+                            str(root/'tests'/(name+'.c')), '-o', str(exe)], env=env, check=True)
+            subprocess.run([str(exe)] + ([str(vectors)] if name == 'test_panel_ui' else []), env=env, check=True)
     h = root/'user_source/hdl_source'
     lib = out/'simlib'
     if not lib.exists():

@@ -25,7 +25,10 @@ int main(int argc,char **argv) {
     assert(argc==2);FILE *f=fopen(argv[1],"w");assert(f);
     /* Export all pages for independent RTL pixel/theme checks. */
     for(i=0;i<7;i++) {
-        panel_open(&s,i);mcu_menu_publish(&s,0);
+        panel_open(&s,i);
+        /* Include the new AUTO value in the actual FPGA font/pixel test. */
+        s.histogram_available=(i==PANEL_PICTURE);s.histogram_mode=s.histogram_available?3:0;
+        mcu_menu_publish(&s,0);
         assert(words[0]%256==mcu_label_pool[mcu_panel_labels[i][0]]);
         for(unsigned j=0;j<256;j++)fprintf(f,"%08x\n",words[j]);
     }
@@ -130,12 +133,23 @@ int main(int argc,char **argv) {
     menu_key(&s,1);assert(s.index==7);menu_key(&s,8);assert(s.edit);
     menu_key(&s,1);assert(s.histogram_mode==1);
     menu_key(&s,1);assert(s.histogram_mode==2);
+    menu_key(&s,1);assert(s.histogram_mode==3);
+    mcu_menu_publish(&s,0);
+    for(unsigned c=0;c<4;c++)assert((words[136+c]&511u)==(MENU_ASCII|(unsigned)"AUTO"[c]));
+    menu_key(&s,1);assert(s.histogram_mode==0);
+    menu_key(&s,2);assert(s.histogram_mode==3);
+    menu_key(&s,2);assert(s.histogram_mode==2);
     menu_key(&s,2);assert(s.histogram_mode==1);
     tap(&s,400,952);assert(s.histogram_mode==2);
     tap(&s,100,952);assert(s.histogram_mode==1);
     mcu_menu_poll(&s);i=commits;s.histogram_mode=2;mcu_menu_poll(&s);assert(commits==i+1);
     assert((words[136]&511u)==(MENU_ASCII|'1'));
     s.image_effect^=1;mcu_menu_poll(&s);assert(commits==i+2);
+    tap(&s,400,952);assert(s.histogram_mode==3);
+    mcu_menu_poll(&s);assert(commits==i+3);
+    e=(TouchEvent){100,952,TOUCH_MOVE};menu_touch(&s,&e);assert(s.histogram_mode==3);
+    tap(&s,400,952);assert(s.histogram_mode==0);
+    tap(&s,100,952);assert(s.histogram_mode==3);
     assert(s.auto_exposure==1);
     tap(&s,400,916);assert(s.histogram_mode==0 && s.picture==PICTURE_DEFAULT);
     s.histogram_available=0;menu_key(&s,2);assert(s.index==0);

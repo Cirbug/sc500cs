@@ -74,7 +74,10 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
         case 6:kind=(0x08070601u>>(8*((p>>14)&3)))&255u;break;
         case 7:kind=9;break;
         case 8:
-            if(s->histogram_mode) {mcu_menu_text(cells,s->histogram_mode==1?"50% ":"100%");return attr;}
+            if(s->histogram_mode) {
+                mcu_menu_text(cells,"50% 100%AUTO"+4*(s->histogram_mode-1u));
+                return attr;
+            }
             kind=1;break;
         default:return attr;
         }

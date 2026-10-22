@@ -74,6 +74,14 @@ module tb_panel_ui;
                 sample(340,696,24'h50d8c0); // '3' top left stroke, small 2x glyph
                 sample(340,711,24'h395264); // gap between number and bar
             end
+            if(page==1)begin
+                // AUTO uses the existing large ASCII font, not a new ROM.
+                // Top glyph row: A=01110, U=10001, T=11111, O=01110.
+                sample(330,949,24'h31404c);sample(334,949,24'h50d8c0);
+                sample(362,949,24'h50d8c0);sample(366,949,24'h31404c);
+                sample(394,949,24'h50d8c0);sample(402,949,24'h50d8c0);
+                sample(426,949,24'h31404c);sample(430,949,24'h50d8c0);
+            end
             sample(500,700,24'h526879); // No DDR/camera pixels changed outside UI.
         end
         sample(1440,96,24'h526879); // Compact FPS: no frame-count panel here.

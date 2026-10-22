@@ -36,12 +36,14 @@ int main(int argc,char **argv) {
     status=0;mcu_menu_poll(&s);assert(commits==3); /* hardware reset republish */
     status=6;mcu_menu_poll(&s);assert(commits==4); /* error recovery */
     s.menu=1;s.picture_page=1;s.record_page=0;s.index=7;s.histogram_available=1;
-    for(unsigned he=0;he<3;he++) {
+    for(unsigned he=0;he<4;he++) {
         s.histogram_mode=he;mcu_menu_publish(&s,0);
         for(unsigned c=0;c<5;c++)assert((words[128+c]&255u)==mcu_label_pool[mcu_labels[1][8]+c]);
         assert(words[128]&MENU_VISIBLE);
         if(he==1)assert((words[136]&511u)==(MENU_ASCII|'5'));
         if(he==2)assert((words[136]&511u)==(MENU_ASCII|'1'));
+        if(he==3)for(unsigned c=0;c<4;c++)
+            assert((words[136+c]&511u)==(MENU_ASCII|(unsigned)"AUTO"[c]));
     }
     status=2;mcu_menu_poll(&s);unsigned prev=commits;
     s.histogram_mode=0;mcu_menu_poll(&s);assert(commits==prev+1);

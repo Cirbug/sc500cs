@@ -1,0 +1,64 @@
+直方图自动对比度升级（2026-10-21）
+
+当前状态
+实际工程 C:/Users/XIAOXIAO/Desktop/fpga/sc500cs/sc500cs，分支 jop4.0。
+检查时 HEAD=e7b6f23（提交说明 jop4.1坐标）。本次没有切换分支或提交代码。
+本次修改 MCU 共享代码，未修改 FPGA RTL，没有新增 FPGA bit，也未下载到板上。
+构建与离线测试通过不代表当前板上已运行此版本。
+
+使用方法
+菜单 → 图像调整 → 第八项“直方图均衡”。
+模式为：关闭 / 50% / 100% / AUTO，启动及恢复默认仍为关闭。
+物理键：选中该行，按 OK 进入编辑，UP/DOWN 正反向循环；从关闭状态按 DOWN 一次进入 AUTO。
+触摸：该行左侧向前一档、右侧向后一档；从关闭状态点左侧一次进入 AUTO。
+AUTO 进入后持续更新对比度，不需要重复按键。它不会打开/关闭曝光页的自动曝光。
+没有 HEQ1 能力时不显示该行；正式 MCU 固件还要求 MUI1 菜单能力。
+
+算法
+50%/100% 保留原 CDF_min 全局均衡及混合方式。
+AUTO 使用同一份 FPGA 256 档亮度直方图，取两端各 floor(样本数/100) 的裁剪范围。
+下端选择累计数量严格大于裁剪数量的首档，上端选择累计数量达到 N-裁剪数量的首档。
+亮度跨度小于 16 时采用恒等映射，避免近乎纯色画面的噪声被强拉伸。
+跨度在 16..127 时以区间中点扩展为 128 档，并限制在 0..255；目标曲线斜率最多 255/128。
+其余范围线性映射到 0..255，超出范围饱和；保持 LUT 单调。
+仍使用上一张 LUT 的 3/4 加新 LUT 的 1/4 做时间平滑，整数四舍五入。
+每次服务最多 16 个直方图读或 LUT 写；完成更新后至少等待 250ms 再申请采样。
+更新还需要等待视频帧、分块服务和换表，因此不是严格每 250ms 更新一次。
+沿用 FPGA 双缓冲 LUT 和帧边界换表，未增加像素流水线延迟。
+复用原有状态和 256 字节 LUT；将状态放入同一结构以降低 TCM 中的访问代码体积。
+这是全局自动对比度，不是分块 CLAHE。强逆光、已过曝细节及逐通道饱和仍有局限。
+识别、跟随、对焦评价仍读取均衡前图像，MCU 直方图控制不接管摄像头曝光/增益。
+
+已完成验证
+tests/run_histogram.py：旧 HE、AUTO 百分位边界、256 种单色、暗/中/亮窄范围、增益上限、
+时间平滑、关闭重开、计时回绕和异常样本数；HEQ1 APB/双缓冲/帧边界/1080p 32400 样本；
+六种效果及识别覆盖层的旁路时序回归全部通过。
+tests/run_panel_ui.py：兼容与正式菜单配置均通过，按键/触摸/恢复默认/AE 独立性通过；
+724021 个面板像素及 AUTO 字形、日期时钟、Logo、菜单柔化通过。
+tests/run_mcu_menu.py：AUTO 四字符内容、脏更新、1893083 个像素、总线所有权及复位通过。
+tests/check_mcu_ui_elf.py 和 tests/check_xip_ui_elf.py：两份固件地址/段布局/启动检查通过。
+未做实板画质、实时 CPU 占用和栈高水位测量。
+
+当前独立构建产物（未覆盖两个 FD 项目原 build 目录）
+输出根目录：C:/Users/XIAOXIAO/Desktop/fpga/sc500cs/sc500cs/build/histogram_auto_20261021
+TCM 调试 ELF：firmware_tcm/build/anlu_app.elf
+SHA256：7D7B3BEE1E49D5AB8D1ADDA57FB70113C5132CE576FAD435C2BF8C57C7D921D5
+size：text=40032，data=168，bss=8888。
+保留 1 KiB 堆和 2 KiB 栈；堆末到栈底连续空隙 16 字节，仍非常紧张。
+XIP ELF：firmware_xip/build/anlu_app2.elf
+SHA256：14092E6CF21B1B6976E45A4CEDD36B9B443371EA330343DFD466813ECA6B3DE4
+XIP BIN：firmware_xip/build/anlu_app2.bin，41464 字节。
+SHA256：71978ED1E56B9E51E0D61E46225C4B3A006D3079E9AC2F35606489B9A59A6DFD
+XIP 代码从 0x20E00000 链接，DLM 连续链接空隙 3824 字节，仍保留相同堆/栈。
+这些空隙均为静态链接布局，不是运行时栈水位。
+两种固件均使用现有 HEQ1/MUI1 FPGA 接口；本次功能可配合此前红色坐标版 bit 使用。
+FD 原下载配置可能仍指向旧 build/anlu_app.elf，应明确选择上面的新 ELF。
+XIP 下载方式见 FDwork/anlu_app2/FLASH_DOWNLOAD.md，先确认板上匹配接口和启动配置。
+
+在工程根目录复现（PowerShell，本机工具路径）
+python tests/run_histogram.py --out build/histogram_auto_20261021/tests_he
+python tests/run_panel_ui.py --out build/histogram_auto_20261021/tests_panel --modelsim D:/modelsim/win64 --gcc D:/quartuesll/quartus/bin64/cygwin/bin/gcc.exe
+python tests/run_mcu_menu.py --out build/histogram_auto_20261021/tests_menu
+./FDwork/anlu_app/build.ps1 -FdRoot D:/FD/FD -BuildRoot "$PWD/build/histogram_auto_20261021/firmware_tcm"
+./FDwork/anlu_app2/build.ps1 -FdRoot D:/FD/FD -BuildRoot "$PWD/build/histogram_auto_20261021/firmware_xip"
+python tests/check_mcu_ui_elf.py build/histogram_auto_20261021/firmware_tcm/build/anlu_app.elf --tools D:/FD/FD/toolchain/gcc/riscv/ph1p35/bin

@@ -45,6 +45,24 @@ int main(void) {
     s.image_effect=0; assert(picture_effective(&s)&64u);
     s.picture_page=1; s.index=6; menu_adjust(&s,1);
     assert(picture_effective(&s)==PICTURE_DEFAULT);
+#if GAMMA_SLIDER
+    /* GAM1 slider: 0=OFF, 1..8 = gamma presets.  Sobel locks it at 0.45. */
+    s.gamma_slider_available=1; s.gamma_level=0; s.picture=PICTURE_DEFAULT;
+    s.image_step=4; s.image_effect=0; s.index=1;
+    picture_adjust(&s,1); assert(s.gamma_level==1 && (s.picture&64u));
+    s.gamma_level=8; picture_adjust(&s,1); assert(s.gamma_level==0 && !(s.picture&64u));
+    picture_adjust(&s,-1); assert(s.gamma_level==8 && (s.picture&64u));
+    s.gamma_level=7; s.image_step=2; s.image_effect=5;
+    assert(gamma_locked(&s) && gamma_effective(&s)==4u);
+    picture_adjust(&s,1); assert(s.gamma_level==7);
+    s.image_effect=0;
+    assert(!gamma_locked(&s) && gamma_effective(&s)==7u);
+    s.panel_page=PANEL_PICTURE; s.picture_page=1; s.picture_available=1; s.index=1;
+    unsigned gv,glo,ghi;
+    assert(panel_range(&s,1,&gv,&glo,&ghi) && gv==7u && ghi==8u);
+    s.image_step=2; s.image_effect=5;
+    assert(!panel_range(&s,1,&gv,&glo,&ghi));
+#endif
     /* MODE opens a named list without switching; touch selects exactly once,
      * dragging does not cycle, header returns, keys wrap four entries. */
     s.picture_page=0;s.index=4;s.edit=0;s.image_step=4;

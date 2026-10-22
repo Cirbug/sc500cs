@@ -28,7 +28,7 @@ module tb_video_full_pipeline;
     isp_top isp(.axi4s_video_aclk(clk),.I_rst_n(rst_n),.I_tlast(al),.I_tuser(af),
         .I_tdata(axis_data),.I_tvalid(av),.I_tdest(10'd0),.O_tready(1'b1),
         .O_tdata(packed_data),.O_tuser(pf),.O_tvalid(pv),
-        .I_awb_bypass(1'b0),.I_blc_off(8'd12),.I_gamma_en(1'b0),.I_bright(2'd1),
+        .I_awb_bypass(1'b0),.I_blc_off(8'd12),.I_gamma_en(1'b0),.I_gamma_sel(4'd4),.I_bright(2'd1),
         .I_core_sel(3'd0),.I_awb_gate_en(1'b1),.I_awb_gate_th(8'd48),
         .I_awb_smooth_en(1'b1),.I_sat_off(1'b0),.I_sat_sel(2'd1),.I_denoise(2'd0));
     video_rx_integrity check_rx(.clk(clk),.rst_n(rst_n),.line_end(packet_end),

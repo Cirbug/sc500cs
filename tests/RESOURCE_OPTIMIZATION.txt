@@ -1,5 +1,9 @@
 Gamma 查表资源优化（2026-10-18）
 
+2026-10-22 note: the gamma block was later extended to 8 presets and a fourth
+pipeline stage (see tests/GAMMA_SLIDER.txt).  The "three-stage" numbers below
+describe the 2026-10-18 single-curve build, not the current GAM1 bitstream.
+
 对比基线：ab4917f0be7a1bea3b95460a697c38f1de80b130。
 两版使用同一器件 PH1P35MDG324、同一工程配置和时序约束。
 本次仅修改 isp_top.v 中 rgb96_gamma；其余已合入的优化不计入本次收益。

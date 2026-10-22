@@ -3,19 +3,22 @@
 // Bundled-data mailbox. Source holds a complete word until the destination
 // acknowledges it; destination applies only at a frame boundary. Rapid menu
 // changes coalesce to the newest value without tearing multi-bit fields.
-module picture_control_cdc (
+module picture_control_cdc #(
+    parameter integer WIDTH = 16,
+    parameter INIT = 16'h1050
+) (
     input wire src_clk, dst_clk, rst_n,
-    input wire [15:0] requested,
+    input wire [WIDTH-1:0] requested,
     input wire frame_start,
-    output reg [15:0] active
+    output reg [WIDTH-1:0] active
 );
-    reg [15:0] held, pending;
+    reg [WIDTH-1:0] held, pending;
     reg req, ack;
     (* async_reg="true" *) reg ack1, ack2;
     (* async_reg="true" *) reg req1, req2;
     reg req3;
     always @(posedge src_clk or negedge rst_n) begin
-        if(!rst_n) begin held<=16'h1050; req<=0; ack1<=0; ack2<=0; end
+        if(!rst_n) begin held<=INIT; req<=0; ack1<=0; ack2<=0; end
         else begin
             ack1<=ack; ack2<=ack1;
             if(ack2==req && requested!=held) begin held<=requested; req<=~req; end
@@ -24,7 +27,7 @@ module picture_control_cdc (
     always @(posedge dst_clk or negedge rst_n) begin
         if(!rst_n) begin
             req1<=0; req2<=0; req3<=0; ack<=0;
-            pending<=16'h1050; active<=16'h1050;
+            pending<=INIT; active<=INIT;
         end else begin
             req1<=req; req2<=req1; req3<=req2;
             if(req3!=ack) begin pending<=held; ack<=req3; end

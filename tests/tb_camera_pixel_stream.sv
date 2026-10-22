@@ -13,7 +13,7 @@ module tb_camera_pixel_stream;
         .I_valid(v),.I_data(data),.O_frame_start(sf),.O_last(sl),.O_valid(sv),.O_data(sd));
     picture_denoise dn(.clk(clk),.rst_n(rst_n),.frame_start(sf),.valid(sv),.last(sl),
         .data(sd),.strength(strength),.out_frame_start(df),.out_valid(dv),.out_last(dl),.out_data(dd));
-    rgb96_gamma gamma(.I_clk(clk),.I_rst_n(rst_n),.I_enable(1'b0),.I_bright(2'd1),
+    rgb96_gamma gamma(.I_clk(clk),.I_rst_n(rst_n),.I_enable(1'b0),.I_gamma_sel(4'd4),.I_bright(2'd1),
         .I_frame_start(df),.I_valid(dv),.I_data(dd),.O_frame_start(gf),.O_valid(gv),.O_data(gd));
     data_96bit_to_128bit packer(clk,rst_n,gf,gv,gd,pf,pv,pd);
     byte expected[$];

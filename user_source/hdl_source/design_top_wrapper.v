@@ -415,12 +415,15 @@ module design_top_wrapper (
     wire S_mode_page_apb;
     reg S_mode_page_p1, S_mode_page_p2;
     reg S_picture_page_p1, S_picture_page_p2;
-    wire [15:0] S_picture_apb, S_picture_isp, S_picture_pixel;
-    picture_control_cdc u_picture_isp (
+    wire [15:0] S_picture_ctrl_apb;
+    wire [3:0]  S_gamma_level_apb;
+    wire [19:0] S_picture_apb, S_picture_isp, S_picture_pixel;
+    assign S_picture_apb = {S_gamma_level_apb, S_picture_ctrl_apb};
+    picture_control_cdc #(.WIDTH(20), .INIT(20'h41050)) u_picture_isp (
         .src_clk(S_mcu_apb_clk), .dst_clk(S_csi_rx_clk), .rst_n(S_rst_n),
         .requested(S_picture_apb), .frame_start(S_raw_tuser), .active(S_picture_isp)
     );
-    picture_control_cdc u_picture_pixel (
+    picture_control_cdc #(.WIDTH(20), .INIT(20'h41050)) u_picture_pixel (
         .src_clk(S_mcu_apb_clk), .dst_clk(S_hdmi_pixel_clk), .rst_n(S_rst_n),
         .requested(S_picture_apb), .frame_start(S_hdmi_vsync), .active(S_picture_pixel)
     );
@@ -1177,7 +1180,8 @@ module design_top_wrapper (
         .O_menu_index  ( S_ui_index_apb ),
         .O_picture_page( S_picture_page_apb ),
         .O_mode_page   ( S_mode_page_apb ),
-        .O_picture_ctrl( S_picture_apb ),
+        .O_picture_ctrl( S_picture_ctrl_apb ),
+        .O_gamma_level ( S_gamma_level_apb ),
         .O_exposure    ( S_ui_ae_apb ),
         .O_vts(S_ui_vts_apb), .O_camera_display(S_camera_display_apb),
         .O_gain        ( S_ui_ag_apb ),
@@ -1411,6 +1415,7 @@ isp_top u_isp_top (
 .I_awb_bypass    (S_picture_isp[13:12] == 2'd3),
 .I_blc_off       ({2'd0,S_picture_isp[5:0]}),
 .I_gamma_en      (S_picture_isp[6]),
+.I_gamma_sel     (S_picture_isp[19:16]),
 .I_bright        (S_picture_isp[8:7]),
 .I_core_sel      (3'd0),
 .I_awb_gate_en   (S_picture_isp[13:12] == 2'd2),
@@ -1981,7 +1986,7 @@ isp_top u_isp_top (
         .I_track_y1     ( S_track_display_y1 ),
         .I_track_x_negative(S_track_x_negative),.I_track_y_negative(S_track_y_negative),
         .I_track_x_bcd(S_track_x_bcd),.I_track_y_bcd(S_track_y_bcd),
-        .I_picture_ctrl ( S_picture_pixel ),
+        .I_picture_ctrl ( S_picture_pixel[15:0] ),
         .I_exposure     ( S_ui_ae_p2 ),
         .I_gain         ( S_ui_ag_p2 ),
         .I_servo_pan_us ( S_ui_servo_pan_p2 ),

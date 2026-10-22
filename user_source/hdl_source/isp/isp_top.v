@@ -19,6 +19,7 @@ module isp_top (
     input  wire        I_awb_bypass,   // 1 = bypass AWB
     input  wire [7:0]  I_blc_off,      // black level offset in the 8bit RGB domain, 0 = off
     input  wire        I_gamma_en,     // 1 = enable gamma correction (linear -> display)
+    input  wire [3:0]  I_gamma_sel,    // 0=default 0.45; 1..8 = gamma presets
     input  wire [1:0]  I_bright,       // 数字提亮档 0=×1.0 1=×1.125 2=×1.25 3=×1.5
     input  wire [2:0]  I_core_sel,     // 暗部彩噪抑制强度：0=关 1=弱 2=中 3=强 4=极强
     // ★ 白平衡质量改进 + 颜色校正矩阵（CCM）开关，见 awb.v / rgb96_ccm 注释
@@ -239,6 +240,7 @@ awb #(
         .I_clk         (axi4s_video_aclk),
         .I_rst_n       (I_rst_n),
         .I_enable      (I_gamma_en),
+        .I_gamma_sel   (I_gamma_sel),
         .I_bright      (I_bright),
         .I_frame_start (dn_fs),
         .I_valid       (dn_valid),
@@ -1153,26 +1155,22 @@ endmodule
 
 
 // ===========================================================================
-// rgb96_gamma : 亮度 gamma 校正（线性数据 -> 显示器需要的曲线）
-//   96bit = 4 个 RGB888 像素。逐通道“分段折线 + 线性插值”：
-//       y = base[x[7:4]] + ((slope[x[7:4]] * x[3:0]) >> 4)
-//   曲线为 γ ≈ 0.45 的幂函数近似（y = 255*(x/255)^0.45）：
-//     ★ 注意：严格意义上的 sRGB 是“分段”传递函数（近线性段 + 2.4 次幂段 + 常数偏移），
-//       并不是单一的 x^0.45；这里是**有意简化**的 0.45 幂函数近似（工程上常用），
-//       报告/文档里不要写成“sRGB 逆曲线”。
-//   16 段折线逼近，误差约 ±2 LSB。
-//   表由 255*(x/255)^0.45 在 x = 0,16,32,...,240 处取值得到：
-//     x    :   0   16   32   48   64   80   96  112  128  144  160  176  192  208  224  240
-//     base :   0   73  100  120  137  151  164  176  187  197  207  216  224  233  241  248
-//     slope:  73   27   20   17   14   13   12   11   10   10    9    8    9    8    7    7
-//   两次 case 查表 + 4bit×7bit 乘法（综合成移位加法，不占 DSP）+ 饱和加法。
-//   I_enable = 0 时数据原样通过（流水线延时不变），方便上板 A/B 对比。
+// rgb96_gamma : 8 档固定 gamma 预设（线性数据 -> 显示器需要的曲线）
+//   0=OFF（直通），1..8 = γ 0.30/0.35/0.40/0.45/0.50/0.55/0.60/0.65。
+//   档位 4（0.45）与旧版逐点 gamma 表完全一致；Sobel 在 MCU 侧锁定该档。
+//   曲线为 γ≈0.45 幂函数近似，不是严格 sRGB 逆曲线。
+//   每条曲线 = 低端 0..15 逐点精确值 + 16..255 的 16 段折线：
+//       y = base + ((slope * x[3:0]) >> 4)
+//   256×16 系数 ROM 存 8 条曲线的 {base,slope}，12 路并行读取；四拍流水
+//   （输入寄存 → 同步系数 ROM → 插值/旁路寄存 → 数字亮度 + 输出寄存）。
+//   I_enable=0 时数据原样通过，流水线延时不变。
 // ===========================================================================
 module rgb96_gamma (
     input  wire        I_clk,
     input  wire        I_rst_n,
-    input  wire        I_enable,        // 1 = 打开 gamma，0 = 直通
-    input  wire [1:0]  I_bright,        // 数字提亮档：0=×1.0 1=×1.125 2=×1.25 3=×1.5
+    input  wire        I_enable,        // 1 = gamma path enabled (PIC1 bit6)
+    input  wire [3:0]  I_gamma_sel,     // 0 = default 0.45 when enabled; 1..8 = preset
+    input  wire [1:0]  I_bright,        // 0=1.0 1=1.125 2=1.25 3=1.5
 
     input  wire        I_frame_start,
     input  wire        I_valid,
@@ -1183,295 +1181,61 @@ module rgb96_gamma (
     output reg  [95:0] O_data
 );
 
-    // Exact results of the previous integer gamma curve; keep the same pipeline.
-    // Use synchronous block ROM reads to save LUTs; preserve all three pipeline stages.
-    (* rom_style = "bram" *) reg [7:0] gamma_table [0:511];
-    integer gamma_index;
+    // Eight fixed gamma presets.  Every 16-bit entry is {base[7:0], slope[7:0]}.
+    // Entries 0..15 are the exact low-end outputs (slope 0); entries 16..30
+    // cover x=16..255 in 16-step linear segments.  The table is a ROM, so the
+    // pixel path never performs a real power function.
+    (* rom_style = "block" *) reg [15:0] gamma_coef [0:255];
     initial begin
-        // Lower half is exact bypass, upper half is the existing gamma curve.
-        // The mode bit is part of the ROM address: no bypass mux/register bank.
-        for(gamma_index=0;gamma_index<256;gamma_index=gamma_index+1)
-            gamma_table[gamma_index] = gamma_index[7:0];
-        gamma_table[256] = 8'd0;
-        gamma_table[257] = 8'd21;
-        gamma_table[258] = 8'd29;
-        gamma_table[259] = 8'd35;
-        gamma_table[260] = 8'd39;
-        gamma_table[261] = 8'd43;
-        gamma_table[262] = 8'd47;
-        gamma_table[263] = 8'd51;
-        gamma_table[264] = 8'd54;
-        gamma_table[265] = 8'd57;
-        gamma_table[266] = 8'd59;
-        gamma_table[267] = 8'd62;
-        gamma_table[268] = 8'd64;
-        gamma_table[269] = 8'd67;
-        gamma_table[270] = 8'd69;
-        gamma_table[271] = 8'd71;
-        gamma_table[272] = 8'd73;
-        gamma_table[273] = 8'd74;
-        gamma_table[274] = 8'd76;
-        gamma_table[275] = 8'd78;
-        gamma_table[276] = 8'd79;
-        gamma_table[277] = 8'd81;
-        gamma_table[278] = 8'd83;
-        gamma_table[279] = 8'd84;
-        gamma_table[280] = 8'd86;
-        gamma_table[281] = 8'd88;
-        gamma_table[282] = 8'd89;
-        gamma_table[283] = 8'd91;
-        gamma_table[284] = 8'd93;
-        gamma_table[285] = 8'd94;
-        gamma_table[286] = 8'd96;
-        gamma_table[287] = 8'd98;
-        gamma_table[288] = 8'd100;
-        gamma_table[289] = 8'd101;
-        gamma_table[290] = 8'd102;
-        gamma_table[291] = 8'd103;
-        gamma_table[292] = 8'd105;
-        gamma_table[293] = 8'd106;
-        gamma_table[294] = 8'd107;
-        gamma_table[295] = 8'd108;
-        gamma_table[296] = 8'd110;
-        gamma_table[297] = 8'd111;
-        gamma_table[298] = 8'd112;
-        gamma_table[299] = 8'd113;
-        gamma_table[300] = 8'd115;
-        gamma_table[301] = 8'd116;
-        gamma_table[302] = 8'd117;
-        gamma_table[303] = 8'd118;
-        gamma_table[304] = 8'd120;
-        gamma_table[305] = 8'd121;
-        gamma_table[306] = 8'd122;
-        gamma_table[307] = 8'd123;
-        gamma_table[308] = 8'd124;
-        gamma_table[309] = 8'd125;
-        gamma_table[310] = 8'd126;
-        gamma_table[311] = 8'd127;
-        gamma_table[312] = 8'd128;
-        gamma_table[313] = 8'd129;
-        gamma_table[314] = 8'd130;
-        gamma_table[315] = 8'd131;
-        gamma_table[316] = 8'd132;
-        gamma_table[317] = 8'd133;
-        gamma_table[318] = 8'd134;
-        gamma_table[319] = 8'd135;
-        gamma_table[320] = 8'd137;
-        gamma_table[321] = 8'd137;
-        gamma_table[322] = 8'd138;
-        gamma_table[323] = 8'd139;
-        gamma_table[324] = 8'd140;
-        gamma_table[325] = 8'd141;
-        gamma_table[326] = 8'd142;
-        gamma_table[327] = 8'd143;
-        gamma_table[328] = 8'd144;
-        gamma_table[329] = 8'd144;
-        gamma_table[330] = 8'd145;
-        gamma_table[331] = 8'd146;
-        gamma_table[332] = 8'd147;
-        gamma_table[333] = 8'd148;
-        gamma_table[334] = 8'd149;
-        gamma_table[335] = 8'd150;
-        gamma_table[336] = 8'd151;
-        gamma_table[337] = 8'd151;
-        gamma_table[338] = 8'd152;
-        gamma_table[339] = 8'd153;
-        gamma_table[340] = 8'd154;
-        gamma_table[341] = 8'd155;
-        gamma_table[342] = 8'd155;
-        gamma_table[343] = 8'd156;
-        gamma_table[344] = 8'd157;
-        gamma_table[345] = 8'd158;
-        gamma_table[346] = 8'd159;
-        gamma_table[347] = 8'd159;
-        gamma_table[348] = 8'd160;
-        gamma_table[349] = 8'd161;
-        gamma_table[350] = 8'd162;
-        gamma_table[351] = 8'd163;
-        gamma_table[352] = 8'd164;
-        gamma_table[353] = 8'd164;
-        gamma_table[354] = 8'd165;
-        gamma_table[355] = 8'd166;
-        gamma_table[356] = 8'd167;
-        gamma_table[357] = 8'd167;
-        gamma_table[358] = 8'd168;
-        gamma_table[359] = 8'd169;
-        gamma_table[360] = 8'd170;
-        gamma_table[361] = 8'd170;
-        gamma_table[362] = 8'd171;
-        gamma_table[363] = 8'd172;
-        gamma_table[364] = 8'd173;
-        gamma_table[365] = 8'd173;
-        gamma_table[366] = 8'd174;
-        gamma_table[367] = 8'd175;
-        gamma_table[368] = 8'd176;
-        gamma_table[369] = 8'd176;
-        gamma_table[370] = 8'd177;
-        gamma_table[371] = 8'd178;
-        gamma_table[372] = 8'd178;
-        gamma_table[373] = 8'd179;
-        gamma_table[374] = 8'd180;
-        gamma_table[375] = 8'd180;
-        gamma_table[376] = 8'd181;
-        gamma_table[377] = 8'd182;
-        gamma_table[378] = 8'd182;
-        gamma_table[379] = 8'd183;
-        gamma_table[380] = 8'd184;
-        gamma_table[381] = 8'd184;
-        gamma_table[382] = 8'd185;
-        gamma_table[383] = 8'd186;
-        gamma_table[384] = 8'd187;
-        gamma_table[385] = 8'd187;
-        gamma_table[386] = 8'd188;
-        gamma_table[387] = 8'd188;
-        gamma_table[388] = 8'd189;
-        gamma_table[389] = 8'd190;
-        gamma_table[390] = 8'd190;
-        gamma_table[391] = 8'd191;
-        gamma_table[392] = 8'd192;
-        gamma_table[393] = 8'd192;
-        gamma_table[394] = 8'd193;
-        gamma_table[395] = 8'd193;
-        gamma_table[396] = 8'd194;
-        gamma_table[397] = 8'd195;
-        gamma_table[398] = 8'd195;
-        gamma_table[399] = 8'd196;
-        gamma_table[400] = 8'd197;
-        gamma_table[401] = 8'd197;
-        gamma_table[402] = 8'd198;
-        gamma_table[403] = 8'd198;
-        gamma_table[404] = 8'd199;
-        gamma_table[405] = 8'd200;
-        gamma_table[406] = 8'd200;
-        gamma_table[407] = 8'd201;
-        gamma_table[408] = 8'd202;
-        gamma_table[409] = 8'd202;
-        gamma_table[410] = 8'd203;
-        gamma_table[411] = 8'd203;
-        gamma_table[412] = 8'd204;
-        gamma_table[413] = 8'd205;
-        gamma_table[414] = 8'd205;
-        gamma_table[415] = 8'd206;
-        gamma_table[416] = 8'd207;
-        gamma_table[417] = 8'd207;
-        gamma_table[418] = 8'd208;
-        gamma_table[419] = 8'd208;
-        gamma_table[420] = 8'd209;
-        gamma_table[421] = 8'd209;
-        gamma_table[422] = 8'd210;
-        gamma_table[423] = 8'd210;
-        gamma_table[424] = 8'd211;
-        gamma_table[425] = 8'd212;
-        gamma_table[426] = 8'd212;
-        gamma_table[427] = 8'd213;
-        gamma_table[428] = 8'd213;
-        gamma_table[429] = 8'd214;
-        gamma_table[430] = 8'd214;
-        gamma_table[431] = 8'd215;
-        gamma_table[432] = 8'd216;
-        gamma_table[433] = 8'd216;
-        gamma_table[434] = 8'd217;
-        gamma_table[435] = 8'd217;
-        gamma_table[436] = 8'd218;
-        gamma_table[437] = 8'd218;
-        gamma_table[438] = 8'd219;
-        gamma_table[439] = 8'd219;
-        gamma_table[440] = 8'd220;
-        gamma_table[441] = 8'd220;
-        gamma_table[442] = 8'd221;
-        gamma_table[443] = 8'd221;
-        gamma_table[444] = 8'd222;
-        gamma_table[445] = 8'd222;
-        gamma_table[446] = 8'd223;
-        gamma_table[447] = 8'd223;
-        gamma_table[448] = 8'd224;
-        gamma_table[449] = 8'd224;
-        gamma_table[450] = 8'd225;
-        gamma_table[451] = 8'd225;
-        gamma_table[452] = 8'd226;
-        gamma_table[453] = 8'd226;
-        gamma_table[454] = 8'd227;
-        gamma_table[455] = 8'd227;
-        gamma_table[456] = 8'd228;
-        gamma_table[457] = 8'd229;
-        gamma_table[458] = 8'd229;
-        gamma_table[459] = 8'd230;
-        gamma_table[460] = 8'd230;
-        gamma_table[461] = 8'd231;
-        gamma_table[462] = 8'd231;
-        gamma_table[463] = 8'd232;
-        gamma_table[464] = 8'd233;
-        gamma_table[465] = 8'd233;
-        gamma_table[466] = 8'd234;
-        gamma_table[467] = 8'd234;
-        gamma_table[468] = 8'd235;
-        gamma_table[469] = 8'd235;
-        gamma_table[470] = 8'd236;
-        gamma_table[471] = 8'd236;
-        gamma_table[472] = 8'd237;
-        gamma_table[473] = 8'd237;
-        gamma_table[474] = 8'd238;
-        gamma_table[475] = 8'd238;
-        gamma_table[476] = 8'd239;
-        gamma_table[477] = 8'd239;
-        gamma_table[478] = 8'd240;
-        gamma_table[479] = 8'd240;
-        gamma_table[480] = 8'd241;
-        gamma_table[481] = 8'd241;
-        gamma_table[482] = 8'd241;
-        gamma_table[483] = 8'd242;
-        gamma_table[484] = 8'd242;
-        gamma_table[485] = 8'd243;
-        gamma_table[486] = 8'd243;
-        gamma_table[487] = 8'd244;
-        gamma_table[488] = 8'd244;
-        gamma_table[489] = 8'd244;
-        gamma_table[490] = 8'd245;
-        gamma_table[491] = 8'd245;
-        gamma_table[492] = 8'd246;
-        gamma_table[493] = 8'd246;
-        gamma_table[494] = 8'd247;
-        gamma_table[495] = 8'd247;
-        gamma_table[496] = 8'd248;
-        gamma_table[497] = 8'd248;
-        gamma_table[498] = 8'd249;
-        gamma_table[499] = 8'd249;
-        gamma_table[500] = 8'd250;
-        gamma_table[501] = 8'd250;
-        gamma_table[502] = 8'd251;
-        gamma_table[503] = 8'd251;
-        gamma_table[504] = 8'd252;
-        gamma_table[505] = 8'd252;
-        gamma_table[506] = 8'd253;
-        gamma_table[507] = 8'd253;
-        gamma_table[508] = 8'd254;
-        gamma_table[509] = 8'd254;
-        gamma_table[510] = 8'd255;
-        gamma_table[511] = 8'd255;
+        // curve 1: gamma 0.30
+        gamma_coef[0] = 16'h0000; gamma_coef[1] = 16'h3000; gamma_coef[2] = 16'h3c00; gamma_coef[3] = 16'h4300; gamma_coef[4] = 16'h4900; gamma_coef[5] = 16'h4e00; gamma_coef[6] = 16'h5300; gamma_coef[7] = 16'h5700;
+        gamma_coef[8] = 16'h5a00; gamma_coef[9] = 16'h5e00; gamma_coef[10] = 16'h6100; gamma_coef[11] = 16'h6300; gamma_coef[12] = 16'h6600; gamma_coef[13] = 16'h6800; gamma_coef[14] = 16'h6b00; gamma_coef[15] = 16'h6d00;
+        gamma_coef[16] = 16'h6f1a; gamma_coef[17] = 16'h8912; gamma_coef[18] = 16'h9b0d; gamma_coef[19] = 16'ha80c; gamma_coef[20] = 16'hb40a; gamma_coef[21] = 16'hbe09; gamma_coef[22] = 16'hc708; gamma_coef[23] = 16'hcf08;
+        gamma_coef[24] = 16'hd707; gamma_coef[25] = 16'hde06; gamma_coef[26] = 16'he406; gamma_coef[27] = 16'hea06; gamma_coef[28] = 16'hf005; gamma_coef[29] = 16'hf505; gamma_coef[30] = 16'hfa06; gamma_coef[31] = 16'h0000;
+        // curve 2: gamma 0.35
+        gamma_coef[32] = 16'h0000; gamma_coef[33] = 16'h2500; gamma_coef[34] = 16'h2f00; gamma_coef[35] = 16'h3600; gamma_coef[36] = 16'h3c00; gamma_coef[37] = 16'h4000; gamma_coef[38] = 16'h4500; gamma_coef[39] = 16'h4800;
+        gamma_coef[40] = 16'h4c00; gamma_coef[41] = 16'h4f00; gamma_coef[42] = 16'h5200; gamma_coef[43] = 16'h5500; gamma_coef[44] = 16'h5700; gamma_coef[45] = 16'h5a00; gamma_coef[46] = 16'h5c00; gamma_coef[47] = 16'h5f00;
+        gamma_coef[48] = 16'h611a; gamma_coef[49] = 16'h7b13; gamma_coef[50] = 16'h8e0f; gamma_coef[51] = 16'h9d0d; gamma_coef[52] = 16'haa0b; gamma_coef[53] = 16'hb50a; gamma_coef[54] = 16'hbf09; gamma_coef[55] = 16'hc809;
+        gamma_coef[56] = 16'hd108; gamma_coef[57] = 16'hd907; gamma_coef[58] = 16'he007; gamma_coef[59] = 16'he706; gamma_coef[60] = 16'hed07; gamma_coef[61] = 16'hf406; gamma_coef[62] = 16'hfa06; gamma_coef[63] = 16'h0000;
+        // curve 3: gamma 0.40
+        gamma_coef[64] = 16'h0000; gamma_coef[65] = 16'h1c00; gamma_coef[66] = 16'h2500; gamma_coef[67] = 16'h2b00; gamma_coef[68] = 16'h3000; gamma_coef[69] = 16'h3500; gamma_coef[70] = 16'h3900; gamma_coef[71] = 16'h3d00;
+        gamma_coef[72] = 16'h4000; gamma_coef[73] = 16'h4300; gamma_coef[74] = 16'h4600; gamma_coef[75] = 16'h4900; gamma_coef[76] = 16'h4b00; gamma_coef[77] = 16'h4e00; gamma_coef[78] = 16'h5000; gamma_coef[79] = 16'h5200;
+        gamma_coef[80] = 16'h541b; gamma_coef[81] = 16'h6f14; gamma_coef[82] = 16'h8310; gamma_coef[83] = 16'h930d; gamma_coef[84] = 16'ha00d; gamma_coef[85] = 16'had0a; gamma_coef[86] = 16'hb70b; gamma_coef[87] = 16'hc209;
+        gamma_coef[88] = 16'hcb09; gamma_coef[89] = 16'hd408; gamma_coef[90] = 16'hdc08; gamma_coef[91] = 16'he407; gamma_coef[92] = 16'heb07; gamma_coef[93] = 16'hf207; gamma_coef[94] = 16'hf907; gamma_coef[95] = 16'h0000;
+        // curve 4: gamma 0.45
+        gamma_coef[96] = 16'h0000; gamma_coef[97] = 16'h1500; gamma_coef[98] = 16'h1d00; gamma_coef[99] = 16'h2300; gamma_coef[100] = 16'h2700; gamma_coef[101] = 16'h2b00; gamma_coef[102] = 16'h2f00; gamma_coef[103] = 16'h3300;
+        gamma_coef[104] = 16'h3600; gamma_coef[105] = 16'h3900; gamma_coef[106] = 16'h3b00; gamma_coef[107] = 16'h3e00; gamma_coef[108] = 16'h4000; gamma_coef[109] = 16'h4300; gamma_coef[110] = 16'h4500; gamma_coef[111] = 16'h4700;
+        gamma_coef[112] = 16'h491b; gamma_coef[113] = 16'h6414; gamma_coef[114] = 16'h7811; gamma_coef[115] = 16'h890e; gamma_coef[116] = 16'h970d; gamma_coef[117] = 16'ha40c; gamma_coef[118] = 16'hb00b; gamma_coef[119] = 16'hbb0a;
+        gamma_coef[120] = 16'hc50a; gamma_coef[121] = 16'hcf09; gamma_coef[122] = 16'hd808; gamma_coef[123] = 16'he009; gamma_coef[124] = 16'he908; gamma_coef[125] = 16'hf107; gamma_coef[126] = 16'hf808; gamma_coef[127] = 16'h0000;
+        // curve 5: gamma 0.50
+        gamma_coef[128] = 16'h0000; gamma_coef[129] = 16'h1000; gamma_coef[130] = 16'h1700; gamma_coef[131] = 16'h1c00; gamma_coef[132] = 16'h2000; gamma_coef[133] = 16'h2400; gamma_coef[134] = 16'h2700; gamma_coef[135] = 16'h2a00;
+        gamma_coef[136] = 16'h2d00; gamma_coef[137] = 16'h3000; gamma_coef[138] = 16'h3200; gamma_coef[139] = 16'h3500; gamma_coef[140] = 16'h3700; gamma_coef[141] = 16'h3a00; gamma_coef[142] = 16'h3c00; gamma_coef[143] = 16'h3e00;
+        gamma_coef[144] = 16'h401a; gamma_coef[145] = 16'h5a15; gamma_coef[146] = 16'h6f11; gamma_coef[147] = 16'h800f; gamma_coef[148] = 16'h8f0d; gamma_coef[149] = 16'h9c0d; gamma_coef[150] = 16'ha90c; gamma_coef[151] = 16'hb50b;
+        gamma_coef[152] = 16'hc00a; gamma_coef[153] = 16'hca0a; gamma_coef[154] = 16'hd409; gamma_coef[155] = 16'hdd09; gamma_coef[156] = 16'he609; gamma_coef[157] = 16'hef08; gamma_coef[158] = 16'hf709; gamma_coef[159] = 16'h0000;
+        // curve 6: gamma 0.55
+        gamma_coef[160] = 16'h0000; gamma_coef[161] = 16'h0c00; gamma_coef[162] = 16'h1200; gamma_coef[163] = 16'h1600; gamma_coef[164] = 16'h1a00; gamma_coef[165] = 16'h1d00; gamma_coef[166] = 16'h2000; gamma_coef[167] = 16'h2300;
+        gamma_coef[168] = 16'h2600; gamma_coef[169] = 16'h2900; gamma_coef[170] = 16'h2b00; gamma_coef[171] = 16'h2d00; gamma_coef[172] = 16'h2f00; gamma_coef[173] = 16'h3200; gamma_coef[174] = 16'h3400; gamma_coef[175] = 16'h3600;
+        gamma_coef[176] = 16'h3819; gamma_coef[177] = 16'h5115; gamma_coef[178] = 16'h6611; gamma_coef[179] = 16'h7710; gamma_coef[180] = 16'h870e; gamma_coef[181] = 16'h950d; gamma_coef[182] = 16'ha20d; gamma_coef[183] = 16'haf0b;
+        gamma_coef[184] = 16'hba0b; gamma_coef[185] = 16'hc50b; gamma_coef[186] = 16'hd00a; gamma_coef[187] = 16'hda0a; gamma_coef[188] = 16'he409; gamma_coef[189] = 16'hed0a; gamma_coef[190] = 16'hf709; gamma_coef[191] = 16'h0000;
+        // curve 7: gamma 0.60
+        gamma_coef[192] = 16'h0000; gamma_coef[193] = 16'h0900; gamma_coef[194] = 16'h0e00; gamma_coef[195] = 16'h1200; gamma_coef[196] = 16'h1500; gamma_coef[197] = 16'h1800; gamma_coef[198] = 16'h1b00; gamma_coef[199] = 16'h1d00;
+        gamma_coef[200] = 16'h2000; gamma_coef[201] = 16'h2200; gamma_coef[202] = 16'h2500; gamma_coef[203] = 16'h2700; gamma_coef[204] = 16'h2900; gamma_coef[205] = 16'h2b00; gamma_coef[206] = 16'h2d00; gamma_coef[207] = 16'h2f00;
+        gamma_coef[208] = 16'h3019; gamma_coef[209] = 16'h4915; gamma_coef[210] = 16'h5e11; gamma_coef[211] = 16'h6f10; gamma_coef[212] = 16'h7f0f; gamma_coef[213] = 16'h8e0e; gamma_coef[214] = 16'h9c0d; gamma_coef[215] = 16'ha90c;
+        gamma_coef[216] = 16'hb50c; gamma_coef[217] = 16'hc10b; gamma_coef[218] = 16'hcc0b; gamma_coef[219] = 16'hd70b; gamma_coef[220] = 16'he20a; gamma_coef[221] = 16'hec0a; gamma_coef[222] = 16'hf60a; gamma_coef[223] = 16'h0000;
+        // curve 8: gamma 0.65
+        gamma_coef[224] = 16'h0000; gamma_coef[225] = 16'h0700; gamma_coef[226] = 16'h0b00; gamma_coef[227] = 16'h0e00; gamma_coef[228] = 16'h1100; gamma_coef[229] = 16'h1400; gamma_coef[230] = 16'h1600; gamma_coef[231] = 16'h1900;
+        gamma_coef[232] = 16'h1b00; gamma_coef[233] = 16'h1d00; gamma_coef[234] = 16'h1f00; gamma_coef[235] = 16'h2100; gamma_coef[236] = 16'h2300; gamma_coef[237] = 16'h2500; gamma_coef[238] = 16'h2700; gamma_coef[239] = 16'h2800;
+        gamma_coef[240] = 16'h2a18; gamma_coef[241] = 16'h4214; gamma_coef[242] = 16'h5612; gamma_coef[243] = 16'h6810; gamma_coef[244] = 16'h780f; gamma_coef[245] = 16'h870e; gamma_coef[246] = 16'h950e; gamma_coef[247] = 16'ha30d;
+        gamma_coef[248] = 16'hb00c; gamma_coef[249] = 16'hbc0c; gamma_coef[250] = 16'hc80c; gamma_coef[251] = 16'hd40b; gamma_coef[252] = 16'hdf0b; gamma_coef[253] = 16'hea0b; gamma_coef[254] = 16'hf50b; gamma_coef[255] = 16'h0000;
     end
 
-    function [7:0] gamma_apply;
-        input [7:0] v;
-        begin gamma_apply = gamma_table[{1'b1,v}]; end
-    endfunction
+    // 0 is "no explicit selection": when gamma is enabled, keep the historical
+    // 0.45 curve.  1..8 select the preset curves; >8 clamps to the last one.
+    wire [3:0] sel = (I_gamma_sel == 4'd0) ? 4'd4 :
+                     (I_gamma_sel > 4'd8) ? 4'd8 : I_gamma_sel;
+    wire [2:0] curve = sel[2:0] - 3'd1;
 
-    // 数字提亮（在 gamma 之后做，纯移位加法，不占 DSP）
-    function [7:0] add_bright;
-        input [7:0] v;
-        input [1:0] sel;
-        reg   [8:0] t;
-        begin
-            case(sel)
-                2'd1:    t = {1'b0, v} + {1'b0, v[7:3]};   // ×1.125
-                2'd2:    t = {1'b0, v} + {1'b0, v[7:2]};   // ×1.25
-                2'd3:    t = {1'b0, v} + {1'b0, v[7:1]};   // ×1.5
-                default: t = {1'b0, v};                    // ×1.0
-            endcase
-            add_bright = t[8] ? 8'd255 : t[7:0];
-        end
-    endfunction
-
-    // ---- 第 1 级：输入寄存 ----
+    // ---- stage 1: input register ----
     reg [95:0] S_data_1d;
     reg [1:0]  S_ctrl_1d;
     always @(posedge I_clk) begin
@@ -1479,44 +1243,97 @@ module rgb96_gamma (
         S_ctrl_1d <= {I_frame_start, I_valid};
     end
 
-    // Stage 2: synchronous ROM read, with bypass selected by the address
-    // MSB. I_enable is sampled at the original stage-2 boundary, so live
-    // mode changes preserve the exact original pixels and three-cycle latency.
-    reg [95:0] S_gam_2d;
-    reg [1:0] S_ctrl_2d;
-    genvar gamma_channel;
-    generate for(gamma_channel=0;gamma_channel<12;gamma_channel=gamma_channel+1) begin: gamma_reads
+    // ---- stage 2: synchronous coefficient read for all 12 channels ----
+    reg [95:0]  S_px_2d;
+    reg [191:0] S_coef_2d;
+    reg [1:0]   S_ctrl_2d;
+    reg         S_en_2d;
+    reg [95:0]  S_gam_3d;
+    reg [1:0]   S_ctrl_3d;
+    reg [1:0]   S_bright_3d;
+    genvar ch;
+    generate for(ch=0;ch<12;ch=ch+1) begin: gamma_reads
+        wire [7:0] px  = S_data_1d[ch*8 +: 8];
+        // x<16: direct low-end entry.  x>=16: segment 16..30.
+        wire [4:0] seg = px[7:4] ? (5'd15 + px[7:4]) : {1'b0,px[3:0]};
         always @(posedge I_clk)
-            S_gam_2d[gamma_channel*8+:8] <= gamma_table[{I_enable,S_data_1d[gamma_channel*8+:8]}];
+            S_coef_2d[ch*16 +: 16] <= gamma_coef[{curve,seg}];
     end endgenerate
     always @(posedge I_clk) begin
+        S_px_2d   <= S_data_1d;
         S_ctrl_2d <= S_ctrl_1d;
+        // Same sampling point as the old table/bypass mux at stage 2.
+        S_en_2d   <= I_enable;
     end
 
-    // ---- 第 3 级：数字提亮 + 寄存输出 ----
+    // y = base + ((slope * x[3:0]) >> 4), saturating at 255.
+    function [7:0] gamma_interp;
+        input [7:0] base;
+        input [7:0] slope;
+        input [3:0] frac;
+        reg [11:0] product;
+        reg [8:0]  sum;
+        begin
+            product = slope * frac;
+            sum     = {1'b0,base} + {5'd0,product[11:4]};
+            gamma_interp = sum[8] ? 8'd255 : sum[7:0];
+        end
+    endfunction
+
+    // Digital brightness after gamma, four fixed shifts (unchanged).
+    function [7:0] add_bright;
+        input [7:0] v;
+        input [1:0] sel_b;
+        reg [8:0] t;
+        begin
+            case(sel_b)
+                2'd1:    t = {1'b0, v} + {1'b0, v[7:3]};
+                2'd2:    t = {1'b0, v} + {1'b0, v[7:2]};
+                2'd3:    t = {1'b0, v} + {1'b0, v[7:1]};
+                default: t = {1'b0, v};
+            endcase
+            add_bright = t[8] ? 8'd255 : t[7:0];
+        end
+    endfunction
+
+    // ---- stage 3: interpolate/bypass; register gamma pixels ----
+    genvar gc;
+    generate for(gc=0;gc<12;gc=gc+1) begin: gamma_lanes
+        wire [7:0] px    = S_px_2d[gc*8 +: 8];
+        wire [7:0] base  = S_coef_2d[gc*16+8 +: 8];
+        wire [7:0] slope = S_coef_2d[gc*16   +: 8];
+        wire [7:0] mapped = S_en_2d ? gamma_interp(base, slope, px[3:0]) : px;
+        always @(posedge I_clk)
+            S_gam_3d[gc*8 +: 8] <= mapped;
+    end endgenerate
+    always @(posedge I_clk) begin
+        S_ctrl_3d   <= S_ctrl_2d;
+        S_bright_3d <= I_bright;
+    end
+
+    // ---- stage 4: digital brightness + output register ----
+    genvar gb;
+    generate for(gb=0;gb<12;gb=gb+1) begin: bright_lanes
+        always @(posedge I_clk or negedge I_rst_n) begin
+            if(!I_rst_n)
+                O_data[gb*8 +: 8] <= 8'd0;
+            else
+                O_data[gb*8 +: 8] <= add_bright(S_gam_3d[gb*8 +: 8], S_bright_3d);
+        end
+    end endgenerate
+
     always @(posedge I_clk or negedge I_rst_n) begin
         if(!I_rst_n) begin
             O_frame_start <= 1'b0;
             O_valid       <= 1'b0;
-            O_data        <= 96'd0;
-        end
-        else begin
-            O_frame_start <= S_ctrl_2d[1];
-            O_valid       <= S_ctrl_2d[0];
-            O_data        <= {
-                add_bright(S_gam_2d[95:88], I_bright), add_bright(S_gam_2d[87:80], I_bright),
-                add_bright(S_gam_2d[79:72], I_bright),
-                add_bright(S_gam_2d[71:64], I_bright), add_bright(S_gam_2d[63:56], I_bright),
-                add_bright(S_gam_2d[55:48], I_bright),
-                add_bright(S_gam_2d[47:40], I_bright), add_bright(S_gam_2d[39:32], I_bright),
-                add_bright(S_gam_2d[31:24], I_bright),
-                add_bright(S_gam_2d[23:16], I_bright), add_bright(S_gam_2d[15:8],  I_bright),
-                add_bright(S_gam_2d[7:0],   I_bright)
-            };
+        end else begin
+            O_frame_start <= S_ctrl_3d[1];
+            O_valid       <= S_ctrl_3d[0];
         end
     end
 
 endmodule
+
 
 
 

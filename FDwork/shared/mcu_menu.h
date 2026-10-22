@@ -27,6 +27,10 @@ static void mcu_menu_text(uint16_t *cells, const char *s)
     unsigned i;
     for(i=0;i<4;i++) cells[8+i]=MENU_ASCII|(unsigned char)s[i];
 }
+#if GAMMA_SLIDER
+/* 0=OFF, 1..8 = gamma 0.30..0.65.  Four ASCII cells per value. */
+static const char mcu_gamma_text[]="OFF 0.300.350.400.450.500.550.600.65";
+#endif
 /* NUL-terminated shared glyph-ID strings remove repeated/padded labels. */
 static __attribute__((noinline)) void mcu_menu_label(uint16_t *cells,unsigned offset)
 {
@@ -67,7 +71,15 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
         switch(row) {
         case 0:kind=0;break;
         case 1:cells[10]=MENU_ASCII|('0'+(p&63)/10);cells[11]=MENU_ASCII|('0'+(p&63)%10);return attr;
-        case 2:kind=(p&64)?2:1;break;
+        case 2:
+#if GAMMA_SLIDER
+            if(s->gamma_slider_available) {
+                unsigned g=gamma_effective(s);
+                mcu_menu_text(cells,mcu_gamma_text+4*g);
+                return attr;
+            }
+#endif
+            kind=(p&64)?2:1;break;
         case 3:mcu_menu_text(cells,"1.001.121.251.50"+4*((p>>7)&3));return attr;
         case 4:mcu_menu_text(cells,"1.001.251.501.752.00"+4*(((p>>9)&7)>4?4:(p>>9)&7));return attr;
         case 5:kind=(0x01050403u>>(8*((p>>12)&3)))&255u;break;
@@ -207,7 +219,11 @@ static void mcu_menu_poll(const MenuState *s)
     key[0]=s->menu|(s->edit<<1)|(s->index<<4)|(s->picture_page<<8)|(s->record_page<<10)|
            (s->panel_page<<16)|(s->panel_ui<<20)|(s->info<<21)|(s->logo_enable<<22)|
            (s->record_available<<23)|(s->picture_available<<24)|(s->auto_exposure<<25);
+#if GAMMA_SLIDER
+    key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s)|(gamma_effective(s)<<16);
+#else
     key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s);
+#endif
     key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8)|
         (s->image_effect<<16)|(s->image_target<<20)|(s->histogram_mode<<24);
     if((status&6u)==2u && !memcmp(key,mcu_menu_previous,sizeof key))return;

@@ -16,6 +16,9 @@ int main(int argc,char **argv) {
         .picture=PICTURE_DEFAULT,.image_step=4,.record_available=1};
     FILE *f=argc>1?fopen(argv[1],"w"):0;
     unsigned mode,i;
+#if GAMMA_SLIDER
+    unsigned c;
+#endif
     assert(f);
     for(mode=0;mode<9;mode++) {
         s.menu=mode!=4;s.picture_page=mode==1||mode==6?1:mode==3||mode==8?2:0;
@@ -48,6 +51,17 @@ int main(int argc,char **argv) {
     status=2;mcu_menu_poll(&s);unsigned prev=commits;
     s.histogram_mode=0;mcu_menu_poll(&s);assert(commits==prev+1);
     s.histogram_available=0;mcu_menu_publish(&s,0);assert(!(words[128]&511u));
+#if GAMMA_SLIDER
+    /* Gamma slider text: OFF / 0.30..0.65, with Sobel locked at 0.45. */
+    s.menu=1;s.panel_page=PANEL_PICTURE;s.picture_page=1;s.picture_available=1;
+    s.image_step=4;s.image_effect=0;s.gamma_slider_available=1;s.gamma_level=4;s.index=1;
+    mcu_menu_publish(&s,0);
+    for(c=0;c<4;c++)assert((words[40+c]&511u)==(MENU_ASCII|(unsigned)"0.45"[c]));
+    s.gamma_level=0;mcu_menu_publish(&s,0);
+    for(c=0;c<4;c++)assert((words[40+c]&511u)==(MENU_ASCII|(unsigned)"OFF "[c]));
+    s.gamma_level=7;s.image_step=2;s.image_effect=5;mcu_menu_publish(&s,0);
+    for(c=0;c<4;c++)assert((words[40+c]&511u)==(MENU_ASCII|(unsigned)"0.45"[c]));
+#endif
     puts("PASS HE menu label/values, eighth-row visibility and histogram-only dirty update");
     puts("PASS MCU menu contents, dirty detection, busy and reset recovery");
     return 0;

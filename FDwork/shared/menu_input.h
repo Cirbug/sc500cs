@@ -7,6 +7,12 @@
 #ifndef MENU_LEGACY_COMPAT
 #define MENU_LEGACY_COMPAT 1
 #endif
+/* XIP keeps the 8-step gamma slider.  The TCM image has no room for it
+ * (the pre-existing heap/stack gap was 16 bytes), so the TCM target keeps
+ * the historical OFF/ON gamma switch. */
+#ifndef GAMMA_SLIDER
+#define GAMMA_SLIDER 1
+#endif
 
 /* MCU input/state layer. Geometry matches the 1920x1080 ui_osd.v layout.
  * Both firmware targets include this file; no extra FPGA logic is required. */
@@ -52,6 +58,7 @@ typedef struct {
     uint32_t servo_menu_available;
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
+    uint8_t gamma_level, gamma_slider_available; /* 0 off, 1..8 = 0.30..0.65 */
     uint32_t record_page, record_available, record_interval;
     uint32_t histogram_mode, histogram_available; /* 0 off, 1 half, 2 full, 3 auto */
     int touch_capture; /* -1:none; panel 16..23:slider */
@@ -73,12 +80,36 @@ static inline uint32_t picture_effective(const MenuState *s)
     return s->picture | ((s->image_step == 2u &&
                            s->image_effect == 5u) ? (1u << 6) : 0u);
 }
+/* Sobel forces the historical 0.45 curve.  The slider is locked while Sobel
+ * is active; leaving Sobel restores the user's selected preset. */
+static inline unsigned gamma_locked(const MenuState *s)
+{
+    return s->gamma_slider_available && s->image_step == 2u && s->image_effect == 5u;
+}
+static inline unsigned gamma_effective(const MenuState *s)
+{
+    if(s->image_step == 2u && s->image_effect == 5u) return 4u;
+    if(s->gamma_slider_available)
+        return s->gamma_level > 8u ? 8u : s->gamma_level;
+    return (s->picture & (1u << 6)) ? 4u : 0u;
+}
 static inline void picture_adjust(MenuState *s, int direction)
 {
     unsigned shift, mask, high, value;
     switch(s->index) {
     case 0: shift=0; mask=63; high=63; break;
-    case 1: shift=6; mask=1; high=1; break;
+    case 1:
+#if GAMMA_SLIDER
+        if(s->gamma_slider_available) {
+            unsigned g=s->gamma_level;
+            if(gamma_locked(s)) return;
+            g=direction>0?(g>=8u?0u:g+1u):(g==0u?8u:g-1u);
+            s->gamma_level=(uint8_t)g;
+            if(g) s->picture|=1u<<6; else s->picture&=~(1u<<6);
+            return;
+        }
+#endif
+        shift=6; mask=1; high=1; break;
     case 2: shift=7; mask=3; high=3; break;
     case 3: shift=9; mask=7; high=4; break;
     case 4: shift=12; mask=3; high=3; break;
@@ -88,7 +119,7 @@ static inline void picture_adjust(MenuState *s, int direction)
             /* OFF -> 50% -> 100% -> AUTO (1%..99% percentile stretch). */
             s->histogram_mode=direction>0?(s->histogram_mode+1)%4:(s->histogram_mode+3)%4;
         return;
-    default: s->picture=PICTURE_DEFAULT;s->histogram_mode=0;return;
+    default: s->picture=PICTURE_DEFAULT;s->gamma_level=0;s->histogram_mode=0;return;
     }
     value=(s->picture>>shift)&mask;
     if(s->index==0) {
@@ -209,7 +240,7 @@ static inline unsigned menu_key_legacy(MenuState *s, unsigned keys)
                 s->auto_exposure=!s->auto_exposure;s->edit=!s->auto_exposure;return 0;
             }
             if(s->record_page || (!s->picture_page && (s->index>=2 && s->index<=4))) return menu_adjust(s,1);
-            if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT;s->histogram_mode=0;return 0; }
+            if(s->picture_page && s->index==6) { s->picture=PICTURE_DEFAULT;s->gamma_level=0;s->histogram_mode=0;return 0; }
             s->edit = 1; s->info = 0;
         }
     }
@@ -393,10 +424,18 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
 }
 static inline int panel_editable(const MenuState *s)
 {
+#if GAMMA_SLIDER
+    return (s->panel_page==PANEL_EXPOSURE && s->index<3) ||
+           (s->panel_page==PANEL_PICTURE && ((s->index<6 && !(s->index==1 && gamma_locked(s))) ||
+            (s->index==7 && s->histogram_available))) ||
+           (s->panel_page==PANEL_RECORD && s->index==3) ||
+           (s->panel_page==PANEL_MODE && s->index==4);
+#else
     return (s->panel_page==PANEL_EXPOSURE && s->index<3) ||
            (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
            (s->panel_page==PANEL_MODE && s->index==4);
+#endif
 }
 static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned keys)
 {
@@ -433,6 +472,11 @@ static unsigned panel_range(const MenuState *s,unsigned row,unsigned *v,unsigned
     }
     if(s->panel_page==PANEL_PICTURE && s->picture_available) {
         if(row==0){*v=s->picture&63;*hi=63;return 1;}
+#if GAMMA_SLIDER
+        if(row==1 && s->gamma_slider_available && !gamma_locked(s)) {
+            *v=gamma_effective(s);*hi=8;return 1;
+        }
+#endif
         if(row==2){*v=(s->picture>>7)&3;*hi=3;return 1;}
         if(row==3){*v=(s->picture>>9)&7;*hi=4;return 1;}
         if(row==5){*v=(s->picture>>14)&3;*hi=3;return 1;}
@@ -451,6 +495,13 @@ static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
         else if(row==1)s->gain=v;
         else {s->vts=v;if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);}
     } else if(s->panel_page==PANEL_PICTURE) {
+#if GAMMA_SLIDER
+        if(row==1) {
+            s->gamma_level=(uint8_t)v;
+            if(v) s->picture|=1u<<6; else s->picture&=~(1u<<6);
+            return 0;
+        }
+#endif
         shift=row==0?0:row==2?7:row==3?9:14;
         mask=row==0?63:row==3?7:3;
         s->picture=(s->picture&~(mask<<shift))|(v<<shift);

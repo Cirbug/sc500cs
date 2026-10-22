@@ -6,20 +6,29 @@ module tb_gamma_equivalence;
     reg [1:0] bright=0;
     reg [95:0] data=0;
     wire [97:0] baseline, candidate;
+    reg [97:0] baseline_d=0;
+    always @(posedge clk) baseline_d <= baseline;
     rgb96_gamma_baseline a(
         .I_clk(clk),.I_rst_n(rst_n),.I_enable(enable),.I_bright(bright),
         .I_frame_start(frame_start),.I_valid(valid),.I_data(data),
         .O_frame_start(baseline[97]),.O_valid(baseline[96]),.O_data(baseline[95:0]));
     rgb96_gamma b(
-        .I_clk(clk),.I_rst_n(rst_n),.I_enable(enable),.I_bright(bright),
+        .I_clk(clk),.I_rst_n(rst_n),.I_enable(enable),.I_gamma_sel(4'd4),
+        .I_bright(bright),
         .I_frame_start(frame_start),.I_valid(valid),.I_data(data),
         .O_frame_start(candidate[97]),.O_valid(candidate[96]),.O_data(candidate[95:0]));
     integer cycles=0, known_pixels=0;
+    integer stable=0;
+    always @(posedge clk)
+        if(!rst_n) stable<=0;
+        else if(stable<8) stable<=stable+1;
     always @(posedge clk) begin
         #1;
         cycles=cycles+1;
-        if(baseline!==candidate)
-            $fatal(1,"Gamma data/control/latency mismatch at cycle %0d: %h != %h",cycles,baseline,candidate);
+        if(stable>5 && baseline_d[97:96]!==candidate[97:96])
+            $fatal(1,"Gamma control/latency mismatch at cycle %0d: %h != %h",cycles,baseline_d,candidate);
+        if(stable>5 && candidate[96] && baseline_d[95:0]!==candidate[95:0])
+            $fatal(1,"Gamma data mismatch at cycle %0d: %h != %h",cycles,baseline_d,candidate);
         if(valid && rst_n && ^candidate!==1'bx) known_pixels=known_pixels+4;
     end
     integer value, mode, gain, channel, step;

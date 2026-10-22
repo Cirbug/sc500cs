@@ -9,7 +9,7 @@ module tb_picture_algorithms;
     wire [95:0] sd,gd;
     rgb96_sat_boost s(.I_clk(clk),.I_rst_n(rst),.I_sat_off(sat_off),.I_sat_sel(sat),
         .I_frame_start(fs),.I_valid(valid),.I_data(data),.O_frame_start(sf),.O_valid(sv),.O_data(sd));
-    rgb96_gamma g(.I_clk(clk),.I_rst_n(rst),.I_enable(gamma_en),.I_bright(bright),
+    rgb96_gamma g(.I_clk(clk),.I_rst_n(rst),.I_enable(gamma_en),.I_gamma_sel(4'd4),.I_bright(bright),
         .I_frame_start(fs),.I_valid(valid),.I_data(data),.O_frame_start(gf),.O_valid(gv),.O_data(gd));
     task sample;
         input [23:0] pixel,sat_expected,gamma_expected;
@@ -18,6 +18,7 @@ module tb_picture_algorithms;
             @(negedge clk); valid=0; fs=0;
             repeat(2) @(negedge clk);
             if(!sv || !sf || sd!=={4{sat_expected}}) $fatal(1,"saturation/controls mismatch %h",sd);
+            @(negedge clk);
             if(!gv || !gf || gd!=={4{gamma_expected}}) $fatal(1,"gamma/controls mismatch %h",gd);
             repeat(4) @(negedge clk);
         end

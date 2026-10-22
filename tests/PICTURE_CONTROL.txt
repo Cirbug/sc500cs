@@ -1,5 +1,10 @@
 MCU picture controls (PIC1), 2026-10-13
 
+2026-10-22: GAM1 bitstreams replace the gamma OFF/ON switch with an 8-step
+slider (0=OFF, 1..8 = 0.30..0.65; Sobel keeps 0.45).  The XIP firmware carries
+the slider; the TCM image keeps the old OFF/ON switch because it has no room.
+See tests/GAMMA_SLIDER.txt.
+
 Deploy BOTH the picture FPGA bitstream and one matching MCU firmware:
   FPGA: build/picture_control_20261013/camera_to_dsi_display_picture.bit
   RAM debug: FDwork/anlu_app/build/anlu_app.elf
@@ -16,9 +21,10 @@ Picture page:
   Physical keys and touch edit the same MenuState in both firmware targets.
 
 BLACK: 0..63, saturating subtraction in 8-bit RGB, MCU default 12.
-GAMMA: OFF/ON, existing gamma LUT, MCU default OFF. Sobel edge display
-     (MODE 1/2, EFFECT 5) forces ON; leaving it restores the user's setting.
-     The OSD shows the effective value, so Gamma remains ON during Sobel.
+GAMMA: GAM1 slider 0=OFF, 1..8 = 0.30..0.65 on the XIP firmware; the TCM
+     image keeps the old OFF/ON switch. Sobel edge display (MODE 1/2, EFFECT 5)
+     forces the historical 0.45 curve; leaving it restores the user's setting.
+     The OSD shows the effective value, so Gamma remains 0.45 during Sobel.
 BRIGHT: 1.0/1.125/1.25/1.5, default 1.125; displayed as 1.12.
 SAT: 1.0/1.25/1.5/1.75/2.0, default 1.0.
 AWB: AUTO (unsmoothed), SMTH (IIR + clamp), GRAY (near-gray 32 + SMTH),
@@ -35,6 +41,9 @@ Register map, base 0x70000000:
        bits15:14 denoise 0..3. Existing FPGA reset 0x1050; MCU startup and
        DEFAULT explicitly write 0x108c (BLACK=12, gamma OFF, brightness 1.125x).
        Requires both low byte strobes; invalid saturation clamps to 4.
+  0x6c GAM1: write low 4 bits = gamma level (0=OFF, 1..8=0.30..0.65);
+       read 0x47414D30 | level.  GAM1 and PIC1 share the 20-bit frame-boundary
+       mailbox.  XIP only; TCM keeps the old OFF/ON PIC1 bit.
   0x74 read-only 0x50494331 (PIC1).
 MCU checks PIC1 before exposing the submenu or writing the new register.
 The requested word crosses each clock domain through an acknowledged mailbox;

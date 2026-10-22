@@ -209,12 +209,25 @@ static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
         autofocus_stop(AF_REASON_MANUAL);
     if(s->image_step!=old->image_step || (actions & MENU_REACQUIRE))
         g_track_control.primed=0;
+#if GAMMA_SLIDER
+    if(s->picture_available &&
+       (picture_effective(s)!=picture_effective(old) ||
+        (s->gamma_slider_available && gamma_effective(s)!=gamma_effective(old)))) {
+        if(s->gamma_slider_available && gamma_effective(s)!=gamma_effective(old))
+            ui_write(0x6c,gamma_effective(s));
+        ui_write(0x70, picture_effective(s));
+        /* Read back hardware fields without saving Sobel's forced gamma as
+         * the user's preference. OSD shows the effective hardware setting. */
+        s->picture=(ui_read(0x70) & ~(1u << 6)) | (s->picture & (1u << 6));
+    }
+#else
     if(s->picture_available && picture_effective(s)!=picture_effective(old)) {
         ui_write(0x70, picture_effective(s));
         /* Read back hardware fields without saving Sobel's forced gamma as
          * the user's preference. OSD shows the effective hardware setting. */
         s->picture=(ui_read(0x70) & ~(1u << 6)) | (s->picture & (1u << 6));
     }
+#endif
     if(s->vts_available && s->vts != old->vts) {
         ui_write(UI_VTS,s->vts);s->vts=ui_read(UI_VTS);
         if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);
@@ -389,7 +402,14 @@ AL_S32 main(void)
     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
     ui.picture_available=(ui_read(0x74)==0x50494331u);
     ui.picture=PICTURE_DEFAULT;
+#if GAMMA_SLIDER
+    ui.gamma_level=0;
+    ui.gamma_slider_available=((ui_read(0x6c)&0xFFFFFFF0u)==0x47414D30u);
+#endif
     if(ui.picture_available) {
+#if GAMMA_SLIDER
+        if(ui.gamma_slider_available) ui_write(0x6c,gamma_effective(&ui));
+#endif
         ui_write(0x70,picture_effective(&ui));
         ui.picture=(ui_read(0x70) & ~(1u << 6)) | (ui.picture & (1u << 6));
     }

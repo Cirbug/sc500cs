@@ -1,0 +1,132 @@
+Gamma 滑动调节（GAM1，2026-10-22）
+=====================================
+
+目标：把图像设置页的 Gamma 从 OFF/ON 改成和曝光一样的滑条，同时保持
+Sobel（边缘检测）自动使用当前 0.45 曲线，不受用户档位影响。
+
+一、用户界面
+------------
+图像设置 -> 伽马：
+  0    = OFF（旁路）
+  1    = 0.30
+  2    = 0.35
+  3    = 0.40
+  4    = 0.45（默认值；与旧 gamma 表逐点一致）
+  5    = 0.50
+  6    = 0.55
+  7    = 0.60
+  8    = 0.65
+
+操作与曝光/亮度滑条一致：
+  - 物理键：UP/DOWN 调一档，OK 进入/退出编辑；
+  - 触摸：点左侧减、右侧加，或直接拖动滑条；
+  - 菜单显示 OFF 或 0.30..0.65；
+  - “恢复默认”回到 OFF（PICTURE_DEFAULT=0x108c）。
+  - 档位循环：0 -> 1 -> ... -> 8 -> 0，反向同理。
+
+Sobel（MODE 2 / EFFECT 5）：
+  - 硬件强制使用档位 4（0.45），即旧版曲线；
+  - 菜单显示 0.45，不显示滑条；
+  - Sobel 期间伽马不可编辑；退出 Sobel 后恢复用户档位；
+  - 用户原档位保存在 MenuState，不会被 Sobel 覆盖。
+
+二、APB 寄存器
+--------------
+GAM1 使用 APB 0x6c（未改动 PIC1 0x70/0x74）：
+
+  写 0x6c：低 4 位 = gamma_level，0..8，大于 8 钳到 8。
+  读 0x6c：0x47414D30 | gamma_level，即 "GAM" + 低 4 位档位。
+           旧 bit 读到 0，新 MCU 据此隐藏滑条并回退 OFF/ON。
+
+PIC1 的 bit6 仍然是 gamma enable：
+  - 新 MCU 写 GAM1 档位时，同时让 bit6 = (level != 0)；
+  - 旧 MCU 只写 bit6 时，新 FPGA 默认使用 0.45；
+  - 新 MCU 读不到 GAM1 时，退回旧 OFF/ON 行为。
+
+GAM1 与 PIC1 一起通过 20-bit 的 picture_control_cdc 在原始帧边界提交：
+  [19:16] = gamma_level，[15:0] = PIC1 picture word。
+  这样档位和 bit6 不会在帧中间撕裂。
+
+三、FPGA 实现
+-------------
+rgb96_gamma（user_source/hdl_source/isp/isp_top.v）：
+  - 8 条固定曲线 + 旁路；
+  - 每条曲线：x=0..15 逐点精确值，x=16..255 为 16 段线性插值；
+  - 256 x 16-bit 系数 ROM，条目 = {base[7:0], slope[7:0]}；
+  - 12 路并行读系数，每拍 4 个 RGB888 像素；
+  - 四拍流水：输入寄存 -> 同步系数 ROM -> 插值/旁路寄存 -> 数字亮度 + 输出寄存；
+  - 插值：y = base + ((slope * x[3:0]) >> 4)，饱和到 255；
+  - 数字亮度仍在 gamma 之后，四档移位相加不变；
+  - I_enable=0 时原样旁路，流水线延迟不变。
+
+曲线精度：
+  - 0.45 档与旧版 256 项表逐点一致；
+  - 其余档对 255*(x/255)^gamma 的最大误差约 2 LSB；
+  - 低端 0..15 逐点精确，避免暗部插值误差。
+
+四、固件差异（重要）
+--------------------
+TCM 固件（FDwork/anlu_app）：
+  - 原有 48 KiB TCM 在改动前只剩 16 字节连续空隙；
+  - 加入滑条代码 + 约 424 字节 text 后，heap 与 stack 重叠，链接失败；
+  - 因此 TCM 构建定义 GAMMA_SLIDER=0，保留旧 OFF/ON，不包含滑条；
+  - 这样可以继续保留 1 KiB heap + 2 KiB stack，不牺牲内存安全。
+
+XIP 固件（FDwork/anlu_app2）：
+  - 定义 GAMMA_SLIDER=1，包含完整 8 档滑条；
+  - 当前 XIP DLM 连续空隙约 3792 字节，仍保留 1 KiB heap + 2 KiB stack；
+  - 新功能应使用 XIP 固件。
+
+构建入口：
+  ./FDwork/anlu_app/build.ps1  -FdRoot D:/FD/FD -BuildRoot <out>/firmware_tcm
+  ./FDwork/anlu_app2/build.ps1 -FdRoot D:/FD/FD -BuildRoot <out>/firmware_xip
+
+FD 默认输出同步（2026-10-22）：
+  FDwork/anlu_app2/build/anlu_app2.elf/.bin/.map 已替换为本次 8 档 XIP 固件；
+  使用 FDwork/anlu_app2/anlu_app_onecable.launch 时，PROGRAM_NAME 指向
+  build/anlu_app2.elf，因此会加载新固件。
+  FDwork/anlu_app/build/anlu_app.elf 仍是 TCM 构建，按设计没有滑条；
+  不要把它当作 gamma 滑条的验收固件。
+  两个 launch 的 bitstreamFile 已指向新 bit，但 doProgramFPGA 仍为 false；
+  新 bit 需要单独下载。
+
+五、验证记录（2026-10-22）
+--------------------------
+已通过：
+  - tests/run_gamma_equivalence.py：
+    新 rgb96_gamma 在 I_gamma_sel=4 时与旧模块逐周期、逐像素完全一致；
+    22057 cycles，48292 known pixels，0 error。
+  - tests/run_gamma_presets.py：
+    sel 0..9、256 个输入、12 lane、旁路，33792 lane samples，
+    对幂函数参考最大误差 <= 2 LSB。
+  - tests/run_awb.py：包括 tb_picture_algorithms 的 gamma 旁路/亮度/流水线。
+  - tests/run_rgb_stream.py、tb_video_full_pipeline：全链路像素对齐。
+  - tests/run_panel_ui.py、tests/run_mcu_menu.py：菜单、触摸、按键、像素表。
+  - check_mcu_ui_elf.py：TCM 49088/49152，heap-stack 16 字节。
+  - check_xip_ui_elf.py：XIP 布局通过，DLM 连续空隙 3792 字节。
+
+FPGA 构建（2026-10-22 19:14）：
+  bit：build/gamma_slider_20261022/fpga4/camera_gamma_slider_20261022.bit
+  大小：1,789,539 字节
+  SHA256：32BF11AF9BE19D842E37D67A1770F633429C31517E0F2C6F0CC162ACE10B8233
+  Slice：19091/21216 = 89.98%（旧默认 18942 = 89.28%，+149）
+  LUT6：18364/21216 = 86.56%
+  寄存器：18129/42432 = 42.72%
+  ERAM：95/108 = 87.96%；DSP：26/40 = 65.00%
+  setup WNS=0.116ns，hold WNS=0.020ns，TNS 均为 0，STA coverage=94.27%
+  构建日志 0 ERROR；仍有 PHY-5060/5079/5016/5088 等既有告警。
+  TD 还报 HDL-5314 "gamma_coef does not have a driver"；导出网表的
+  ERAM INIT_00..0F 含非零系数，说明初值已写入，但最终仍需上板确认。
+
+未做：
+  - 没有上板下载/烧录；
+  - 没有实测各档暗部噪声、banding、AE/识别表现；
+  - 没有测 XIP 断电启动。
+
+六、风险
+--------
+  - Gamma 在 DDR 之前，滑条会同时影响显示、识别/跟踪输入和 AE 测光；
+  - 8-bit 表没有 dithering，暗部渐变可能出现 banding；
+  - 0.45 档与旧表一致，但其他档仍是近似曲线（<=2 LSB）；
+  - 新 bit 与旧 bit 的 GAM1 能力不同，必须配套使用；
+  - TCM 不包含滑条，只有 XIP 有；不要把 TCM 当作该功能的验收固件。

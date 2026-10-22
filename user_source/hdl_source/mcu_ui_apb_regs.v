@@ -39,6 +39,7 @@ module mcu_ui_apb_regs #(
     output reg         O_picture_page,
     output reg         O_mode_page,
     output reg  [15:0] O_picture_ctrl,
+    output reg  [3:0]  O_gamma_level,
     output reg  [2:0]  O_menu_index,
     output reg  [15:0] O_exposure,
     output reg  [15:0] O_gain,
@@ -136,6 +137,7 @@ module mcu_ui_apb_regs #(
             O_mode_page <= 1'b0;
             O_focus_roi <= 32'h01e00370; // hidden, centered 160x120 ROI
             O_picture_ctrl <= 16'h1050;
+            O_gamma_level  <= 4'd4;
             O_menu_index  <= 3'd0;
             O_exposure    <= AE_INIT;
             O_gain        <= AG_INIT;
@@ -221,6 +223,9 @@ module mcu_ui_apb_regs #(
                         O_picture_ctrl <= {I_pwdata[15:12],
                             (I_pwdata[11:9] > 3'd4 ? 3'd4 : I_pwdata[11:9]), I_pwdata[8:0]};
                     end
+                    // GAM1: 0 = gamma off, 1..8 = gamma preset, default 4 (0.45).
+                    8'h6c: if(I_pstrobe[0])
+                        O_gamma_level <= (I_pwdata[3:0] > 4'd8) ? 4'd8 : I_pwdata[3:0];
                     8'h78: if(&I_pstrobe) O_rtc_set_time0<=I_pwdata;
                     8'h7c: if(&I_pstrobe) O_rtc_set_time1<=I_pwdata;
                     8'h80: if(&I_pstrobe && I_pwdata==32'h53455431 && !I_rtc_set_status[0]) O_rtc_set<=1;
@@ -287,6 +292,7 @@ module mcu_ui_apb_regs #(
                 8'h64: O_prdata = I_rtc_time1;
                 8'h68: O_prdata = I_rtc_status;
                 8'h70: O_prdata = {16'd0, O_picture_ctrl};
+                8'h6c: O_prdata = 32'h47414D30 | {28'd0, O_gamma_level}; // GAM1
                 8'h74: O_prdata = 32'h50494331; // PIC1 capability, independent of camera build ID.
                 8'h78: O_prdata = O_rtc_set_time0;
                 8'h7c: O_prdata = O_rtc_set_time1;

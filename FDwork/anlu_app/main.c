@@ -11,8 +11,9 @@
 #include "max3421e_diag.h"
 #include "../shared/touch_focus.h"
 #include "../shared/sd_recorder.h"
+#define RTC_DIAG_QUIET 1
 #include "../shared/rtc_diag.h"
-#include "../shared/video_diag.h"
+#include "../shared/net_diag.h"
 #include "../shared/red_track_control.h"
 
 /* Keep the UI/AF control code compact enough for 48 KiB TCM with SD + RTC.
@@ -198,7 +199,6 @@ static void lens_diag_report(void)
 }
 
 #include "../shared/autofocus_control.h"
-#include "../shared/lens_serial_diag.h"
 #include "../shared/tracking_service.h"
 
 /* All inputs commit through this one hardware boundary. */
@@ -308,7 +308,7 @@ static MenuState *record_ui;
 static void recorder_service(void) {
     wifi_mcu_poll(1);
     rtc_diag_poll((uint32_t)UI_APB_BASE);
-    video_diag_poll((uint32_t)UI_APB_BASE);
+    net_diag_poll((uint32_t)UI_APB_BASE);
     max3421e_touch_poll();
     autofocus_task();
     if(record_ui) {
@@ -463,8 +463,7 @@ AL_S32 main(void)
         max3421e_touch_poll();
         touchscreen_handle(&ui);
         rtc_diag_poll((uint32_t)UI_APB_BASE);
-        video_diag_poll((uint32_t)UI_APB_BASE);
-        lens_serial_poll();
+        net_diag_poll((uint32_t)UI_APB_BASE);
         recorder_poll();
         wifi_mcu_poll(0);
         ui_controls_poll(&ui);

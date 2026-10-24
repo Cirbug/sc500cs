@@ -36,7 +36,14 @@ module isp_top (
     output wire [7:0]  O_stat_min_r,
     output wire [13:0] O_stat_samples,
     output wire [7:0] O_stat_sequence,
-    output wire        O_stat_frm_tgl
+    output wire        O_stat_frm_tgl,
+
+    // Parallel network branch: area-weighted 1080p RGB888 to 720p RGB565.
+    output wire        O_net_frame_start,
+    output wire        O_net_line_end,
+    output wire        O_net_frame_end,
+    output wire        O_net_valid,
+    output wire [63:0] O_net_rgb565
 );
  
 wire         m_aixs_tvalid;  //synthesis keep 
@@ -62,6 +69,7 @@ wire         m_aixs_tvalid;  //synthesis keep
   // gamma 校正级（rgb96_gamma）的输出
   wire         S_gam_tuser;
   wire         S_gam_tvalid;
+  wire         S_gam_tlast;
   wire [ 95:0] S_gam_tdata;
 
   // 暗部彩噪抑制级（rgb96_chroma_core）的输出
@@ -242,10 +250,30 @@ awb #(
         .I_bright      (I_bright),
         .I_frame_start (dn_fs),
         .I_valid       (dn_valid),
+        .I_last        (dn_last),
         .I_data        (dn_data),
         .O_frame_start (S_gam_tuser),
         .O_valid       (S_gam_tvalid),
+        .O_last        (S_gam_tlast),
         .O_data        (S_gam_tdata)
+    );
+
+    rgb888_1080_to_rgb565_720 #(
+        .OUT_WORDS(320),
+        .OUT_HEIGHT(720),
+        .ADDR_WIDTH(9)
+    ) u_net_rgb565_scaler (
+        .I_clk(axi4s_video_aclk),
+        .I_rst_n(I_rst_n),
+        .I_frame_start(S_gam_tuser),
+        .I_line_end(S_gam_tlast),
+        .I_valid(S_gam_tvalid),
+        .I_rgb888(S_gam_tdata),
+        .O_frame_start(O_net_frame_start),
+        .O_line_end(O_net_line_end),
+        .O_frame_end(O_net_frame_end),
+        .O_valid(O_net_valid),
+        .O_rgb565(O_net_rgb565)
     );
 
     // 后级探针挂在整条链路最后（饱和度增强 + 缩放 + gamma 之后），读的就是最终画面
@@ -1176,10 +1204,12 @@ module rgb96_gamma (
 
     input  wire        I_frame_start,
     input  wire        I_valid,
+    input  wire        I_last,
     input  wire [95:0] I_data,
 
     output reg         O_frame_start,
     output reg         O_valid,
+    output reg         O_last,
     output reg  [95:0] O_data
 );
 
@@ -1473,17 +1503,17 @@ module rgb96_gamma (
 
     // ---- 第 1 级：输入寄存 ----
     reg [95:0] S_data_1d;
-    reg [1:0]  S_ctrl_1d;
+    reg [2:0]  S_ctrl_1d;
     always @(posedge I_clk) begin
         S_data_1d <= I_data;
-        S_ctrl_1d <= {I_frame_start, I_valid};
+        S_ctrl_1d <= {I_frame_start, I_valid, I_last};
     end
 
     // Stage 2: synchronous ROM read, with bypass selected by the address
     // MSB. I_enable is sampled at the original stage-2 boundary, so live
     // mode changes preserve the exact original pixels and three-cycle latency.
     reg [95:0] S_gam_2d;
-    reg [1:0] S_ctrl_2d;
+    reg [2:0] S_ctrl_2d;
     genvar gamma_channel;
     generate for(gamma_channel=0;gamma_channel<12;gamma_channel=gamma_channel+1) begin: gamma_reads
         always @(posedge I_clk)
@@ -1498,11 +1528,13 @@ module rgb96_gamma (
         if(!I_rst_n) begin
             O_frame_start <= 1'b0;
             O_valid       <= 1'b0;
+            O_last        <= 1'b0;
             O_data        <= 96'd0;
         end
         else begin
-            O_frame_start <= S_ctrl_2d[1];
-            O_valid       <= S_ctrl_2d[0];
+            O_frame_start <= S_ctrl_2d[2];
+            O_valid       <= S_ctrl_2d[1];
+            O_last        <= S_ctrl_2d[0];
             O_data        <= {
                 add_bright(S_gam_2d[95:88], I_bright), add_bright(S_gam_2d[87:80], I_bright),
                 add_bright(S_gam_2d[79:72], I_bright),

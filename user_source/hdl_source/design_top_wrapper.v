@@ -1,16 +1,20 @@
 `include "video_params.vh"
-// Keep the mailbox reachable from existing TD GUI/generated source lists.
-`include "red_track_mailbox.v"
 `include "video_integrity.v"
 `include "capture_display_latency.v"
 `include "histogram_equalizer.v"
-`include "shape_result_filter.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
     input wire I_sd_miso,
     input wire        I_sys_clk,
-    input wire        I_rst_n,
+    input wire [3:0]  I_a_rgmii_rxd,
+    input wire        I_a_rgmii_rx_ctl,
+    input wire        I_a_rgmii_rxc,
+    output wire [3:0] O_a_rgmii_txd,
+    output wire       O_a_rgmii_tx_ctl,
+    output wire       O_a_rgmii_txc,
+    output wire       O_phy_rst,
+    output wire [3:0] O_LED4,
 
     input wire        I_mcu_uart_rx,
     output wire       O_mcu_uart_tx,
@@ -45,7 +49,6 @@ module design_top_wrapper (
 
     input wire [3:0]  I_button,
 
-    output wire       O_screen_pwm,
     output wire       O_tmds_ch0_p,
     output wire       O_tmds_ch1_p,
     output wire       O_tmds_ch2_p,
@@ -199,12 +202,8 @@ module design_top_wrapper (
     wire        S_hdmi_out_de;
     wire[23:0]  S_hdmi_out_data;
 
-    // _9 post-DDR image branch.  The denoiser is kept as a side branch so
-    // the existing DDR/HDMI timing and the current menu/OSD path stay intact.
-    reg         S_video_de_1d;
-    wire        S_video_dn_de;
-    wire [23:0] S_video_dn_data;
-    wire [23:0] S_shape_input_data;
+    // Main-board recognition has moved to EG4D20. Keep the legacy mixer
+    // diagnostic inputs at zero so display/menu timing remains unchanged.
     wire [7:0]  S_dn_noise;
     wire [7:0]  S_dn_mean_y;
     reg         S_isp_stat_t1, S_isp_stat_t2, S_isp_stat_t3;
@@ -221,7 +220,6 @@ module design_top_wrapper (
     wire        S_dbg_recog_mode;
     wire        S_logo_enable;
     wire [1:0]  S_motion_target;
-    reg         S_track_reacquire;
 
     wire        S_shape_valid;
     wire [2:0]  S_shape_type;
@@ -242,6 +240,12 @@ module design_top_wrapper (
     wire signed [12:0] S_track_ex, S_track_ey;
     wire [6:0]  S_track_area;
     wire [31:0] S_track_status_apb, S_track_errors_apb;
+    wire [31:0] S_net_tx_packets_apb, S_net_tx_frames_apb;
+    wire [31:0] S_net_reply_packets_apb, S_net_bad_packets_apb;
+    wire [31:0] S_net_remote_frames_apb, S_net_remote_errors_apb;
+    wire [31:0] S_net_remote_frame_id_apb;
+    wire [4:0]  S_net_status_apb;
+    wire [15:0] S_net_stack_debug_apb;
     wire [23:0] S_hdmi_base_data;
     wire        S_hdmi_overlay_valid;
     wire        S_effect_vsync, S_effect_hsync, S_effect_de;
@@ -459,7 +463,6 @@ module design_top_wrapper (
     reg [2:0]   S_image_effect_p1, S_image_effect_p2;
     reg [1:0]   S_image_target_p1, S_image_target_p2;
     reg         S_image_logo_p1, S_image_logo_p2;
-    reg         S_image_track_p1, S_image_track_p2, S_image_track_seen;
     wire        S_osd_vsync;
     wire        S_osd_hsync;
     wire        S_osd_de;
@@ -550,7 +553,6 @@ module design_top_wrapper (
     wire        S_lane_error_any;
 
 
-    assign O_screen_pwm = 1'b1;
     assign S_video_out_vsync = ~S_hdmi_vsync;
 	
 	
@@ -871,10 +873,6 @@ module design_top_wrapper (
             S_image_target_p2  <= 2'd0;
             S_image_logo_p1    <= 1'b1;
             S_image_logo_p2    <= 1'b1;
-            S_image_track_p1   <= 1'b0;
-            S_image_track_p2   <= 1'b0;
-            S_image_track_seen <= 1'b0;
-            S_track_reacquire  <= 1'b0;
         end else begin
             S_ui_enable_p1 <= S_ui_enable_apb;
             S_ui_enable_p2 <= S_ui_enable_p1;
@@ -923,10 +921,6 @@ module design_top_wrapper (
             S_image_target_p2  <= S_image_target_p1;
             S_image_logo_p1    <= S_image_logo_apb;
             S_image_logo_p2    <= S_image_logo_p1;
-            S_image_track_p1   <= S_image_track_toggle_apb;
-            S_image_track_p2   <= S_image_track_p1;
-            S_track_reacquire  <= S_image_track_p2 ^ S_image_track_seen;
-            S_image_track_seen <= S_image_track_p2;
         end
     end
 	
@@ -935,7 +929,7 @@ module design_top_wrapper (
 	
     PLL u_PLL(
         .refclk      ( I_sys_clk         ),
-        .reset    	 ( ~I_rst_n          ),
+        .reset(1'b0),
         
         .clk0_out    ( S_100m_clk        ),
         .clk1_out    ( S_24m_clk         ),
@@ -1198,6 +1192,11 @@ module design_top_wrapper (
         .O_rtc_set(S_rtc_set), .I_rtc_set_status(S_rtc_set_status),
         .O_wifi_ctrl(S_wifi_ctrl), .I_wifi_pads(S_wifi_pad_sync),
         .I_track_status(S_track_status_apb), .I_track_errors(S_track_errors_apb),
+        .I_net_tx_packets(S_net_tx_packets_apb), .I_net_tx_frames(S_net_tx_frames_apb),
+        .I_net_reply_packets(S_net_reply_packets_apb), .I_net_bad_packets(S_net_bad_packets_apb),
+        .I_net_remote_frames(S_net_remote_frames_apb), .I_net_remote_errors(S_net_remote_errors_apb),
+        .I_net_remote_frame_id(S_net_remote_frame_id_apb), .I_net_status(S_net_status_apb),
+        .I_net_stack_debug(S_net_stack_debug_apb),
         .I_video_rx_diag(S_rx_diag_apb[63:0]),.I_video_fault_details(S_rx_diag_apb[159:64]),.I_video_capture_diag(S_capture_diag_apb),
         .I_video_display_diag(S_display_diag_apb),
         .I_ae_rgb(S_ae_meter_apb[23:0]), .I_ae_meta(S_ae_meter_apb[63:32]),
@@ -1389,6 +1388,11 @@ wire [7:0] S_isp_stat_mean_g;
 wire [7:0] S_isp_stat_mean_b;
 wire [7:0] S_isp_stat_min_r;
 wire       S_isp_stat_frm_tgl;
+wire       S_net_frame_start;
+wire       S_net_line_end;
+wire       S_net_frame_end;
+wire       S_net_valid;
+wire [63:0] S_net_rgb565;
 
 isp_top u_isp_top (
 .axi4s_video_aclk(S_csi_rx_clk),
@@ -1422,6 +1426,11 @@ isp_top u_isp_top (
 .O_stat_mean_b   (S_isp_stat_mean_b),
 .O_stat_min_r    (S_isp_stat_min_r),
 .O_stat_frm_tgl  (S_isp_stat_frm_tgl),
+.O_net_frame_start(S_net_frame_start),
+.O_net_line_end   (S_net_line_end),
+.O_net_frame_end  (S_net_frame_end),
+.O_net_valid      (S_net_valid),
+.O_net_rgb565     (S_net_rgb565),
 .I_tready        ()
   );
 
@@ -1630,123 +1639,40 @@ isp_top u_isp_top (
         .O_vtc_last    ( S_hdmi_last      )
     );
 
-    // Match video_out's one-cycle read latency before entering the _9
-    // 3x3 line-buffer branch.  The branch is enabled only for recognition
-    // modes; normal display modes receive a delay-only output from it.
-    always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
-        if(!S_hdmi_rst_n)
-            S_video_de_1d <= 1'b0;
-        else
-            S_video_de_1d <= S_hdmi_window_rd_en;
-    end
-
-    rgb24_denoise u_rgb24_denoise_9 (
-        .I_clk         (S_hdmi_pixel_clk),
-        .I_rst_n       (S_hdmi_rst_n),
-        .I_sel         (S_dbg_recog_mode ? 4'd9 : 4'd0),
-        .I_tone        (2'd0),
-        .I_vsync       (S_hdmi_vsync),
-        .I_de          (S_video_de_1d),
-        .I_data        (S_video_rd_data),
-        .O_de          (S_video_dn_de),
-        .O_data        (S_video_dn_data),
-        .O_noise       (S_dn_noise),
-        .O_mean_y      (S_dn_mean_y),
-        .O_smooth_data (S_shape_input_data)
-    );
-
     // Image mode/effect/target/logo are supplied by the MCU APB menu.  The
     // former FPGA-side dbg_ctrl and its second key debouncer are intentionally
     // removed so all four physical buttons have one owner.
 
-    // The current ISP/DDR path remains the source of the display pixels. The
-    // recognition branches are parallel consumers and do not alter USB, VCM,
-    // MCU, or manual-servo ownership of the video path.
-    wire S_shape_mode=S_dbg_recog_mode && (S_dbg_step==3'd3);
-    wire [2:0] S_component_shape;
-    shape_result_filter u_shape_result_filter(
-        .clk(S_hdmi_pixel_clk),.rst_n(S_hdmi_rst_n),.enable(S_shape_mode),
-        .frame_start(S_hdmi_user),.new_result(S_track_new),.raw_valid(S_track_valid),
-        .raw_type(S_component_shape),.x0(S_track_x0),.y0(S_track_y0),.x1(S_track_x1),.y1(S_track_y1),
-        .valid(S_shape_valid),.kind(S_shape_type),.ox0(S_shape_x0),.oy0(S_shape_y0),.ox1(S_shape_x1),.oy1(S_shape_y1));
-
-    motion_detect #(
-        .IMG_WIDTH      (`DISPLAY_WIDTH),
-        .IMG_HEIGHT     (`DISPLAY_HEIGHT),
-        .BLOCK_SHIFT    (5),
-        .DIFF_THRESHOLD (8'd20),
-        .MIN_BLOCKS     (16'd4)
-    ) u_motion_detect_99 (
-        .I_clk      ( S_hdmi_pixel_clk ),
-        .I_rst_n    ( S_hdmi_rst_n ),
-        .I_user     ( S_hdmi_user ),
-        .I_de       ( S_video_dn_de ),
-        .I_data     ( S_video_dn_data ),
-        .I_enable   ( S_dbg_recog_mode && (S_dbg_step == 3'd4) ),
-        .I_target_mode ( S_motion_target ),
-        .O_valid    ( S_motion_valid ), .O_count ( S_motion_count ),
-        .O_tvalid   ( S_motion_tvalid ),
-        .O_x0_0 (S_motion_x0_0), .O_y0_0 (S_motion_y0_0),
-        .O_x1_0 (S_motion_x1_0), .O_y1_0 (S_motion_y1_0),
-        .O_x0_1 (S_motion_x0_1), .O_y0_1 (S_motion_y0_1),
-        .O_x1_1 (S_motion_x1_1), .O_y1_1 (S_motion_y1_1),
-        .O_x0_2 (S_motion_x0_2), .O_y0_2 (S_motion_y0_2),
-        .O_x1_2 (S_motion_x1_2), .O_y1_2 (S_motion_y1_2)
-    );
-
-    color_detect #(
-        .IMG_WIDTH    (`DISPLAY_WIDTH),
-        .IMG_HEIGHT   (`DISPLAY_HEIGHT),
-        .SAMPLE_SHIFT (4),
-        .MIN_SAMPLES  (16'd16)
-    ) u_color_detect_99 (
-        .I_clk      ( S_hdmi_pixel_clk ),
-        .I_rst_n    ( S_hdmi_rst_n ),
-        .I_user     ( S_hdmi_user ),
-        .I_de       ( S_video_dn_de ),
-        .I_data     ( S_video_dn_data ),
-        .I_enable   ( S_dbg_recog_mode && (S_dbg_step == 3'd4) ),
-        .O_valid    ( S_color_valid ), .O_color ( S_color_code ),
-        .O_count    ( S_color_count ),
-        .O_x0       ( S_color_x0 ), .O_y0 (S_color_y0),
-        .O_x1       ( S_color_x1 ), .O_y1 (S_color_y1)
-    );
-
-    red_shape_tracker #(
-        .IMG_WIDTH    (`DISPLAY_WIDTH),
-        .IMG_HEIGHT   (`DISPLAY_HEIGHT),
-        .SAMPLE_SHIFT (4),
-        .REPORT_AREA_PERCENT (0)
-    ) u_red_target_tracker_99 (
-        .I_clk       ( S_hdmi_pixel_clk ),
-        .I_rst_n     ( S_hdmi_rst_n ),
-        .I_enable    ( S_dbg_recog_mode && ((S_dbg_step == 3'd5) || S_shape_mode) ),
-        .I_shape_mode(S_shape_mode), .O_shape_type(S_component_shape),
-        .I_reacquire ( S_track_reacquire ),
-        .I_user      ( S_hdmi_user ),
-        .I_de        ( S_video_dn_de ),
-        .I_data      ( S_shape_input_data ),
-        .O_new_result (S_track_new), .O_valid (S_track_valid),
-        .O_state     (S_track_state),
-        .O_x0 (S_track_x0), .O_y0 (S_track_y0),
-        .O_x1 (S_track_x1), .O_y1 (S_track_y1),
-        .O_cx (S_track_cx), .O_cy (S_track_cy),
-        .O_error_x (S_track_ex), .O_error_y (S_track_ey),
-        .O_dir_x (S_track_dx), .O_dir_y (S_track_dy),
-        .O_level_x (S_track_lx), .O_level_y (S_track_ly),
-        .O_area_percent (S_track_area)
-    );
-
-    red_track_mailbox u_red_track_mailbox (
-        .pixel_clk(S_hdmi_pixel_clk), .apb_clk(S_mcu_apb_clk),
-        .rst_n(S_hdmi_rst_n && S_rst_n),
-        .enable(S_dbg_step == 3'd5), .reacquire(S_track_reacquire),
-        .new_result(S_track_new), .valid(S_track_valid), .state(S_track_state),
-        .dir_x(S_track_dx), .dir_y(S_track_dy),
-        .level_x(S_track_lx), .level_y(S_track_ly),
-        .error_x(S_track_ex), .error_y(S_track_ey),
-        .status(S_track_status_apb), .errors(S_track_errors_apb)
-    );
+    // Recognition runs on EG4D20. PH1P35 receives only the remote shape result
+    // for its existing HDMI OSD; local recognition inputs remain disabled.
+    assign S_dn_noise = 8'd0;
+    assign S_dn_mean_y = 8'd0;
+    assign S_motion_valid = 1'b0;
+    assign S_motion_count = 16'd0;
+    assign S_motion_tvalid = 3'd0;
+    assign S_motion_x0_0 = 12'd0; assign S_motion_y0_0 = 12'd0;
+    assign S_motion_x1_0 = 12'd0; assign S_motion_y1_0 = 12'd0;
+    assign S_motion_x0_1 = 12'd0; assign S_motion_y0_1 = 12'd0;
+    assign S_motion_x1_1 = 12'd0; assign S_motion_y1_1 = 12'd0;
+    assign S_motion_x0_2 = 12'd0; assign S_motion_y0_2 = 12'd0;
+    assign S_motion_x1_2 = 12'd0; assign S_motion_y1_2 = 12'd0;
+    assign S_color_valid = 1'b0;
+    assign S_color_code = 3'd0;
+    assign S_color_count = 16'd0;
+    assign S_color_x0 = 12'd0; assign S_color_y0 = 12'd0;
+    assign S_color_x1 = 12'd0; assign S_color_y1 = 12'd0;
+    assign S_track_new = 1'b0;
+    assign S_track_valid = 1'b0;
+    assign S_track_state = 2'd0;
+    assign S_track_dx = 2'd0; assign S_track_dy = 2'd0;
+    assign S_track_lx = 2'd0; assign S_track_ly = 2'd0;
+    assign S_track_x0 = 12'd0; assign S_track_y0 = 12'd0;
+    assign S_track_x1 = 12'd0; assign S_track_y1 = 12'd0;
+    assign S_track_cx = 12'd0; assign S_track_cy = 12'd0;
+    assign S_track_ex = 13'sd0; assign S_track_ey = 13'sd0;
+    assign S_track_area = 7'd0;
+    assign S_track_status_apb = 32'd0;
+    assign S_track_errors_apb = 32'd0;
 
     hdmi_mixer #(
         .H_OFFSET   ( 0    ),
@@ -2013,4 +1939,42 @@ isp_top u_isp_top (
 
 
     
+
+    // Main-board video is sent as independently framed UDP chunks to EG4D20.
+    // The PHY stack clock is unrelated to the camera byte clock, so buffering
+    // and frame-boundary handling stay inside eth_udp_video_tx.
+    eth_udp_main u_eth_udp (
+        .I_sys_clk          ( I_sys_clk          ),
+        .I_pixel_clk        ( S_csi_rx_clk       ),
+        .I_pixel_reset_n    ( S_rst_n            ),
+        .I_shape_dst_clk    ( S_hdmi_pixel_clk   ),
+        .I_diag_dst_clk     ( S_mcu_apb_clk      ),
+        .I_pixel_frame_start( S_net_frame_start  ),
+        .I_pixel_frame_end  ( S_net_frame_end    ),
+        .I_pixel_valid      ( S_net_valid        ),
+        .I_pixel_rgb565     ( S_net_rgb565       ),
+        .I_a_rgmii_rxd      ( I_a_rgmii_rxd      ),
+        .I_a_rgmii_rx_ctl   ( I_a_rgmii_rx_ctl   ),
+        .I_a_rgmii_rxc      ( I_a_rgmii_rxc      ),
+        .O_a_rgmii_txd      ( O_a_rgmii_txd      ),
+        .O_a_rgmii_tx_ctl   ( O_a_rgmii_tx_ctl   ),
+        .O_a_rgmii_txc      ( O_a_rgmii_txc      ),
+        .O_phy_rst          ( O_phy_rst          ),
+        .O_led              ( O_LED4             ),
+        .O_shape_valid      ( S_shape_valid      ),
+        .O_shape_type       ( S_shape_type       ),
+        .O_shape_x0         ( S_shape_x0         ),
+        .O_shape_y0         ( S_shape_y0         ),
+        .O_shape_x1         ( S_shape_x1         ),
+        .O_shape_y1         ( S_shape_y1         ),
+        .O_tx_packets       ( S_net_tx_packets_apb ),
+        .O_tx_frames        ( S_net_tx_frames_apb ),
+        .O_reply_packets    ( S_net_reply_packets_apb ),
+        .O_bad_packets      ( S_net_bad_packets_apb ),
+        .O_remote_frames    ( S_net_remote_frames_apb ),
+        .O_remote_errors    ( S_net_remote_errors_apb ),
+        .O_remote_frame_id  ( S_net_remote_frame_id_apb ),
+        .O_net_status       ( S_net_status_apb ),
+        .O_stack_debug      ( S_net_stack_debug_apb )
+    );
 endmodule

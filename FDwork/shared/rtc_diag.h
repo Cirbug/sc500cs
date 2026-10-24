@@ -4,15 +4,22 @@
 #include "al_systimer.h"
 #pragma GCC push_options
 #pragma GCC optimize ("Os")
+/* The UART command receiver stays active while periodic RTC text is quiet. */
+static uint32_t rtc_diag_period,rtc_diag_last;
+#if !defined(RTC_DIAG_QUIET)
 /* Unsigned 32-bit deltas are wrap-safe for the 1/3/5 second intervals. */
-static uint32_t rtc_diag_period,rtc_diag_last,rtc_diag_count_tick,rtc_diag_time_tick;
+static uint32_t rtc_diag_count_tick,rtc_diag_time_tick;
 static uint32_t rtc_diag_count,rtc_diag_time;
-static unsigned rtc_diag_started,rtc_diag_seen;
+#endif
+static unsigned rtc_diag_started;
 #include "rtc_serial.h"
+#if !defined(RTC_DIAG_QUIET)
 static __attribute__((noinline)) unsigned rtc_diag_bcd(unsigned v) {return (v&15)>9 || (v>>4)>9 ? 255 : (v>>4)*10+(v&15);}
+#endif
 static void rtc_diag_poll(uintptr_t base) {
     uint32_t now=(uint32_t)AlSys_GetTimerTickCount();
     if(rtc_diag_started) rtc_serial_poll(base,now);
+#if !defined(RTC_DIAG_QUIET)
     if(!rtc_diag_started || now-rtc_diag_last<rtc_diag_period) return;
     rtc_diag_last=now;
     volatile uint32_t *r=(volatile uint32_t *)(uintptr_t)base;
@@ -40,15 +47,23 @@ static void rtc_diag_poll(uintptr_t base) {
     al_printf("RTC: TIME=%04u-%02u-%02u %02u:%02u:%02u trusted=%u health=%u fault=%u osf=%u reads=%u\r\n",
         2000+((date&0x00800000u)?100:0)+year,month,day,h,min,sec,
         health==0,health,fault,osf,count);
+#else
+    (void)base;
+#endif
 }
 static void rtc_diag_init(uintptr_t base) {
     /* SDK SystemCoreClock already contains TIMER_CLOCK, but GetTimerFreq()
      * divides it by five again. Use the board timer frequency only here. */
     rtc_diag_period=PH1P35_MCU_TIMER_CLOCK;
     rtc_diag_last=AlSys_GetTimerTickCount()-rtc_diag_period;
-    rtc_diag_seen=0;rtc_diag_started=1;
+    rtc_diag_started=1;
+#if !defined(RTC_DIAG_QUIET)
+    rtc_diag_seen=0;
+#endif
     rtc_uart_init();
+#if !defined(RTC_DIAG_QUIET)
     al_printf("RTC: SERIAL=rtc-set-v3\r\n");
+#endif
     rtc_diag_poll(base);
 }
 #pragma GCC pop_options

@@ -1,6 +1,22 @@
 
 set_pin_assignment	{ I_sys_clk }			{ LOCATION = C4; IOSTANDARD  = LVCMOS33; PULLTYPE = PULLUP; }
-set_pin_assignment	{ I_rst_n }				{ LOCATION = R10; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment { I_a_rgmii_rx_ctl } { LOCATION = N8; IOSTANDARD = LVCMOS33; PULLTYPE = NONE; }
+set_pin_assignment { I_a_rgmii_rxc } { LOCATION = V3; IOSTANDARD = LVCMOS33; PULLTYPE = NONE; }
+set_pin_assignment { I_a_rgmii_rxd[0] } { LOCATION = N9; IOSTANDARD = LVCMOS33; PULLTYPE = NONE; }
+set_pin_assignment { I_a_rgmii_rxd[1] } { LOCATION = T7; IOSTANDARD = LVCMOS33; PULLTYPE = NONE; }
+set_pin_assignment { I_a_rgmii_rxd[2] } { LOCATION = T8; IOSTANDARD = LVCMOS33; PULLTYPE = NONE; }
+set_pin_assignment { I_a_rgmii_rxd[3] } { LOCATION = T9; IOSTANDARD = LVCMOS33; PULLTYPE = NONE; }
+set_pin_assignment { O_a_rgmii_tx_ctl } { LOCATION = R10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; }
+set_pin_assignment { O_a_rgmii_txc } { LOCATION = U9; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; OUTDEL = 3; }
+set_pin_assignment { O_a_rgmii_txd[0] } { LOCATION = R11; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; }
+set_pin_assignment { O_a_rgmii_txd[1] } { LOCATION = P11; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; }
+set_pin_assignment { O_a_rgmii_txd[2] } { LOCATION = T10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; }
+set_pin_assignment { O_a_rgmii_txd[3] } { LOCATION = R12; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; }
+set_pin_assignment { O_phy_rst } { LOCATION = V8; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; }
+set_pin_assignment { O_LED4[0] } { LOCATION = D10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment { O_LED4[1] } { LOCATION = E10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment { O_LED4[2] } { LOCATION = C6; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment { O_LED4[3] } { LOCATION = D6; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
 
 # MAX3421E module on GPIOB (3.3 V logic).
 set_pin_assignment { O_usb_sclk }  { LOCATION = K2;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
@@ -42,7 +58,6 @@ set_pin_assignment	{ I_button[1] }			{ LOCATION = A9; IOSTANDARD = LVCMOS33; PUL
 set_pin_assignment	{ I_button[2] }			{ LOCATION = B9; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
 set_pin_assignment	{ I_button[3] }			{ LOCATION = C7; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
 
-set_pin_assignment	{ O_screen_pwm } 		{ LOCATION = R11; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLDOWN; }
 set_pin_assignment	{ O_tmds_ch0_p }		{ LOCATION = G16; IOSTANDARD = TMDS33; PULLTYPE = NONE; }
 set_pin_assignment	{ O_tmds_ch1_p }		{ LOCATION = F17; IOSTANDARD = TMDS33; PULLTYPE = NONE; }
 set_pin_assignment	{ O_tmds_ch2_p }		{ LOCATION = H14; IOSTANDARD = TMDS33; PULLTYPE = NONE; }

@@ -66,6 +66,12 @@ module mcu_ui_apb_regs #(
     output reg [1:0] O_wifi_ctrl,
     input wire [1:0] I_wifi_pads,
     input wire [31:0] I_track_status, I_track_errors,
+    input wire [31:0] I_net_tx_packets, I_net_tx_frames,
+    input wire [31:0] I_net_reply_packets, I_net_bad_packets,
+    input wire [31:0] I_net_remote_frames, I_net_remote_errors,
+    input wire [31:0] I_net_remote_frame_id,
+    input wire [4:0] I_net_status,
+    input wire [15:0] I_net_stack_debug,
     input wire [63:0] I_video_rx_diag,I_video_capture_diag,
     input wire [31:0] I_video_display_diag,
     input wire [95:0] I_video_fault_details,
@@ -163,7 +169,7 @@ module mcu_ui_apb_regs #(
             else
                 key_event <= key_event | key_pulse;
             if(apb_write) begin
-                case(I_paddr[7:0])
+                case(I_paddr[11:0])
                     8'h04: begin end
                     8'h08: begin
                         O_menu_enable <= I_pwdata[0];
@@ -237,7 +243,7 @@ module mcu_ui_apb_regs #(
     always @* begin
         O_prdata = 32'd0;
         if(apb_read) begin
-            case(I_paddr[7:0])
+            case(I_paddr[11:0])
                 8'h00: O_prdata = ID_VALUE;
                 8'h04: O_prdata = {28'd0, key_event};
                 8'h08: O_prdata = {27'd0, O_mode_page, O_picture_page, O_info_enable, O_edit_enable, O_menu_enable};
@@ -297,6 +303,16 @@ module mcu_ui_apb_regs #(
                 8'h94: O_prdata = O_focus_roi;
                 8'h98: O_prdata = 32'h41465231; // AFR1: touch focus ROI
                 8'h90: O_prdata = 32'h57494631; // WIF1: UART0 and boot/reset pads.
+                12'h100: O_prdata = 32'h4e455431; // NET1: dual-board UDP diagnostics.
+                12'h104: O_prdata = I_net_tx_packets;
+                12'h108: O_prdata = I_net_tx_frames;
+                12'h10c: O_prdata = I_net_reply_packets;
+                12'h110: O_prdata = I_net_bad_packets;
+                12'h114: O_prdata = I_net_remote_frames;
+                12'h118: O_prdata = I_net_remote_errors;
+                12'h11c: O_prdata = I_net_remote_frame_id;
+                12'h120: O_prdata = {27'd0,I_net_status};
+                12'h124: O_prdata = {16'd0,I_net_stack_debug};
                 default: O_prdata = 32'd0;
             endcase
         end

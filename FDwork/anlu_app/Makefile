@@ -24,7 +24,11 @@ APP_TAR_DIR ?= $(abspath .)/build
 APP_OBJ_DIR ?= $(APP_TAR_DIR)/obj
 
 
-COMPILE_PREFIX ?=
+# Local FD toolchain (RISC-V GCC 13.1.1). A command-line COMPILE_PREFIX=...
+# still wins, so build.ps1 and manual builds are unaffected. This default
+# exists because the Eclipse/FD IDE build does not export COMPILE_PREFIX,
+# which made make invoke a bare "gcc" that does not exist on this machine.
+COMPILE_PREFIX ?= D:/fang/toolchain/gcc/riscv/ph1p35/bin/riscv64-unknown-elf-
 
 
 
@@ -113,3 +117,15 @@ LDFLAGS += -flto
 
 # Stack for FatFs plus cooperative touch service.
 LDFLAGS += -Wl,--defsym=__STACK_SIZE=2048
+
+# TCM is 48 KiB and this image had exactly 0 bytes of slack: .heap (1 KiB) ended
+# precisely at __StackTop's fixed address ORIGIN(TCM)+LENGTH(TCM)-__STACK_SIZE.
+# Any added code made .bss grow into the stack reservation and ld failed with
+# "section .heap ... overlaps section .stack", so no .elf was produced at all
+# (FD then reports "Program file does not exist").
+# The application has no malloc caller of its own: the only one in the SDK
+# (al_chip.c's QSPI device struct) is removed by --gc-sections, and the map
+# shows no malloc/_sbrk symbol in the image at all. So the heap is dead
+# weight; 256 B keeps a safety net and hands the rest back to the image
+# (needed by main.c's cross-reset state block in .wifi_noinit).
+LDFLAGS += -Wl,--defsym=__HEAP_SIZE=256

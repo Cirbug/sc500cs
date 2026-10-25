@@ -1,0 +1,37 @@
+双板程序分离说明（2026-10-21）
+==============================
+
+本次把「主板 PH1P35」和「从板 EG4D20」的程序拆开：
+
+- 主板 PH1P35：保留在 sc500cs（本仓库）。
+  网络侧文件仍在 board_link/camera_net/：
+    camera_network.al / camera_network640.al（TD 工程）
+    design_top_wrapper_net.v（顶层）
+    rtl/camera_network.v、rtl/network_result_bridge.v、
+    rtl/preview_capture.v、rtl/preview_sender.v（主板发送图像/接收结果）
+    pin_net.adc、timing_net.sdc
+    build_main*.tcl、download_main*.tcl
+    vendor/（主板用 UDP 协议栈，含 net_pll.v、ph1p_phy_pll_wrapper）
+    anlogic_logo_rom_trim.v（主板 HDMI logo）
+  v640/、v640_fast/ 中仅保留主板文件（design_top_wrapper_net.v、camera_network.v、
+  network_result_bridge.v、preview_capture.v、preview_sender.v）。
+
+- 从板 EG4D20：已整体移入现有独立工程
+  C:\Users\21397\Desktop\EG4D20\camera_net\
+  包含从板顶层 eg_image_sink.v、red_target_tracker_eg.v、shape_features320.v、
+  rtl/preview_receiver.v、rtl/preview_analyzer.v、rtl/eg_recognition_pll40.v、
+  v640/v640_fast 从板文件、timing_eg*.sdc、eg_image_sink*.al、
+  build_eg*.tcl、download_eg*.tcl，以及 vendor/ 和 shape_component_features.v 副本。
+  文件内绝对路径已改为 EG4D20/camera_net。
+
+注意
+----
+- 原 prepare.py / prepare640.py / prepare_fast_variant.py 是「双板整合副本」的生成脚本，
+  其中从板侧的生成逻辑（eg_image_sink.v、eg_image_sink.al、red_target_tracker_eg.v、
+  vendor、timing_eg.sdc、build_eg*.tcl 等）现在由 EG4D20/camera_net 独立工程接管；
+  这些脚本里对从板文件的引用已不再指向本仓库（如需重新生成从板整合副本，请以
+  EG4D20/camera_net 为准，或先在 EG4D20 工程中维护）。
+- v640*/tests/ 下的「双板对跑」仿真脚本会同时编译主板+从板 RTL，从板 RTL 已移出，
+  运行前需把 EG4D20/camera_net 的 rtl/v640 路径加入仿真源列表。
+- 主板合成/布局布线（build_main*.tcl + camera_network*.al）不受影响，可直接编译。
+- 本仓库中本次删除的文件以未暂存的删除形式出现在 git status，按需提交即可。

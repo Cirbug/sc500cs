@@ -39,6 +39,10 @@ module mcu_ui_apb_regs #(
     output reg         O_picture_page,
     output reg         O_mode_page,
     output reg  [15:0] O_picture_ctrl,
+    // LSC 运行时强度（菜单"系统信息 -> 色度"）：0 = 旁路，16 = 表值原样，
+    // 31 = 约 194%。5 位，每一步只有旧版的一半，便于半步微调。
+    // 复位默认 16（等价于编译期表值）。MCU 开机写一次，之后由菜单维护。
+    output reg  [4:0]  O_lsc_ctrl,
     output reg  [2:0]  O_menu_index,
     output reg  [15:0] O_exposure,
     output reg  [15:0] O_gain,
@@ -135,7 +139,13 @@ module mcu_ui_apb_regs #(
             O_picture_page <= 1'b0;
             O_mode_page <= 1'b0;
             O_focus_roi <= 32'h01e00370; // hidden, centered 160x120 ROI
-            O_picture_ctrl <= 16'h1050;
+            // 必须与固件的 PICTURE_DEFAULT 完全一致（FDwork/shared/menu_input.h）。
+            // MCU 是跑在本 FPGA 内的软核，TD 重新配置 FPGA 时 MCU 一并复位，
+            // 0x70 回到这里的复位值；若与固件默认不同，画面就会跳变
+            // （旧值 0x1050 = 伽马开/黑电平16/亮度1.00，固件是 0x108C）。
+            // 0x108C = 黑电平12, 伽马关, 亮度1.125x, 饱和度旁路, 白平衡平滑, 降噪0。
+            O_picture_ctrl <= 16'h108C;
+            O_lsc_ctrl    <= 5'd16;     // LSC 强度 = 表值原样（旧的 8）
             O_menu_index  <= 3'd0;
             O_exposure    <= AE_INIT;
             O_gain        <= AG_INIT;
@@ -225,6 +235,8 @@ module mcu_ui_apb_regs #(
                     8'h7c: if(&I_pstrobe) O_rtc_set_time1<=I_pwdata;
                     8'h80: if(&I_pstrobe && I_pwdata==32'h53455431 && !I_rtc_set_status[0]) O_rtc_set<=1;
                     8'h88: if(I_pstrobe[0]) O_wifi_ctrl<=I_pwdata[1:0];
+                    // LSC 强度：5 位，超出 31 会被截断（31 已是约 194% 上限）
+                    8'hec: if(I_pstrobe[0]) O_lsc_ctrl<=I_pwdata[4:0];
                     8'h94: if(&I_pstrobe) O_focus_roi <= {I_pwdata[31],4'd0,
                         (I_pwdata[26:16]>11'd960 ? 11'd960 : I_pwdata[26:16]),5'd0,
                         (I_pwdata[10:0]>11'd1760 ? 11'd1760 : I_pwdata[10:0])};
@@ -297,6 +309,8 @@ module mcu_ui_apb_regs #(
                 8'h94: O_prdata = O_focus_roi;
                 8'h98: O_prdata = 32'h41465231; // AFR1: touch focus ROI
                 8'h90: O_prdata = 32'h57494631; // WIF1: UART0 and boot/reset pads.
+                8'hec: O_prdata = {27'd0, O_lsc_ctrl}; // LSC 强度（读回）
+                8'hf0: O_prdata = 32'h4c534331; // LSC1 capability: runtime LSC strength
                 default: O_prdata = 32'd0;
             endcase
         end

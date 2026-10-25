@@ -52,6 +52,9 @@ typedef struct {
     uint32_t servo_menu_available;
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
+    /* 系统页"色度"：镜头色晕校正（LSC）强度 0..15，直接写 APB 0xec。
+     * 0 = 完全旁路，8 = 表值 100%，15 = 约 187%。现场调色偏不用再重编固件。 */
+    uint32_t lsc_strength;
     uint32_t record_page, record_available, record_interval;
     uint32_t histogram_mode, histogram_available; /* 0 off, 1 half, 2 full */
     int touch_capture; /* -1:none; panel 16..23:slider */
@@ -65,6 +68,18 @@ enum { MENU_AF = 1, MENU_FOCUS_UP = 2, MENU_FOCUS_DOWN = 4,
 /* MCU startup/DEFAULT profile for PIC1: BLACK=12, gamma off, brightness 1.125x.
  * Firmware explicitly writes this even with the previous FPGA reset profile. */
 #define PICTURE_DEFAULT 0x108cu
+/* LSC（镜头阴影校正）运行时强度：APB 0xec，也就是菜单"系统信息 → 色度"那一项。
+ * 0 = 完全旁路，16 = lens_shading_correction.v 编译期表值原样，31 = 约 194%。
+ *
+ * 5 位、每步 1/16 —— 精度是旧版（4 位、每步 1/8）的两倍。换算：旧 8 = 新 16，
+ * 旧 11 = 新 22，旧 6~9 = 新 12~18。
+ *
+ * 默认 16：2026-10-24 现场（黑电平 0、均匀亮面）手调下来觉得合适的区间是
+ * 旧 6~9，取中间值。量出来的径向最平点在新 22 附近，但旧版缩放以 1.0 为支点，
+ * 调高会顺带把整个画面调暖（旧 6→11 全画面 R/G 涨 2.9%），所以现场看 22 会
+ * 偏红 —— HDL 现已改成以"表的加权均值"为支点，调强度只改空间形状、不再动
+ * 整体色调，可以放心往上试半步/一档，定下来再写死默认值。 */
+#define LSC_STRENGTH_DEFAULT 16u
 static inline uint32_t picture_effective(const MenuState *s)
 {
     /* Hardware IDs 2..5 are displayed as modes 1..4; original ID 1 is removed.
@@ -335,7 +350,7 @@ enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
        PANEL_TRACK, PANEL_RECORD, PANEL_SYSTEM };
 static inline unsigned panel_rows(const MenuState *s)
 {
-    static const uint8_t rows[]={6,7,4,5,3,7,2};
+    static const uint8_t rows[]={6,7,4,5,3,7,3};
     return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
 }
 static __attribute__((noinline)) void panel_open(MenuState *s,unsigned page)
@@ -385,7 +400,8 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
         break;
     case PANEL_SYSTEM:
         if(selected==0)s->logo_enable=!s->logo_enable;
-        else s->info=!s->info;
+        else if(selected==1)s->info=!s->info;
+        else s->lsc_strength=menu_step(s->lsc_strength,direction,0u,31u,1u);
         break;
     }
     return action;
@@ -395,6 +411,7 @@ static inline int panel_editable(const MenuState *s)
     return (s->panel_page==PANEL_EXPOSURE && s->index<3) ||
            (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
+           (s->panel_page==PANEL_SYSTEM && s->index==2) ||
            (s->panel_page==PANEL_MODE && s->index==4);
 }
 static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned keys)
@@ -437,6 +454,7 @@ static unsigned panel_range(const MenuState *s,unsigned row,unsigned *v,unsigned
         if(row==5){*v=(s->picture>>14)&3;*hi=3;return 1;}
     }
     if(s->panel_page==PANEL_RECORD && row==3){*v=s->record_interval;*hi=4;return 1;}
+    if(s->panel_page==PANEL_SYSTEM && row==2){*v=s->lsc_strength;*hi=31;return 1;}
     return 0;
 }
 static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
@@ -453,6 +471,8 @@ static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
         shift=row==0?0:row==2?7:row==3?9:14;
         mask=row==0?63:row==3?7:3;
         s->picture=(s->picture&~(mask<<shift))|(v<<shift);
+    } else if(s->panel_page==PANEL_SYSTEM) {
+        s->lsc_strength=v;
     } else {s->record_interval=v;return MENU_INTERVAL;}
     return 0;
 }

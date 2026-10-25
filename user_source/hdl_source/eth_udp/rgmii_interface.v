@@ -87,6 +87,9 @@ wire   [7:0] gmii_rxd_reg;
 
 wire         inband_ce;                    //RGMII带内状态寄存器 使能输出信号
 wire         rgmii_rxc_int;
+// PH1P35 HDIO input delay: 30-60 ps per step (IPUG026). Eight steps
+// provide approximately 0.24-0.48 ns of board-input hold margin.
+wire [4:0]   rgmii_rx_dly = 5'd8;
 
 
 //==============================================================================
@@ -297,13 +300,17 @@ assign	rgmii_rxc_int = gmii_rx_clk;      ////input 125mhz（1gbps） 25mhz(100mbps
 genvar j;
 generate for (j=0; j<4; j=j+1)begin : rxdata_bus
 	
-// EG_LOGIC_IDELAY delay_rgmii_rxd 
-// (
-// .i       (rgmii_rxd[j]),
-// .o       (rgmii_rxd_delay[j])
-// );
-
-assign rgmii_rxd_delay[j] = rgmii_rxd[j];
+PH1P_LOGIC_DYNAMIC_HD_IDELAY #(
+ .CAS_MODE ("NONE")
+) delay_rgmii_rxd (
+ .i         (rgmii_rxd[j]),
+ .dly       (rgmii_rx_dly),
+ .o         (rgmii_rxd_delay[j]),
+ .cas_i     (1'b0),
+ .cas_o     (),
+ .cas_rtn_i (1'b0),
+ .cas_rtn_o ()
+);
 end
 endgenerate
 
@@ -340,12 +347,17 @@ endgenerate
 // RGMII 接收逻辑：rgmii_rx_ctl ------> gmii_rx_dv、gmii_rx_er
 //---------------------------------------------------------------------------
 	
-// EG_LOGIC_IDELAY delay_rgmii_rx_ctl 
-// (
-// .i       (rgmii_rx_ctl),
-// .o       (rgmii_rx_ctl_delay)
-// );
-assign rgmii_rx_ctl_delay = rgmii_rx_ctl;
+PH1P_LOGIC_DYNAMIC_HD_IDELAY #(
+ .CAS_MODE ("NONE")
+) delay_rgmii_rx_ctl (
+ .i         (rgmii_rx_ctl),
+ .dly       (rgmii_rx_dly),
+ .o         (rgmii_rx_ctl_delay),
+ .cas_i     (1'b0),
+ .cas_o     (),
+ .cas_rtn_i (1'b0),
+ .cas_rtn_o ()
+);
  
 PH1P_LOGIC_HD_IDDR rgmii_rx_ctl_in 
 (

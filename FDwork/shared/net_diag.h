@@ -27,6 +27,14 @@ static __attribute__((noinline)) void net_diag_poll(uintptr_t base)
         (unsigned)r[0x114/4],(unsigned)r[0x118/4],
         (unsigned)r[0x11c/4]);
     {
+        uint32_t box0=(uint32_t)r[0x130/4];
+        uint32_t box1=(uint32_t)r[0x134/4];
+        al_printf("NET: result valid=%u type=%u box=(%u,%u)-(%u,%u)\r\n",
+            (unsigned)r[0x128/4], (unsigned)r[0x12c/4],
+            (unsigned)((box0>>16)&0xfffu), (unsigned)(box0&0xfffu),
+            (unsigned)((box1>>16)&0xfffu), (unsigned)(box1&0xfffu));
+    }
+    {
         uint32_t s=(uint32_t)r[0x120/4];
         uint32_t d=(uint32_t)r[0x124/4];
         al_printf("NET: local status=%02x tx_state=%u ovf=%u phy_rst_n=%u pll_lock=%u\r\n",

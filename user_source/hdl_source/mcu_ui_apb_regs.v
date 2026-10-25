@@ -70,6 +70,10 @@ module mcu_ui_apb_regs #(
     input wire [31:0] I_net_reply_packets, I_net_bad_packets,
     input wire [31:0] I_net_remote_frames, I_net_remote_errors,
     input wire [31:0] I_net_remote_frame_id,
+    input wire        I_net_shape_valid,
+    input wire [2:0]  I_net_shape_type,
+    input wire [11:0] I_net_shape_x0, I_net_shape_y0,
+    input wire [11:0] I_net_shape_x1, I_net_shape_y1,
     input wire [4:0] I_net_status,
     input wire [15:0] I_net_stack_debug,
     input wire [63:0] I_video_rx_diag,I_video_capture_diag,
@@ -313,6 +317,10 @@ module mcu_ui_apb_regs #(
                 12'h11c: O_prdata = I_net_remote_frame_id;
                 12'h120: O_prdata = {27'd0,I_net_status};
                 12'h124: O_prdata = {16'd0,I_net_stack_debug};
+                12'h128: O_prdata = {31'd0,I_net_shape_valid};
+                12'h12c: O_prdata = {29'd0,I_net_shape_type};
+                12'h130: O_prdata = {8'd0,I_net_shape_x0,I_net_shape_y0};
+                12'h134: O_prdata = {8'd0,I_net_shape_x1,I_net_shape_y1};
                 default: O_prdata = 32'd0;
             endcase
         end

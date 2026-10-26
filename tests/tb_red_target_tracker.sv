@@ -8,7 +8,12 @@ module tb_red_target_tracker #(parameter REPORT_AREA_PERCENT=1);
     red_target_tracker #(.IMG_WIDTH(160),.IMG_HEIGHT(96),.DEAD_X_ENTER(8),.DEAD_X_EXIT(12),
         .DEAD_Y_ENTER(8),.DEAD_Y_EXIT(12),.LEVEL_X_MEDIUM(20),.LEVEL_X_LARGE(40),
         .LEVEL_Y_MEDIUM(16),.LEVEL_Y_LARGE(32),.REPORT_AREA_PERCENT(REPORT_AREA_PERCENT)) dut
-        (clk,rst,enable,reacquire,user,de,data,result,valid,state,x0,y0,x1,y1,cx,cy,ex,ey,dx,dy,lx,ly,area);
+          (.I_clk(clk),.I_rst_n(rst),.I_enable(enable),.I_reacquire(reacquire),
+           .I_user(user),.I_de(de),.I_data(data),
+           .O_new_result(result),.O_valid(valid),.O_state(state),
+           .O_x0(x0),.O_y0(y0),.O_x1(x1),.O_y1(y1),.O_cx(cx),.O_cy(cy),
+           .O_error_x(ex),.O_error_y(ey),.O_dir_x(dx),.O_dir_y(dy),
+           .O_level_x(lx),.O_level_y(ly),.O_area_percent(area));
     integer results=0;
     always @(posedge clk) if(result) results=results+1;
     // kind: red left; same-size blue; red right + small left distractor; empty.

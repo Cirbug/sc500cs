@@ -47,9 +47,11 @@ int main(int argc,char **argv) {
     s.index=2;s.edit=0;menu_key(&s,8);menu_key(&s,2);assert(s.vts==1980 && s.exposure==3950);
     TouchEvent e={400,780,TOUCH_MOVE};menu_touch(&s,&e);assert(s.gain==16);
     panel_open(&s,PANEL_PICTURE);tap(&s,400,700);assert((s.picture&63)==35);
-    panel_open(&s,PANEL_MODE);tap(&s,400,808);assert(s.image_step==5);
+    panel_open(&s,PANEL_MODE);tap(&s,400,808);assert(s.image_step==5); /* 追踪红色 */
+    tap(&s,400,844);assert(s.image_step==6);                           /* 追踪蓝色（新增档） */
+    tap(&s,400,880);assert(s.image_step==7);                           /* 追踪绿色（新增档） */
     tap(&s,400,700);assert(s.image_step==2);
-    tap(&s,400,844);assert(s.image_effect==1 && s.image_step==2);
+    tap(&s,400,916);assert(s.image_effect==1 && s.image_step==2);      /* 图像特效：第 5 行 -> 第 7 行 */
     panel_open(&s,PANEL_TRACK);tap(&s,400,700);assert(s.image_step==5);
     assert(tap(&s,400,736)==MENU_REACQUIRE);
     assert(tap(&s,400,772)==MENU_AF);

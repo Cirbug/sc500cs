@@ -35,7 +35,11 @@ module red_shape_tracker #(
     parameter integer REPORT_AREA_PERCENT = 1,
     // 场消隐扫描周期上限。1080p30/H_TOTAL=2200/V_TOTAL=1125 的消隐是
     // 45 行 x 2200 = 99000 个像素时钟，取 90000 留约 9% 余量。
-    parameter integer SCAN_BUDGET = 90000,
+    //   【2026-10-26 融合调参】9 万不够：整帧全红(8160 格)的连通域填充实测需要
+    //   11 万~13 万周期，原值会让它被截断（tb_red_tracker_1080p 的 full-mask 用例失败）。
+    //   150000 给结构最坏情况留约 20% 余量，同时仍然是有界扫描（gege 的机制不变）。
+    //   代价：极大幅面目标的最坏扫描可越过消隐约 50%（正常场景扫描很早结束，不影响）。
+parameter integer SCAN_BUDGET = 150000,
     // 三色"显示用"确认门限，单位是采样格数（1 格 = 2^SAMPLE_SHIFT 见方）。
     // 刻意和服务那套 ACQUIRE_PERCENT/RETAIN_PERCENT 分开：那两个是"名义 15%
     // 目标"的伺服捕获门限（5% = 408 格 ≈ 323x323 px），拿它当画框门限的话

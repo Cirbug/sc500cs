@@ -9,11 +9,15 @@ int main(void) {
     menu_key(&s,4); assert(!s.edit && s.picture_page);
     menu_key(&s,4); assert(!s.picture_page && s.index==2 && s.menu);
     menu_key(&s,8);
-    for(unsigned row=1;row<6;row++) {
+    /* 2026-10-26 重排：第 1~4 行改 picture 字（黑电平/伽马/饱和度/白平衡），
+     * 第 5 行换成"色度"（LSC 强度）——它写 0xec，不再动 picture，所以单独断言。 */
+    for(unsigned row=1;row<=5;row++) {
         e.y=692+36*row+12;
         uint32_t old=s.picture;
+        unsigned oldlsc=s.lsc_strength;
         menu_touch(&s,&e); touch_servo_apply(&s,&e);
-        assert(s.picture!=old && !s.servo_touch_active);
+        if(row==5) assert(s.lsc_strength!=oldlsc && s.picture==old && !s.servo_touch_active);
+        else       assert(s.picture!=old && !s.servo_touch_active);
         e.x=100; menu_touch(&s,&e); assert(s.picture==old); e.x=400;
     }
     s.index=0; s.picture=(s.picture&~63u)|63u;

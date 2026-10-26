@@ -421,6 +421,13 @@ static void ui_persist_save(const MenuState *s)
     g_ui_persist.magic    = UI_PERSIST_MAGIC;
 }
 
+/* 色度写入值/掩码：按 bit 的能力位决定 7 位还是 5 位。
+ * 本版 bit 有 0xf8「LSC2」= 7 位（64 = 表值原样，0..127）；老 bit 只有 0xf0「LSC1」= 5 位。
+ * 混搭时按 4:1 折算（新 56 -> 老 14），保证同一档位在新旧 bit 上观感一致。 */
+static uint32_t lsc_word(uint32_t strength, uint32_t lsc7)
+{ return lsc7 ? (strength & 127u) : ((strength >> 2) & 31u); }
+static uint32_t lsc_mask(uint32_t lsc7) { return lsc7 ? 127u : 31u; }
+
 AL_S32 main(void)
 {
     uint32_t id;
@@ -433,7 +440,7 @@ AL_S32 main(void)
         /* 已停用：.track_color = 0   （见 UiPersist 说明） */
     };
     uint32_t last_report = 0;
-    uint32_t restored, lsc_available;
+    uint32_t restored, lsc_available, lsc7;
 
     g_ui_debug_stage = 1;
     al_printf("UI boot: USART1 115200; before APB read at 0x%08x\r\n",
@@ -483,7 +490,7 @@ AL_S32 main(void)
         ui.image_effect = (g_ui_persist.image_ctrl >> 3) & 7u;
         ui.image_target = (g_ui_persist.image_ctrl >> 6) & 3u;
         ui.logo_enable  = (g_ui_persist.image_ctrl >> 8) & 1u;
-        ui.lsc_strength = g_ui_persist.lsc & 31u;
+        ui.lsc_strength = g_ui_persist.lsc & 127u;
         ui.gamma_level  = (uint8_t)(g_ui_persist.gamma_level & 15u);
         /* 已停用：ui.track_color = g_ui_persist.track & 3u;  见 UiPersist 说明 */
         al_printf("UI: restored picture state (survived the last FPGA reconfig)\r\n");
@@ -512,6 +519,9 @@ AL_S32 main(void)
                             ui.servo_tilt_us >= 500u && ui.servo_tilt_us <= 2500u);
     g_track_capability=ui_read(UI_TRACK_ID);
     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
+    /* 目标追踪页的两个状态由 image_step 反解（方案甲：内部仍用 5/6/7，
+     * 所以开机/重配后不需要额外的持久化字段，只要在这里同步一次）。 */
+    track_sync_from_step(&ui);
     ui.picture_available=(ui_read(0x74)==0x50494331u);
 #if GAMMA_SLIDER
     /* Capability probe must run on every boot, independent of "restored". */
@@ -530,12 +540,14 @@ AL_S32 main(void)
         ui_write(0x70,picture_effective(&ui));
         ui.picture=(ui_read(0x70) & ~(1u << 6)) | (ui.picture & (1u << 6));
     }
-    /* LSC 运行时强度（APB 0xec）：值来自菜单"系统 → 色度"，0 = 完全旁路、
-     * 16 = 编译期表值原样、31 = 约 194%（5 位，半档精度）。首次开机取
-     * LSC_STRENGTH_DEFAULT，之后由跨复位块带回上次的值。先探测 0xf0 是否为
-     * "LSC1"，老 bit 没有这个寄存器就不写。 */
+    /* LSC 运行时强度（APB 0xec）：值来自菜单"图像调整 → 色度"，0 = 完全旁路、
+     * 64 = 编译期表值原样、127 = 约 194%（7 位）。首次开机取 LSC_STRENGTH_DEFAULT，
+     * 之后由跨复位块带回上次的值。
+     * 能力位：0xf0「LSC1」= 有 LSC；0xf8「LSC2」= 强度是 7 位（老 bit 为 5 位）。
+     * 老 bit 没有 0xf0 就完全不写；只有 LSC1 时按 4:1 折算后写 5 位。 */
     lsc_available = (ui_read(0xf0)==0x4c534331u);
-    if(lsc_available) ui_write(0xec, ui.lsc_strength & 31u);
+    lsc7 = lsc_available && (ui_read(0xf8)==0x4c534332u);
+    if(lsc_available) ui_write(0xec, lsc_word(ui.lsc_strength, lsc7));
 /* --- 已停用（2026-10-26）：gege 的 COL1 / 0xf4 track_color 链路，见 UiPersist 说明 --- */
 #if 0
     /* "COL1"（0xf8）：本版 bit 才有三色识别 + 目标跟踪，0xf4 = 伺服跟哪个颜色。
@@ -589,8 +601,8 @@ AL_S32 main(void)
          * 菜单里改了值也在这里生效（菜单本身不碰硬件）。
          * 读回必须掩 31 位 —— 以前这里掩的是 15，色度 >=16 时永远不相等，
          * 于是每轮循环都白写一次。 */
-        if(lsc_available && ((ui_read(0xec) & 31u) != (ui.lsc_strength & 31u)))
-            ui_write(0xec, ui.lsc_strength & 31u);
+        if(lsc_available && ((ui_read(0xec) & lsc_mask(lsc7)) != lsc_word(ui.lsc_strength, lsc7)))
+            ui_write(0xec, lsc_word(ui.lsc_strength, lsc7));
 /* --- 已停用（2026-10-26）：gege 的 COL1 / 0xf4 track_color 链路，见 UiPersist 说明 --- */
 #if 0
         /* 0xf4 跟随菜单"系统 → 目标跟踪"（0=红 1=绿 2=蓝）。 */
@@ -612,7 +624,7 @@ AL_S32 main(void)
          * 现在写一定生效"的时刻，毫秒级。AE 自己也盯这两位
          * （auto_exposure.h:89），时机天然对齐，写回后 AE 从原值继续。
          *
-         * 0xec（LSC 强度）只在这个事件和开机时写，不做周期刷新 —— 调试器里
+         * 0xec（LSC 强度，7 位）只在这个事件和开机时写，不做周期刷新 —— 调试器里
          * set 0x700000ec 的实时值不会被冲掉，下一轮还会被 ui_persist_save 记住。
          * ------------------------------------------------------------- */
         {
@@ -634,7 +646,7 @@ AL_S32 main(void)
                     ui.exposure = ui_read(UI_EXPOSURE);
                     ui.gain     = ui_read(UI_GAIN);
                     if(ui.histogram_available) ui_write(HE_BASE+0x1c, 0);
-                    if(lsc_available) ui_write(0xec, ui.lsc_strength & 31u);
+                    if(lsc_available) ui_write(0xec, lsc_word(ui.lsc_strength, lsc7));
 #if GAMMA_SLIDER
                     /* GAM1 belongs with PIC1: restore the preset too. */
                     if(ui.gamma_slider_available) ui_write(0x6c, gamma_effective(&ui));

@@ -7,7 +7,7 @@ See tests/GAMMA_SLIDER.txt.
 
 2026-10-26: adds lens-shading correction (LSC) and cross-reconfiguration state
 retention from the "picture repair" branch, merged with the GAM1 slider above.
-LSC strength is menu item SYSTEM -> 色度 (APB 0xec/0xf0, 5-bit, 0..31) and runs
+LSC strength is menu item IMAGE -> 色度 (APB 0xec/0xf0/0xf8, 7-bit, 0..127) and runs
 in the display domain after video_out, where gamma is off.  FPGA reset, the
 picture mailbox INIT and firmware PICTURE_DEFAULT are now all 0x108c; keep them
 in step or the picture jumps on every bit load.  See lens_shading_correction.v.
@@ -52,9 +52,12 @@ Register map, base 0x70000000:
        read 0x47414D30 | level.  GAM1 and PIC1 share the 20-bit frame-boundary
        mailbox.  XIP only; TCM keeps the old OFF/ON PIC1 bit.
   0x74 read-only 0x50494331 (PIC1).
-  0xec LSC: write low 5 bits = lens-shading strength (0 = bypass, 16 = table
-       as-is, 31 = about 194%).  Read back as {27 zero bits, value}.
-  0xf0 read-only 0x4c534331 (LSC1 capability).
+  0xec LSC: write low 7 bits = lens-shading strength (0 = bypass, 64 = table
+       as-is, 127 = about 194%).  Read back as {25 zero bits, value}.
+  0xf0 read-only 0x4c534331 (LSC1 capability: LSC present).
+  0xf8 read-only 0x4c534332 (LSC2 capability: strength is 7-bit; an older bit
+       only has LSC1 and takes 5-bit values, 16 = table as-is.  Firmware scales
+       by 4:1 when it only sees LSC1, so the same menu step looks identical.)
 MCU checks PIC1 before exposing the submenu or writing the new register.
 The requested word crosses each clock domain through an acknowledged mailbox;
 the ISP applies it only on frame start. OSD values may lag the edit briefly.

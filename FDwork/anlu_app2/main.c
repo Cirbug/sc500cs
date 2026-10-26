@@ -342,10 +342,18 @@ static void recorder_service(void) {
     }
 }
 
+/* 色度写入值/掩码：按 bit 的能力位决定 7 位还是 5 位。
+ * 本版 bit 有 0xf8「LSC2」= 7 位（64 = 表值原样，0..127）；老 bit 只有 0xf0「LSC1」= 5 位。
+ * 混搭时按 4:1 折算（新 56 -> 老 14），保证同一档位在新旧 bit 上观感一致。 */
+static uint32_t lsc_word(uint32_t strength, uint32_t lsc7)
+{ return lsc7 ? (strength & 127u) : ((strength >> 2) & 31u); }
+static uint32_t lsc_mask(uint32_t lsc7) { return lsc7 ? 127u : 31u; }
+
 AL_S32 main(void)
 {
     uint32_t id;
     uint32_t events;
+    uint32_t lsc7;
     MenuState ui = {
         .menu = 0, .exposure = 3990, .gain = 80,
         .servo_pan_us = 1500, .servo_tilt_us = 1500,
@@ -413,6 +421,9 @@ AL_S32 main(void)
                             ui.servo_tilt_us >= 500u && ui.servo_tilt_us <= 2500u);
     g_track_capability=ui_read(UI_TRACK_ID);
     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
+    /* 目标追踪页的两个状态由 image_step 反解（方案甲：内部仍用 5/6/7，
+     * 所以开机/重配后不需要额外的持久化字段，只要在这里同步一次）。 */
+    track_sync_from_step(&ui);
     ui.picture_available=(ui_read(0x74)==0x50494331u);
     ui.picture=PICTURE_DEFAULT;
 #if GAMMA_SLIDER
@@ -426,9 +437,11 @@ AL_S32 main(void)
         ui_write(0x70,picture_effective(&ui));
         ui.picture=(ui_read(0x70) & ~(1u << 6)) | (ui.picture & (1u << 6));
     }
-    /* LSC 运行时强度（APB 0xec）：16 = 编译期表值原样，0 = 完全旁路，31 = 约 194%（5 位）。
-     * 现场调试可直接在 GDB 里写 0x700000ec（0..31）实时看画面。 */
-    if(ui_read(0xf0)==0x4c534331u) ui_write(0xec, LSC_STRENGTH_DEFAULT);
+    /* LSC 运行时强度（APB 0xec）：0 = 完全旁路，64 = 编译期表值原样，127 = 约 194%（7 位）。
+     * 现场调试可直接在 GDB 里写 0x700000ec（0..127）实时看画面。
+     * 能力位：0xf0「LSC1」= 有 LSC；0xf8「LSC2」= 7 位（老 bit 为 5 位，按 4:1 折算）。 */
+    lsc7 = (ui_read(0xf0)==0x4c534331u) && (ui_read(0xf8)==0x4c534332u);
+    if(ui_read(0xf0)==0x4c534331u) ui_write(0xec, lsc_word(LSC_STRENGTH_DEFAULT, lsc7));
     al_printf("SERVO: %s PAN/V6=%u us TILT/V4=%u us\r\n",
               ui.servo_menu_available ? "touch ready" : "new FPGA bit required",
               ui.servo_pan_us, ui.servo_tilt_us);
@@ -464,10 +477,10 @@ AL_S32 main(void)
         g_ui_debug_loops++;
         menu_keys_commit(&ui,events);
 
-        /* 0xec 跟随菜单"系统 → 色度"（0..31，0 = 完全旁路，16 = 表值原样）。 */
+        /* 0xec 跟随菜单"图像调整 → 色度"（0..127，0 = 完全旁路，64 = 表值原样）。 */
         if(ui_read(0xf0)==0x4c534331u &&
-           ((ui_read(0xec) & 31u) != (ui.lsc_strength & 31u)))
-            ui_write(0xec, ui.lsc_strength & 31u);
+           ((ui_read(0xec) & lsc_mask(lsc7)) != lsc_word(ui.lsc_strength, lsc7)))
+            ui_write(0xec, lsc_word(ui.lsc_strength, lsc7));
         /* --- 已停用（2026-10-26）：gege 的 COL1 / 0xf4 track_color 链路，
          * 见 anlu_app/main.c 的 UiPersist 说明 --- */
 #if 0

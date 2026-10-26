@@ -59,7 +59,11 @@ typedef struct {
     uint32_t image_step, image_effect, image_target, logo_enable;
     uint32_t picture_page, picture, picture_available; /* page: 0 main, 1 picture, 2 mode */
     uint8_t gamma_level, gamma_slider_available; /* 0 off, 1..8 = 0.30..0.65 */
-    /* 系统页"色度"：镜头色晕校正（LSC）强度 0..31（5 位），直接写 APB 0xec。
+    /* 目标追踪页（2026-10-26 重排新增）。方案甲：内部仍用 image_step 5/6/7
+     * 表达"跟踪中 + 颜色"，由 track_apply()/track_sync_from_step() 双向映射，
+     * 所以不需要新增持久化字段（image_step 已经在 image_ctrl 里存了）。 */
+    uint8_t track_enabled, track_color;   /* color: 0=红 1=蓝 2=绿（= image_step-5） */
+    /* 图像页"色度"：镜头色晕校正（LSC）强度 0..127（7 位），直接写 APB 0xec。
      * 0 = 完全旁路，16 = 表值原样，31 = 约 194%。现场调色偏不用再重编固件。 */
     uint32_t lsc_strength;
     /* --- 已停用（2026-10-26）：gege 的 track_color / APB 0xf4 链路 ----------
@@ -87,25 +91,39 @@ static inline int tracking_mode(const MenuState *s)
 {
     return s->image_step>=5u && s->image_step<=7u;
 }
+/* 目标追踪页 <-> image_step 的双向映射（方案甲）。
+ * 显示模式页只剩 2/3/4（普通/识别/运动）；跟踪开着时 image_step 取 5/6/7
+ * （FPGA 内部按 5=红 6=蓝 7=绿 选色，OSD 的"追踪红色/蓝色/绿色"标签也用这个顺序）。
+ * 关掉跟踪回到普通画面（2）——这一点与重排前的"红色目标跟踪"开关行为一致。 */
+static inline void track_apply(MenuState *s)
+{
+    s->image_step = s->track_enabled ? (uint8_t)(5u + (s->track_color % 3u)) : 2u;
+}
+static inline void track_sync_from_step(MenuState *s)
+{
+    s->track_enabled = tracking_mode(s) ? 1u : 0u;
+    s->track_color   = tracking_mode(s) ? (uint8_t)(s->image_step - 5u) : 0u;
+}
 /* MCU startup/DEFAULT profile for PIC1: BLACK=12, gamma off, brightness 1.125x.
  * Firmware explicitly writes this even with the previous FPGA reset profile. */
 #define PICTURE_DEFAULT 0x108cu
 /* LSC（镜头阴影校正）运行时强度：APB 0xec，也就是菜单"系统信息 → 色度"那一项。
- * 0 = 完全旁路，16 = lens_shading_correction.v 编译期表值原样，31 = 约 194%。
+ * 0 = 完全旁路，64 = lens_shading_correction.v 编译期表值原样，127 = 约 194%。
  *
- * 5 位、每步 1/16 —— 精度是旧版（4 位、每步 1/8）的两倍。换算：旧 8 = 新 16，
- * 旧 11 = 新 22，旧 6~9 = 新 12~18。
+ * 7 位、每步 1/64（2026-10-26 由 5 位/16 扩容）。扩容原因：菜单滑条只有 127 个手指位置，
+ * 5 位时 32 档等于每档要滑 4 像素、现场顿挫；7 位后 128 档 ≈ 127 个位置，手感与"增益"一致。
+ * 换算：旧 5 位值 × 4 = 新值（旧 14 = 新 56，旧 16 = 新 64，旧 31 = 新 124）。
  *
- * 默认 14：2026-10-25 用重新拟合过的 64 档表实测扫档（灰墙均匀面，菜单关），
- * 中心的 R/G 残差按半径分三段：
+ * 默认 56（= 旧值的 14）：2026-10-25 用重新拟合过的 64 档表实测扫档（灰墙均匀面，菜单关），
+ * 中心的 R/G 残差按半径分三段（下表按旧 5 位口径记录，新值 = ×4）：
  *     色度 13 -> 中心 -1.41% / 中环 -0.13% / 外圈 +0.77%   跨度 2.18%（欠补）
  *     色度 14 -> 中心 -0.51% / 中环 +0.20% / 外圈 +0.00%   跨度 0.71%（过零点）
  *     色度 15 -> 中心 +0.99% / 中环 +0.88% / 外圈 -1.38%   跨度 2.37%（过补）
- * 14 是唯一的过零点，且 13/15 两边对称变差 —— 径向到此为止，不要再靠调色度补偿。
+ * 14（新 56）是唯一的过零点，且 13/15 两边对称变差 —— 径向到此为止，不要再靠调色度补偿。
  * 注意：实测残留里还有 ~1.1% 的"上红下绿"方向性偏差、~3.4% 的像素级色噪，
  * 以及 ~1.4% 的固定色斑（镜像自相关仅 0.02/0.19，不对称 -> 是墙面/模组低阶
  * 色阴影，不是径向分量），这些都不是色度旋钮能动的。 */
-#define LSC_STRENGTH_DEFAULT 14u
+#define LSC_STRENGTH_DEFAULT 56u   /* 7 位；= 旧 5 位口径的 14 */
 static inline uint32_t picture_effective(const MenuState *s)
 {
     /* Hardware IDs 2..5 are displayed as modes 1..4; original ID 1 is removed.
@@ -144,10 +162,14 @@ static inline void picture_adjust(MenuState *s, int direction)
         }
 #endif
         shift=6; mask=1; high=1; break;
-    case 2: shift=7; mask=3; high=3; break;
-    case 3: shift=9; mask=7; high=4; break;
-    case 4: shift=12; mask=3; high=3; break;
-    case 5: shift=14; mask=3; high=3; break;
+    /* 2026-10-26 重排：数字亮度移去曝光页；色度（LSC 强度）移入本页第 6 行。 */
+    case 2: shift=9; mask=7; high=4; break;      /* 饱和度 */
+    case 3: shift=12; mask=3; high=3; break;     /* 白平衡（离散，无滑条）*/
+    case 4: shift=14; mask=3; high=3; break;     /* 降噪 */
+    case 5:                                      /* 色度（0..127，两端钳位、不循环）*/
+        if(direction>0) { if(s->lsc_strength<127u)++s->lsc_strength; }
+        else            { if(s->lsc_strength>0u)--s->lsc_strength; }
+        return;
     case 7:
         if(s->histogram_available)
             /* OFF -> 50% -> 100% -> AUTO (1%..99% percentile stretch). */
@@ -401,15 +423,16 @@ enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
        PANEL_TRACK, PANEL_RECORD, PANEL_SYSTEM };
 static inline unsigned panel_rows(const MenuState *s)
 {
-    static const uint8_t rows[]={6,7,4,7,3,7,3};
+    static const uint8_t rows[]={6,7,5,4,4,6,2};   /* 2026-10-26 重排后的各页行数 */
     return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
 }
 /* 显示模式在首页"显示模式"那一行显示的名字 = mcu_panel_values 的下标。
- * image_step 2..7 依次是 普通画面/图形识别/运动检测/追踪红色/追踪蓝色/追踪绿色。 */
-static const uint8_t mode_value_kind[6]={1,2,3,4,8,9};
+ * 2026-10-26 重排后显示模式只剩 2..4（普通/识别/运动）；跟踪态（5/6/7）的
+ * 画面仍然是普通画面，所以首页值显示"普通"，跟踪状态由"目标追踪"那一行表达。 */
+static const uint8_t mode_value_kind[3]={1,2,3};
 static inline unsigned mode_kind_of(const MenuState *s)
 {
-    return (s->image_step>=2u && s->image_step<=7u) ? mode_value_kind[s->image_step-2u] : 1u;
+    return (s->image_step>=2u && s->image_step<=4u) ? mode_value_kind[s->image_step-2u] : 1u;
 }
 static __attribute__((noinline)) void panel_open(MenuState *s,unsigned page)
 {
@@ -434,32 +457,43 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
         panel_open(s,selected+1);break;
     case PANEL_PICTURE:picture_adjust(s,direction);break;
     case PANEL_EXPOSURE:
-        if(selected==3) {
+        if(selected==4) {                        /* 自动曝光（原第 4 行，与页头重名已改）*/
             if(s->auto_exposure_available)s->auto_exposure=!s->auto_exposure;
             s->edit=0;break;
+        }
+        if(selected==3) {                        /* 数字亮度：从"图像调整"页搬来 */
+            unsigned b=(s->picture>>7)&3u;
+            b=direction>0?(b>=3u?0u:b+1u):(b==0u?3u:b-1u);
+            s->picture=(s->picture&~(3u<<7))|(b<<7);
+            break;
         }
         s->index=selected==2?7:selected;
         action=menu_adjust(s,direction);s->index=selected;break;
     case PANEL_MODE:
-        if(selected<6)s->image_step=selected+2;
+        if(selected<3)s->image_step=selected+2;   /* 只剩 普通/识别/运动；跟踪已移出显示模式 */
         else { /* Reuse effect/target adjustment without interpreting it as a mode. */
             old=s->picture_page;s->picture_page=0;s->index=5;
             action=menu_adjust(s,direction);s->index=selected;s->picture_page=old;
         }
         break;
     case PANEL_TRACK:
-        if(selected==0)s->image_step=tracking_mode(s)?2:5;
-        else if(selected==1 && tracking_mode(s))action=MENU_REACQUIRE;
-        else if(selected==2)action=MENU_AF;
+        /* 0 目标跟踪(开/关)  1 目标色(红/蓝/绿)  2 重新识别  3 自动对焦 */
+        if(selected==0) { s->track_enabled=!s->track_enabled; track_apply(s); }
+        else if(selected==1) {
+            s->track_color=(uint8_t)((s->track_color+(direction>0?1u:2u))%3u);
+            if(s->track_enabled)track_apply(s);   /* 关着时只记下，开的时候再生效 */
+        }
+        else if(selected==2 && tracking_mode(s))action=MENU_REACQUIRE;
+        else if(selected==3)action=MENU_AF;
         break;
     case PANEL_RECORD:
-        if(selected==6)panel_back(s);
-        else action=menu_adjust(s,direction);
+        /* 2026-10-26：去掉只有本页才有的"返回"行，与其它页保持一致。 */
+        action=menu_adjust(s,direction);
         break;
     case PANEL_SYSTEM:
+        /* 色度已移到"图像调整"页；本页只剩两个显示开关。 */
         if(selected==0)s->logo_enable=!s->logo_enable;
         else if(selected==1)s->info=!s->info;
-        else if(selected==2)s->lsc_strength=menu_step(s->lsc_strength,direction,0u,31u,1u);
         break;
     }
     return action;
@@ -467,18 +501,18 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
 static inline int panel_editable(const MenuState *s)
 {
 #if GAMMA_SLIDER
-    return (s->panel_page==PANEL_EXPOSURE && s->index<3) ||
+    /* 2026-10-26 重排：曝光页多一行"数字亮度"(index 3)；系统页的色度已移走；
+     * 显示模式页只剩 4 行，"图像特效"落在 index 3。（#if/#else 两支必须同时改）*/
+    return (s->panel_page==PANEL_EXPOSURE && s->index<4) ||
            (s->panel_page==PANEL_PICTURE && ((s->index<6 && !(s->index==1 && gamma_locked(s))) ||
             (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
-           (s->panel_page==PANEL_SYSTEM && s->index==2) ||
-           (s->panel_page==PANEL_MODE && s->index==6);
+           (s->panel_page==PANEL_MODE && s->index==3);
 #else
-    return (s->panel_page==PANEL_EXPOSURE && s->index<3) ||
+    return (s->panel_page==PANEL_EXPOSURE && s->index<4) ||
            (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
-           (s->panel_page==PANEL_SYSTEM && s->index==2) ||
-           (s->panel_page==PANEL_MODE && s->index==6);
+           (s->panel_page==PANEL_MODE && s->index==3);
 #endif
 }
 static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned keys)
@@ -513,6 +547,7 @@ static unsigned panel_range(const MenuState *s,unsigned row,unsigned *v,unsigned
         if(row==0){*v=s->exposure;*lo=3;*hi=camera_exposure_max(s);return 1;}
         if(row==1){*v=s->gain;*lo=16;*hi=143;return 1;}
         if(row==2 && s->vts_available){*v=s->vts;*lo=1980;*hi=2500;return 1;}
+        if(row==3){*v=(s->picture>>7)&3;*hi=3;return 1;}   /* 数字亮度（4 档）*/
     }
     if(s->panel_page==PANEL_PICTURE && s->picture_available) {
         if(row==0){*v=s->picture&63;*hi=63;return 1;}
@@ -521,12 +556,12 @@ static unsigned panel_range(const MenuState *s,unsigned row,unsigned *v,unsigned
             *v=gamma_effective(s);*hi=8;return 1;
         }
 #endif
-        if(row==2){*v=(s->picture>>7)&3;*hi=3;return 1;}
-        if(row==3){*v=(s->picture>>9)&7;*hi=4;return 1;}
-        if(row==5){*v=(s->picture>>14)&3;*hi=3;return 1;}
+        if(row==2){*v=(s->picture>>9)&7;*hi=4;return 1;}    /* 饱和度 */
+        /* row3 白平衡是离散 4 档，没有滑条（沿用原设计）*/
+        if(row==4){*v=(s->picture>>14)&3;*hi=3;return 1;}   /* 降噪 */
+        if(row==5){*v=s->lsc_strength;*hi=127;return 1;}    /* 色度（从系统页搬来）*/
     }
     if(s->panel_page==PANEL_RECORD && row==3){*v=s->record_interval;*hi=4;return 1;}
-    if(s->panel_page==PANEL_SYSTEM && row==2){*v=s->lsc_strength;*hi=31;return 1;}
     return 0;
 }
 static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
@@ -538,6 +573,7 @@ static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
         if(row<2)s->auto_exposure=0;
         if(row==0)s->exposure=v;
         else if(row==1)s->gain=v;
+        else if(row==3)s->picture=(s->picture&~(3u<<7))|(v<<7);   /* 数字亮度 */
         else {s->vts=v;if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);}
     } else if(s->panel_page==PANEL_PICTURE) {
 #if GAMMA_SLIDER
@@ -547,11 +583,10 @@ static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
             return 0;
         }
 #endif
-        shift=row==0?0:row==2?7:row==3?9:14;
-        mask=row==0?63:row==3?7:3;
+        if(row==5) { s->lsc_strength=v; return 0; }            /* 色度 */
+        shift=row==0?0:row==2?9:14;                            /* 黑电平 / 饱和度 / 降噪 */
+        mask=row==0?63:row==2?7:3;
         s->picture=(s->picture&~(mask<<shift))|(v<<shift);
-    } else if(s->panel_page==PANEL_SYSTEM) {
-        s->lsc_strength=v;
     } else {s->record_interval=v;return MENU_INTERVAL;}
     return 0;
 }

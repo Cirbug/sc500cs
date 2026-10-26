@@ -43,7 +43,7 @@ module mcu_ui_apb_regs #(
     // LSC 运行时强度（菜单"系统信息 -> 色度"）：0 = 旁路，16 = 表值原样，
     // 31 = 约 194%。5 位，每一步只有旧版的一半，便于半步微调。
     // 复位默认 16（等价于编译期表值）。MCU 开机写一次，之后由菜单维护。
-    output reg  [4:0]  O_lsc_ctrl,
+    output reg  [6:0]  O_lsc_ctrl,
     // 跟踪目标颜色（APB 0xf4）：0=红 1=绿 2=蓝。三色的连通域同时都在跑、
     // 三个框都会画出来，这一位只决定"伺服跟哪一个"。
     /* 已停用：output reg [1:0] O_track_color,  见 design_top_wrapper.v 说明 */
@@ -156,7 +156,7 @@ module mcu_ui_apb_regs #(
             // （旧值 0x1050 = 伽马开/黑电平16/亮度1.00，固件是 0x108C）。
             // 0x108C = 黑电平12, 伽马关, 亮度1.125x, 饱和度旁路, 白平衡平滑, 降噪0。
             O_picture_ctrl <= 16'h108C;
-            O_lsc_ctrl    <= 5'd14;     // 与固件 LSC_STRENGTH_DEFAULT 一致（实测过零点）
+            O_lsc_ctrl    <= 7'd56;     // 7 位；56 = 表值原样(64) 的 7/8，与固件默认一致
             /* 已停用：O_track_color <= 2'd0;  （0xf4 链路）*/
             O_focus_roi_w <= 11'd0;     // 0 = focus_metric 用默认 160x120
             O_focus_roi_h <= 11'd0;
@@ -254,7 +254,7 @@ module mcu_ui_apb_regs #(
                     8'h80: if(&I_pstrobe && I_pwdata==32'h53455431 && !I_rtc_set_status[0]) O_rtc_set<=1;
                     8'h88: if(I_pstrobe[0]) O_wifi_ctrl<=I_pwdata[1:0];
                     // LSC 强度：5 位，超出 31 会被截断（31 已是约 194% 上限）
-                    8'hec: if(I_pstrobe[0]) O_lsc_ctrl<=I_pwdata[4:0];
+                    8'hec: if(I_pstrobe[0]) O_lsc_ctrl<=I_pwdata[6:0];
                     /* 已停用：8'hf4 跟踪目标颜色写入（0xf4 链路）*/
                     // 对焦 ROI 尺寸。宽高都要落在一个 32 位字里，所以要两条
                     // byte lane 同时有效，不能发布"半个设置"。
@@ -335,10 +335,14 @@ module mcu_ui_apb_regs #(
                 8'h94: O_prdata = O_focus_roi;
                 8'h98: O_prdata = 32'h41465231; // AFR1: touch focus ROI
                 8'h90: O_prdata = 32'h57494631; // WIF1: UART0 and boot/reset pads.
-                8'hec: O_prdata = {27'd0, O_lsc_ctrl}; // LSC 强度（读回）
+                8'hec: O_prdata = {25'd0, O_lsc_ctrl}; // LSC 强度（读回，7 位）
+                // LSC2：本版色度是 7 位（64 = 表值原样，0..127）。老 bit 只有 0xf0「LSC1」、
+                // 5 位（16 = 表值原样，0..31），固件按能力位决定写多少、掩多少。
+                // 放在 0xf8（原 COL1 位，已随 0xf4 死链一起停用）；0xf4 留给
+                // 第二期的目标色/跟踪使能寄存器，避免与这里抢地址。
+                8'hf8: O_prdata = 32'h4c534332; // LSC2 capability: 7-bit LSC strength
                 8'hf0: O_prdata = 32'h4c534331; // LSC1 capability: runtime LSC strength
                 /* 已停用：8'hf4 跟踪目标颜色读回（0xf4 链路）*/
-                /* 已停用：8'hf8 COL1 能力字（唯一消费者是 0xf4 探测，一并停用）*/
                 8'hfc: O_prdata = {5'd0, O_focus_roi_h, 5'd0, O_focus_roi_w}; // 对焦 ROI 尺寸
                 default: O_prdata = 32'd0;
             endcase

@@ -37,6 +37,10 @@ static __attribute__((noinline)) void mcu_menu_label(uint16_t *cells,unsigned of
     const unsigned char *p=mcu_label_pool+offset;
     while(*p)*cells++=*p++;
 }
+/* 前置声明：legacy 渲染器（画面页第 6 行"色度"）要用它，而它的定义在下面，
+ * 不声明就会触发 "static declaration follows non-static declaration"。 */
+static void mcu_panel_number(uint16_t *cells,unsigned value);
+
 /* Pure row builder is shared by host tests and both firmware targets. */
 static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row,uint16_t cells[12])
 {
@@ -80,10 +84,12 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
             }
 #endif
             kind=(p&64)?2:1;break;
-        case 3:mcu_menu_text(cells,"1.001.121.251.50"+4*((p>>7)&3));return attr;
-        case 4:mcu_menu_text(cells,"1.001.251.501.752.00"+4*(((p>>9)&7)>4?4:(p>>9)&7));return attr;
-        case 5:kind=(0x01050403u>>(8*((p>>12)&3)))&255u;break;
-        case 6:kind=(0x08070601u>>(8*((p>>14)&3)))&255u;break;
+        /* 2026-10-26 重排：数字亮度移去曝光页；饱和度/白平衡/降噪各上移一行；
+         * 新第 6 行是色度（LSC 强度），第 7 行仍是恢复默认。 */
+        case 3:mcu_menu_text(cells,"1.001.251.501.752.00"+4*(((p>>9)&7)>4?4:(p>>9)&7));return attr;
+        case 4:kind=(0x01050403u>>(8*((p>>12)&3)))&255u;break;
+        case 5:kind=(0x08070601u>>(8*((p>>14)&3)))&255u;break;
+        case 6:mcu_panel_number(cells,s->lsc_strength);break;
         case 7:kind=9;break;
         case 8:
             if(s->histogram_mode) {
@@ -96,7 +102,7 @@ static uint32_t mcu_menu_row_legacy(const MenuState *s,uint32_t rec,unsigned row
         mcu_menu_value(cells,kind);
     } else if(page==2) {
         switch(row) {
-        case 0:case 7:mcu_menu_value(cells,0);break;
+        case 0:mcu_menu_value(cells,0);break;   /* 2026-10-26：去掉本页特有的"返回"行 */
         case 4:mcu_menu_text(cells,"  2S  5S 10S 30S 60S"+4*(s->record_interval>4?4:s->record_interval));break;
         case 5:for(i=0;i<4;i++)cells[8+i]=MENU_ASCII|('0'+((rec>>(28-4*i))&15));break;
         case 6:mcu_menu_value(cells,rec&255?12:rec&512?11:rec&256?13:10);break;
@@ -143,18 +149,24 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
         if(row==4)mcu_panel_value(cells,tracking_mode(s)?7:6);
         if(row==5 && !s->record_available)mcu_menu_text(cells,"----");
     } else if(page==PANEL_EXPOSURE) {
-        if(row==4) {
+        if(row==5) {                                  /* 自动曝光（原第 4 行，与页头重名已改）*/
             if(!s->auto_exposure_available)mcu_menu_text(cells,"----");
             else if(s->auto_exposure)mcu_menu_text(cells,"AUTO");
             else mcu_panel_value(cells,0);
+            return attr;
+        }
+        if(row==4) {                                  /* 数字亮度（从画面页搬来）*/
+            mcu_menu_text(cells,"1.001.121.251.50"+4*((picture_effective(s)>>7)&3));
             return attr;
         }
         unsigned v=row==1?s->exposure:row==2?s->gain:s->vts;
         mcu_panel_number(cells,v);
         if(row==3 && !s->vts_available)mcu_menu_text(cells,"----");
     } else if(page==PANEL_MODE) {
-        if(row<=6 && s->image_step==row+1)mcu_panel_value(cells,7);
-        else if(row==7) {
+        /* 2026-10-26：显示模式只剩 2/3/4（普通/识别/运动），跟踪已移出本页；
+         * 跟踪态(5/6/7)时本页没有行高亮，跟踪状态在"目标追踪"页看。 */
+        if(row<=3 && s->image_step==row+1)mcu_panel_value(cells,7);
+        else if(row==4) {
             if(s->image_step==2 && s->image_effect<=5) {
                 if(!s->image_effect)mcu_panel_value(cells,6);
                 else for(i=0;i<4;i++)cells[8+i]=mcu_effects[0][s->image_effect][i];
@@ -162,10 +174,12 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
             else mcu_menu_text(cells,"----");
         }
     } else if(page==PANEL_TRACK) {
+        /* 1 目标跟踪(开/关)  2 目标色(红色/蓝色/绿色，panel_values[10..12]) */
         if(row==1)mcu_panel_value(cells,tracking_mode(s)?7:6);
+        else if(row==2)mcu_panel_value(cells,10+s->track_color);
         else cells[11]=MENU_ASCII|'>';
     } else if(page==PANEL_SYSTEM) {
-        /* 第 3 行是"色度"（LSC 强度）：数值由 mcu_menu_row() 统一画。 */
+        /* 色度已移到"图像调整"页；本页只剩两个显示开关。 */
         if(row<=2)mcu_panel_value(cells,(row==1?s->logo_enable:s->info)?7:6);
     }
     return attr;
@@ -180,8 +194,8 @@ static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16
         if(v<lo)v=lo;
         if(v>hi)v=hi;
         width=((v-lo)*127+(hi-lo)/2)/(hi-lo);
-        if((s->panel_page==PANEL_PICTURE && row==6) ||
-           (s->panel_page==PANEL_SYSTEM && row==3))mcu_panel_number(cells,v);
+        /* 只有带数值的滑条才在条上方写数字：画面页第 6 行现在是"色度"。 */
+        if(s->panel_page==PANEL_PICTURE && row==6)mcu_panel_number(cells,v);
         attr|=(1u<<24)|(1u<<14)|(width<<16)|(2u<<9);
     }
     return attr;
@@ -205,6 +219,9 @@ static void mcu_menu_publish(const MenuState *s,uint32_t rec)
                 word|=(col<8?0u:(attr&(1u<<14))?(attr&(7u<<9)):(1u<<9));
                 if((!MENU_LEGACY_COMPAT || s->panel_ui) && col<8 && (attr&(3u<<12)))word|=1u<<9;
                 /* 选中的模式行高亮：档位 2..7 对应 menu 行 1..6，别再用旧的 row<=4。 */
+                /* 这里针对的是 legacy 显示模式页（picture_page==2），它的几何没有随
+                 * 2026-10-26 重排改变，仍有 6 个模式行，所以高亮范围保持 row<=6。
+                 * 新版面板模式页的高亮由 mcu_menu_row_base 的 attr 位负责。 */
                 if(s->picture_page==2 && row>=1 && row<=6 && s->image_step==row+1 && col<8)word|=1u<<9;
             }
             ui_write(MCU_MENU_BASE+12,word);
@@ -225,9 +242,15 @@ static void mcu_menu_poll(const MenuState *s)
            (s->panel_page<<16)|(s->panel_ui<<20)|(s->info<<21)|(s->logo_enable<<22)|
            (s->record_available<<23)|(s->picture_available<<24)|(s->auto_exposure<<25);
 #if GAMMA_SLIDER
-    key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s)|(gamma_effective(s)<<16);
+    /* 2026-10-26：原来 key[3] 只放 picture|gamma，改色度时键不变 -> mcu_menu_poll
+     * 提前返回、菜单根本不重绘（曝光/增益在 key[1]/key[2] 里所以顺滑）。这正是
+     * "色度滑条不顺"的主因；这里把 lsc_strength(7 位) 与 track_color(2 位) 也并进去。*/
+    key[1]=s->exposure;key[2]=s->gain;
+    key[3]=picture_effective(s)|(gamma_effective(s)<<16)|
+           ((uint32_t)s->lsc_strength<<20)|((uint32_t)s->track_color<<27);
 #else
-    key[1]=s->exposure;key[2]=s->gain;key[3]=picture_effective(s);
+    key[1]=s->exposure;key[2]=s->gain;
+    key[3]=picture_effective(s)|((uint32_t)s->lsc_strength<<16)|((uint32_t)s->track_color<<23);
 #endif
     key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8)|
         (s->image_effect<<16)|(s->image_target<<20)|(s->histogram_mode<<24);

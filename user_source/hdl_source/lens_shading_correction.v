@@ -59,7 +59,7 @@ module lens_shading_correction #(
     // 缩放以"表的加权均值"为支点，不是以 1.0 为支点 —— 所以调强度只改空间
     // 形状，不会顺带把整个画面调暖或调冷（实测旧版 6->11 会暖 2.9%）。
     // 由 APB 寄存器 0xec 给出（MCU 开机写默认值，菜单"系统信息->色度"可改）。
-    input  wire [4:0]  I_strength,
+    input  wire [6:0]  I_strength,
 
     output reg         O_vs,
     output reg         O_hs,
@@ -181,14 +181,17 @@ module lens_shading_correction #(
     end
 
     // ------------------------------------------------ 强度缩放（纯无符号）
-    // gain = PIVOT + (base - PIVOT) * strength / 16
-    //   strength = 0  -> 真旁路（增益 256）
-    //   strength = 16 -> 表值原样（等价于旧版的 8）
-    //   strength = 22 -> 旧版的 11；strength = 31 -> 约 194%
+    // gain = PIVOT + (base - PIVOT) * strength / 64
+    //   strength = 0   -> 真旁路（增益 256）
+    //   strength = 64  -> 表值原样（2026-10-26 由 5 位/16 扩到 7 位/64）
+    //   strength = 127 -> 约 194%（与旧版 strength = 31 等效）
+    // 扩位原因：旧版 0..31 只有 32 档，而菜单滑条有 127 个手指位置，
+    // 等于每档要滑 4 像素，现场调色度时手感明显顿挫；曝光有近 4000 档所以顺滑。
+    // 现在 128 档 ≈ 127 个滑条位置，手感与"增益"一致，常用区间分辨率提升 4 倍。
     // 支点取"表的加权均值"而不是 1.0：这样调强度只放大/缩小空间形状，
     // 加权平均增益恒定 ≈ 264，不会顺带把整个画面调暖或调冷。
-    // 位宽：mag 最大 264-244 = 20；20*31 = 620 落在 13 位内；
-    // >>4 后最大 38，所以增益范围 226..302，加上倾斜偏移后仍恒为正、不超 9 位。
+    // 位宽：mag 最大 264-244 = 20；20*127 = 2540 仍落在 13 位内；
+    // >>6 后最大 39，所以增益范围 225..303，加上倾斜偏移后仍恒为正、不超 9 位。
     // 先判符号再取绝对值，避免用到有符号运算。
     localparam [8:0] STRENGTH_PIVOT = 9'd264;
     function [8:0] scale_gain;
@@ -204,7 +207,7 @@ module lens_shading_correction #(
                 neg  = (base < STRENGTH_PIVOT);
                 mag  = neg ? (STRENGTH_PIVOT - base) : (base - STRENGTH_PIVOT);
                 prod = mag * s;
-                mag  = prod[12:4];
+                mag  = prod[12:6];
                 scale_gain = neg ? (STRENGTH_PIVOT - mag) : (STRENGTH_PIVOT + mag);
             end
         end

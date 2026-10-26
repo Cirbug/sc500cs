@@ -332,6 +332,60 @@ static void recorder_service(void) {
     }
 }
 
+/* =====================================================================
+ * 跨"TD 重配"保存用户画面设置 —— 这是"TD 一灌进去画面就变"的根治办法。
+ *
+ * 根因（代码可查）：
+ *   MCU 是硬核没错，但它的 core_reset / por_reset 直接接在 PLL 锁定信号上
+ *   —— design_top_wrapper.v:1063/1064 用 ~S_rst_n，而 574 行
+ *   `assign S_rst_n = S_pll_lock;`。TD 每灌一次 bit，FPGA 重配 → PLL 失锁
+ *   → MCU 整颗复位、从复位向量重跑 main()，用户改过的曝光 / 黑电平 / 亮度 /
+ *   LSC 强度全部回到编译期默认值。所以画面会变，而且不会自己变回来
+ *   （颜色类设置 AE 管不着）。上一版"在 main 循环里周期性重写寄存器"没用，
+ *   就是因为 MCU 自己都被复位了，RAM 里的状态根本留不住。
+ *
+ * 唯一能跨过这次复位的东西是 TCM 本身：
+ *   * 启动代码只清 __bss_start.._end（al_rv32_start.S:254-259）；
+ *   * .wifi_noinit 段被链接脚本放在 _end 之后（gcc_ph1p35_tcm.ld:197-200），
+ *     不在清零范围里，也不由 GDB 下载（NOLOAD，ELF 里没有内容）；
+ *   * TCM 是硬 SRAM，FPGA 重配不动它。
+ *   所以把用户状态放在这一段里，复位后读回来即可。magic 里带版本号，
+ *   结构体布局变了就换一个 magic，避免读到旧布局的垃圾。
+ *
+ * 边界：只跨 MCU 复位 / FPGA 重配，跨不过断电（断电后 FD 本来也要重下固件）。
+ * ===================================================================== */
+#define UI_PERSIST_MAGIC 0x55495032u          /* "UIP2": layout gained gamma_level */
+typedef struct {
+    uint32_t magic, sum;
+    uint32_t picture, exposure, gain, vts, auto_exposure, lsc, image_ctrl, index;
+    uint32_t gamma_level;   /* Cached GAM1 preset (0 = off, 1..8) */
+} UiPersist;
+static UiPersist __attribute__((section(".wifi_noinit"))) g_ui_persist;
+
+static uint32_t ui_persist_sum(const UiPersist *p)
+{
+    return p->picture + p->exposure + p->gain + p->vts +
+           p->auto_exposure + p->lsc + p->image_ctrl + p->index + p->gamma_level;
+}
+
+/* 更新期间先把 magic 清掉，避免"半写"状态被下一次开机当成有效值。 */
+static void ui_persist_save(const MenuState *s)
+{
+    g_ui_persist.magic = 0;
+    g_ui_persist.picture  = s->picture;
+    g_ui_persist.exposure = s->exposure;
+    g_ui_persist.gain     = s->gain;
+    g_ui_persist.vts      = s->vts;
+    g_ui_persist.auto_exposure = s->auto_exposure;
+    g_ui_persist.lsc      = s->lsc_strength;
+    g_ui_persist.image_ctrl = (s->image_step & 7u) | ((s->image_effect & 7u) << 3) |
+                              ((s->image_target & 3u) << 6) | (s->logo_enable ? (1u << 8) : 0u);
+    g_ui_persist.index    = s->index;
+    g_ui_persist.gamma_level = s->gamma_level;
+    g_ui_persist.sum      = ui_persist_sum(&g_ui_persist);
+    g_ui_persist.magic    = UI_PERSIST_MAGIC;
+}
+
 AL_S32 main(void)
 {
     uint32_t id;
@@ -339,9 +393,11 @@ AL_S32 main(void)
     MenuState ui = {
         .menu = 1, .exposure = 3990, .gain = 80,
         .servo_pan_us = 1500, .servo_tilt_us = 1500,
-        .image_step = 2, .logo_enable = 1, .touch_capture = -1
+        .image_step = 2, .logo_enable = 1, .touch_capture = -1,
+        .lsc_strength = LSC_STRENGTH_DEFAULT
     };
     uint32_t last_report = 0;
+    uint32_t restored, lsc_available;
 
     g_ui_debug_stage = 1;
     al_printf("UI boot: USART1 115200; before APB read at 0x%08x\r\n",
@@ -376,13 +432,32 @@ AL_S32 main(void)
     al_printf("LOG: AF manual on boot; menu on: UP/DOWN=select, BACK=exit, OK=edit\r\n");
     lens_diag_report();
 
+    /* 上一次的用户设置还在不在？TD 重配后 MCU 会复位重跑，靠这里捡回来，
+     * 这样画面和灌 bit 之前完全一致（见文件上方 g_ui_persist 的说明）。 */
+    restored = (g_ui_persist.magic == UI_PERSIST_MAGIC &&
+                ui_persist_sum(&g_ui_persist) == g_ui_persist.sum);
+    if(restored) {
+        ui.picture     = g_ui_persist.picture;
+        ui.exposure    = g_ui_persist.exposure;
+        ui.gain        = g_ui_persist.gain;
+        ui.vts         = g_ui_persist.vts;
+        ui.auto_exposure = g_ui_persist.auto_exposure;
+        ui.index       = g_ui_persist.index;
+        ui.image_step   = g_ui_persist.image_ctrl & 7u;
+        ui.image_effect = (g_ui_persist.image_ctrl >> 3) & 7u;
+        ui.image_target = (g_ui_persist.image_ctrl >> 6) & 3u;
+        ui.logo_enable  = (g_ui_persist.image_ctrl >> 8) & 1u;
+        ui.lsc_strength = g_ui_persist.lsc & 31u;
+        ui.gamma_level  = (uint8_t)(g_ui_persist.gamma_level & 15u);
+        al_printf("UI: restored picture state (survived the last FPGA reconfig)\r\n");
+    }
+
     /* Apply startup defaults even when the previous APB value is legal.
      * Legacy gain 16 is a valid sensor code but displays as an empty bar. */
     ui.vts_available=(ui_read(UI_VTS_ID)==0x56545331u);
-    ui.vts=2000u;
+    if(!restored) ui.vts=2000u;
     if(ui.vts_available) {ui_write(UI_VTS,ui.vts);ui.vts=ui_read(UI_VTS);}
-    ui.exposure = 3990u;
-    ui.gain = 80u;
+    if(!restored) { ui.exposure = 3990u; ui.gain = 80u; }
     ui_write(UI_EXPOSURE, ui.exposure);
     ui_write(UI_GAIN, ui.gain);
     ui.exposure = ui_read(UI_EXPOSURE);
@@ -401,11 +476,16 @@ AL_S32 main(void)
     g_track_capability=ui_read(UI_TRACK_ID);
     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
     ui.picture_available=(ui_read(0x74)==0x50494331u);
-    ui.picture=PICTURE_DEFAULT;
 #if GAMMA_SLIDER
-    ui.gamma_level=0;
+    /* Capability probe must run on every boot, independent of "restored". */
     ui.gamma_slider_available=((ui_read(0x6c)&0xFFFFFFF0u)==0x47414D30u);
 #endif
+    if(!restored) {
+        ui.picture=PICTURE_DEFAULT;
+#if GAMMA_SLIDER
+        ui.gamma_level=0;
+#endif
+    }
     if(ui.picture_available) {
 #if GAMMA_SLIDER
         if(ui.gamma_slider_available) ui_write(0x6c,gamma_effective(&ui));
@@ -413,6 +493,12 @@ AL_S32 main(void)
         ui_write(0x70,picture_effective(&ui));
         ui.picture=(ui_read(0x70) & ~(1u << 6)) | (ui.picture & (1u << 6));
     }
+    /* LSC 运行时强度（APB 0xec）：值来自菜单"系统 → 色度"，0 = 完全旁路、
+     * 16 = 编译期表值原样、31 = 约 194%（5 位，半档精度）。首次开机取
+     * LSC_STRENGTH_DEFAULT，之后由跨复位块带回上次的值。先探测 0xf0 是否为
+     * "LSC1"，老 bit 没有这个寄存器就不写。 */
+    lsc_available = (ui_read(0xf0)==0x4c534331u);
+    if(lsc_available) ui_write(0xec, ui.lsc_strength & 31u);
     al_printf("SERVO: %s PAN/V6=%u us TILT/V4=%u us\r\n",
               ui.servo_menu_available ? "touch ready" : "new FPGA bit required",
               ui.servo_pan_us, ui.servo_tilt_us);
@@ -429,6 +515,9 @@ AL_S32 main(void)
 #endif
     ui.panel_ui=(uint8_t)mcu_menu_available;
     auto_exposure_init(&ui);
+    /* auto_exposure_init 会按能力位把 AE 打开，这里把用户上次的开关恢复回去，
+     * 否则"灌完 bit 画面变了"还会多一条：AE 从关变开。 */
+    if(restored) ui.auto_exposure = g_ui_persist.auto_exposure && ui.auto_exposure_available;
     ui.histogram_available=(ui_read(HE_BASE)==HE_ID);
     if(ui.histogram_available)ui_write(HE_BASE+0x1c,0); // MCU-only reload also restores bypass
     mcu_menu_poll(&ui);
@@ -447,6 +536,67 @@ AL_S32 main(void)
         g_ui_debug_events = events;
         g_ui_debug_loops++;
         menu_keys_commit(&ui,events);
+
+        /* 跨复位块始终跟随当前状态（包括 GDB 里现场改的 0xec），
+         * 这样下一次 TD 重配后 main() 能把画面原样恢复。 */
+        /* 0xec 跟随菜单"系统 → 色度"：TD 重配后它会回到复位值，这里自动写回；
+         * 菜单里改了值也在这里生效（菜单本身不碰硬件）。 */
+        if(lsc_available && ((ui_read(0xec) & 31u) != (ui.lsc_strength & 31u)))
+            ui_write(0xec, ui.lsc_strength & 31u);
+        ui_persist_save(&ui);
+
+        /* ---------------------------------------------------------------
+         * FPGA 重配完成的那一瞬间，再把整份状态重写一遍。
+         *
+         * 为什么光靠开机时那一次还不够：main() 里的写回可能早于 fabric 的
+         * 传感器配置序列 —— 序列会把传感器寄存器写成表里的默认值，而 fabric
+         * 里的 O_exposure 影子寄存器内容没变，它就不会自动重发一次。所以要在
+         * "配置序列刚跑完"的时刻再强制写一遍。
+         *
+         * 触发点：0xe8 低两位 = {camera 配置完成, AE 配置完成}，fabric 寄存器，
+         * 重配后先归 0，配置序列跑完回到 3。0->3 的上升沿就是"刚被重配过、
+         * 现在写一定生效"的时刻，毫秒级。AE 自己也盯这两位
+         * （auto_exposure.h:89），时机天然对齐，写回后 AE 从原值继续。
+         *
+         * 0xec（LSC 强度）只在这个事件和开机时写，不做周期刷新 —— 调试器里
+         * set 0x700000ec 的实时值不会被冲掉，下一轮还会被 ui_persist_save 记住。
+         * ------------------------------------------------------------- */
+        {
+            static uint8_t fabric_rdy_prev = 0;
+            uint8_t fabric_rdy = (uint8_t)(ui_read(AE_SENSOR_READY) & 3u);
+            if(fabric_rdy == 3u) {
+                if(fabric_rdy_prev != 3u) {
+                    if(ui.picture_available) {
+                        ui_write(0x70, picture_effective(&ui));
+                        ui.picture=(ui_read(0x70) & ~(1u << 6)) | (ui.picture & (1u << 6));
+                    }
+                    if(ui.vts_available) {
+                        ui_write(UI_VTS, ui.vts);
+                        ui_write(UI_CAMERA_DISPLAY, camera_display_word(&ui));
+                    }
+                    ui_write(UI_EXPOSURE, ui.exposure);
+                    ui_write(UI_GAIN, ui.gain);
+                    /* 硬件会按 VTS 钳位，读回跟随实际值，别让两边不一致。 */
+                    ui.exposure = ui_read(UI_EXPOSURE);
+                    ui.gain     = ui_read(UI_GAIN);
+                    if(ui.histogram_available) ui_write(HE_BASE+0x1c, 0);
+                    if(lsc_available) ui_write(0xec, ui.lsc_strength & 31u);
+#if GAMMA_SLIDER
+                    /* GAM1 belongs with PIC1: restore the preset too. */
+                    if(ui.gamma_slider_available) ui_write(0x6c, gamma_effective(&ui));
+#endif
+                    ui_write(UI_INDEX, ui.index);
+                    /* OSD/菜单与图像档位同样是 fabric 寄存器，一并还原，
+                     * 否则重配后菜单会自己关掉、logo/特效档位回默认。 */
+                    ui_ctrl(ui.menu, ui.edit, ui.info, ui.picture_page);
+                    image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target,
+                                     ui.logo_enable, 0);
+                }
+                fabric_rdy_prev = 3u;
+            } else {
+                fabric_rdy_prev = fabric_rdy;
+            }
+        }
 
         lens_diag_report();
         autofocus_task();
@@ -481,6 +631,9 @@ AL_S32 main(void)
         /* Touch reports are independent of the slower diagnostic poll.  Pop
          * one report every loop so a drag follows the finger promptly. */
         max3421e_touch_poll();
+        /* TD 灌 bit 会清掉 fabric 里的 USB 使能位并把 MAX3421E 复位；
+         * 这里发现掉了就重建 USB/触摸（低频、自己限速）。 */
+        max3421e_usb_recover();
         touchscreen_handle(&ui);
         rtc_diag_poll((uint32_t)UI_APB_BASE);
         video_diag_poll((uint32_t)UI_APB_BASE);

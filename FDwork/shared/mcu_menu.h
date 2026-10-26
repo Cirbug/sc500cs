@@ -164,7 +164,10 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
     } else if(page==PANEL_TRACK) {
         if(row==1)mcu_panel_value(cells,s->image_step==5?7:6);
         else cells[11]=MENU_ASCII|'>';
-    } else if(page==PANEL_SYSTEM) mcu_panel_value(cells,(row==1?s->logo_enable:s->info)?7:6);
+    } else if(page==PANEL_SYSTEM) {
+        /* 第 3 行是"色度"（LSC 强度）：数值由 mcu_menu_row() 统一画。 */
+        if(row<=2)mcu_panel_value(cells,(row==1?s->logo_enable:s->info)?7:6);
+    }
     return attr;
 }
 /* Bit 24: small numeric value above the bar, within the same four cells.
@@ -177,7 +180,8 @@ static uint32_t mcu_menu_row(const MenuState *s,uint32_t rec,unsigned row,uint16
         if(v<lo)v=lo;
         if(v>hi)v=hi;
         width=((v-lo)*127+(hi-lo)/2)/(hi-lo);
-        if(s->panel_page==PANEL_PICTURE && row==6)mcu_panel_number(cells,v);
+        if((s->panel_page==PANEL_PICTURE && row==6) ||
+           (s->panel_page==PANEL_SYSTEM && row==3))mcu_panel_number(cells,v);
         attr|=(1u<<24)|(1u<<14)|(width<<16)|(2u<<9);
     }
     return attr;

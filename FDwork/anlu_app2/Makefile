@@ -23,7 +23,11 @@ APP_TAR_DIR ?= $(abspath .)/build
 APP_OBJ_DIR ?= $(APP_TAR_DIR)/obj
 
 
-COMPILE_PREFIX ?=
+# Local FD toolchain (RISC-V GCC 13.1.1). A command-line COMPILE_PREFIX=...
+# still wins, so build.ps1 and manual builds are unaffected. This default
+# exists because the Eclipse/FD IDE build does not export COMPILE_PREFIX,
+# which made make invoke a bare "gcc" that does not exist on this machine.
+COMPILE_PREFIX ?= D:/FD/FD/toolchain/gcc/riscv/ph1p35/bin/riscv64-unknown-elf-
 
 
 

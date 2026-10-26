@@ -338,7 +338,8 @@ AL_S32 main(void)
     MenuState ui = {
         .menu = 0, .exposure = 3990, .gain = 80,
         .servo_pan_us = 1500, .servo_tilt_us = 1500,
-        .image_step = 2, .logo_enable = 1, .touch_capture = -1
+        .image_step = 2, .logo_enable = 1, .touch_capture = -1,
+        .lsc_strength = LSC_STRENGTH_DEFAULT
     };
     uint32_t last_report = 0;
 
@@ -413,6 +414,9 @@ AL_S32 main(void)
         ui_write(0x70,picture_effective(&ui));
         ui.picture=(ui_read(0x70) & ~(1u << 6)) | (ui.picture & (1u << 6));
     }
+    /* LSC 运行时强度（APB 0xec）：16 = 编译期表值原样，0 = 完全旁路，31 = 约 194%（5 位）。
+     * 现场调试可直接在 GDB 里写 0x700000ec（0..31）实时看画面。 */
+    if(ui_read(0xf0)==0x4c534331u) ui_write(0xec, LSC_STRENGTH_DEFAULT);
     al_printf("SERVO: %s PAN/V6=%u us TILT/V4=%u us\r\n",
               ui.servo_menu_available ? "touch ready" : "new FPGA bit required",
               ui.servo_pan_us, ui.servo_tilt_us);
@@ -447,6 +451,11 @@ AL_S32 main(void)
         g_ui_debug_events = events;
         g_ui_debug_loops++;
         menu_keys_commit(&ui,events);
+
+        /* 0xec 跟随菜单"系统 → 色度"（0..31，0 = 完全旁路，16 = 表值原样）。 */
+        if(ui_read(0xf0)==0x4c534331u &&
+           ((ui_read(0xec) & 31u) != (ui.lsc_strength & 31u)))
+            ui_write(0xec, ui.lsc_strength & 31u);
 
         lens_diag_report();
         autofocus_task();

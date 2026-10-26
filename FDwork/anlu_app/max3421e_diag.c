@@ -883,6 +883,35 @@ int max3421e_diag_init(uint32_t ui_base)
     return diag_result;
 }
 
+/* ---------------------------------------------------------------------
+ * TD 重配（灌 bit）之后把 USB / 触摸重新建立起来。
+ *
+ * 为什么需要：fabric 里的 USB 使能位（APB 0x20 低两位）复位默认值 = 0
+ * （隔离 SPI），而 MAX3421E 的 /RES 在正常分支里直接接 S_rst_n（PLL 锁定，
+ * design_top_wrapper.v:390）—— 所以每灌一次 bit，触摸芯片被复位、SPI 也被
+ * 隔离。本模块只在开机探针里写过一次 board_write(USB_CTRL,3)，之后不再写；
+ * diag_result 又是 0（MCU 认为一切正常），连重试路径也不会跑。结果就是
+ * "灌完 bit 触摸就再也不动了"，而 OSD 时钟照走、按键照用 —— MCU 是活的。
+ *
+ * 低频看门狗：发现使能位被清掉就重跑一遍初始化。限速 2 秒 —— 探针内部有
+ * 几十毫秒 MDelay，不能让主循环被反复初始化拖住。
+ * ------------------------------------------------------------------- */
+#define USB_CTRL_ENABLE_MASK 3u
+#define USB_RECOVER_TICKS 200000000u   /* 2 s @ PH1P35_MCU_TIMER_CLOCK = 100 MHz */
+void max3421e_usb_recover(void)
+{
+    static uint32_t last_tick;
+    uint32_t now;
+    if (!extension_present) return;
+    if ((uint32_t)(board_read(USB_CTRL) & USB_CTRL_ENABLE_MASK) == USB_CTRL_ENABLE_MASK)
+        return;
+    now = (uint32_t)AlSys_GetTimerTickCount();
+    if ((uint32_t)(now - last_tick) < USB_RECOVER_TICKS) return;
+    last_tick = now;
+    diag_printf("MAX3421E: USB SPI enable lost (FPGA was reconfigured); re-init\r\n");
+    max3421e_diag_init(apb_base);
+}
+
 void max3421e_diag_report(void)
 {
     uint8_t revision = 0, mode = 0, irq = 0, hrsl = 0, hctl = 0;

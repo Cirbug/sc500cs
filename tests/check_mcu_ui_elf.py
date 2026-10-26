@@ -16,11 +16,11 @@ assert sections and all(b<=0x0800c000 for _,b,_ in sections),'TCM overflow'
 for before,after in zip(sections,sections[1:]):assert before[1]<=after[0],(before,after)
 byname={name:(start,end) for start,end,name in sections}
 assert byname['.stack']==(0x0800b800,0x0800c000)
-assert byname['.heap'][1]-byname['.heap'][0]>=1024
+assert byname['.heap'][1]-byname['.heap'][0]>=256   # __HEAP_SIZE=256: see FDwork/anlu_app/Makefile
 dis=tool('objdump','-d')
 for reg in ['gp','tp','sp']:
     assert re.search(r'\bauipc\s+'+reg+r',[^\n]+\n[^\n]*\badd[i]?\s+'+reg+','+reg+r',',dis),reg+' initialization relaxed'
 assert re.search(r'\bauipc\s+sp,[^\n]+\n[^\n]*800c000 <_sp>',dis),'SP must resolve to TCM top'
 used=sum(b-a for a,b,_ in sections)
-print(f'PASS ELF: GP/TP/SP PC-relative initialization, 2 KiB stack, 1 KiB heap, TCM sections {used}/49152 bytes')
+print(f'PASS ELF: GP/TP/SP PC-relative initialization, 2 KiB stack, 256 B heap, TCM sections {used}/49152 bytes')
 print(f'Heap-to-stack reserve: {0x0800b800-byname[".heap"][1]} bytes')

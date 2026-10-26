@@ -6,6 +6,9 @@
 `include "capture_display_latency.v"
 `include "histogram_equalizer.v"
 `include "shape_result_filter.v"
+// Same convention: lens shading correction is pulled in through the top file
+// so it does not have to be registered in the TD project (.al) source list.
+`include "lens_shading_correction.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
@@ -434,6 +437,21 @@ module design_top_wrapper (
         end else begin
             S_picture_page_p1<=S_picture_page_apb; S_picture_page_p2<=S_picture_page_p1;
             S_mode_page_p1<=S_mode_page_apb; S_mode_page_p2<=S_mode_page_p1;
+        end
+    end
+    // LSC 运行时强度（APB 0xec）跨到像素时钟域。
+    // 它是慢变控制量，逐位两级同步就够：即使切换瞬间混进一拍，
+    // 也只是一个帧内强度差 1/16，肉眼不可见，不存在功能风险。
+    // 5 位：0 = 旁路，16 = 表值原样，31 = 约 194%（半档精度）。
+    wire [4:0] S_lsc_ctrl_apb;
+    reg  [4:0] S_lsc_ctrl_p1, S_lsc_ctrl_p2;
+    always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
+        if(!S_hdmi_rst_n) begin
+            S_lsc_ctrl_p1 <= 5'd16;
+            S_lsc_ctrl_p2 <= 5'd16;
+        end else begin
+            S_lsc_ctrl_p1 <= S_lsc_ctrl_apb;
+            S_lsc_ctrl_p2 <= S_lsc_ctrl_p1;
         end
     end
     wire [15:0] S_ui_vts_apb,S_cam_vts;
@@ -1182,6 +1200,7 @@ module design_top_wrapper (
         .O_mode_page   ( S_mode_page_apb ),
         .O_picture_ctrl( S_picture_ctrl_apb ),
         .O_gamma_level ( S_gamma_level_apb ),
+        .O_lsc_ctrl    ( S_lsc_ctrl_apb ),
         .O_exposure    ( S_ui_ae_apb ),
         .O_vts(S_ui_vts_apb), .O_camera_display(S_camera_display_apb),
         .O_gain        ( S_ui_ag_apb ),
@@ -1556,6 +1575,38 @@ isp_top u_isp_top (
 
 
 
+    // ------------------------------------------------------------------
+    // 镜头色晕（color shading）空间校正。
+    // 放在 video_out 之后、降噪/特效/OSD 之前：
+    //   * 此处伽马已确认关闭，是线性域，与标定条件一致；
+    //   * 坐标系就是 1920x1080 显示域，与平场标定完全对应；
+    //   * 1 像素/拍，只需两个 8x9 乘法器；
+    //   * 白平衡在其上游，看不到校正结果，两者不会互相争夺。
+    // 已被实测验证：同 setup 下径向 R-G 摆幅 26.2 -> 3.0 等级。
+    // 见 output/lsc_final_table.txt 与 lens_shading_correction.v 头部说明。
+    // ------------------------------------------------------------------
+    wire [23:0] S_lsc_video_data;
+
+    lens_shading_correction #(
+        .H_ACTIVE (`DISPLAY_WIDTH),
+        .V_ACTIVE (`DISPLAY_HEIGHT)
+    ) u_lens_shading (
+        .I_clk    ( S_hdmi_pixel_clk   ),
+        .I_rst_n  ( S_hdmi_rst_n       ),
+        .I_enable ( 1'b1               ),
+        .I_vs     ( S_hdmi_vsync       ),
+        .I_hs     ( S_hdmi_hsync       ),
+        // S_video_de_1d is the DE that matches S_video_rd_data (it already
+        // compensates video_out's one-cycle read latency).
+        .I_de     ( S_video_de_1d      ),
+        .I_data   ( S_video_rd_data    ),
+        .I_strength( S_lsc_ctrl_p2     ),
+        .O_vs     (                    ),
+        .O_hs     (                    ),
+        .O_de     (                    ),
+        .O_data   ( S_lsc_video_data   )
+    );
+
     mc_to_user_interface u_mc_to_user_interface(
         .I_clk                   ( S_ddr_clk               ),
         .I_rst_n                 ( S_rst_n                 ),
@@ -1643,6 +1694,8 @@ isp_top u_isp_top (
     // Match video_out's one-cycle read latency before entering the _9
     // 3x3 line-buffer branch.  The branch is enabled only for recognition
     // modes; normal display modes receive a delay-only output from it.
+    // NOTE: this branch feeds the recognition detectors only (motion/colour),
+    // NOT the display.  It therefore stays on the raw pixels.
     always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
         if(!S_hdmi_rst_n)
             S_video_de_1d <= 1'b0;
@@ -1771,6 +1824,23 @@ isp_top u_isp_top (
         .status(S_track_status_apb), .errors(S_track_errors_apb)
     );
 
+    // lens_shading_correction registers the pixel data by one cycle, so the
+    // timing signals entering the display mixer must be delayed to match.
+    // Without this the OSD/recognition overlay would sit one pixel off.
+    reg S_mix_vsync_d, S_mix_hsync_d, S_mix_de_d, S_mix_user_d, S_mix_last_d;
+    always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
+        if(!S_hdmi_rst_n) begin
+            S_mix_vsync_d <= 1'b0; S_mix_hsync_d <= 1'b0; S_mix_de_d <= 1'b0;
+            S_mix_user_d  <= 1'b0; S_mix_last_d  <= 1'b0;
+        end else begin
+            S_mix_vsync_d <= S_hdmi_vsync;
+            S_mix_hsync_d <= S_hdmi_hsync;
+            S_mix_de_d    <= S_hdmi_de;
+            S_mix_user_d  <= S_hdmi_user;
+            S_mix_last_d  <= S_hdmi_last;
+        end
+    end
+
     hdmi_mixer #(
         .H_OFFSET   ( 0    ),
         .V_OFFSET   ( 0    ),
@@ -1782,11 +1852,11 @@ isp_top u_isp_top (
     )u_hdmi_mixer(
         .I_clk           ( S_hdmi_pixel_clk   ),
         .I_rst_n         ( S_hdmi_rst_n       ),
-        .I_video_vsync   ( S_hdmi_vsync       ),
-        .I_video_hsync   ( S_hdmi_hsync       ),
-        .I_video_de      ( S_hdmi_de          ),
-        .I_video_user    ( S_hdmi_user        ),
-        .I_video_last    ( S_hdmi_last        ),
+        .I_video_vsync   ( S_mix_vsync_d      ),
+        .I_video_hsync   ( S_mix_hsync_d      ),
+        .I_video_de      ( S_mix_de_d         ),
+        .I_video_user    ( S_mix_user_d       ),
+        .I_video_last    ( S_mix_last_d       ),
         .I_debug_status  ( S_hdmi_debug_status),
         .I_dbg_mode      ( S_dbg_disp_mode ),
         .I_dbg_step      ( S_dbg_step ),
@@ -1828,7 +1898,7 @@ isp_top u_isp_top (
         .I_track_ex (S_track_ex), .I_track_ey (S_track_ey),
         .I_track_area (S_track_area),
         .O_video_rd_en   ( S_hdmi_window_rd_en),
-        .I_video_rd_data ( S_video_rd_data    ),
+        .I_video_rd_data ( S_lsc_video_data    ),
         .O_hdmi_vsync    ( S_hdmi_out_vsync   ),
         .O_hdmi_hsync    ( S_hdmi_out_hsync   ),
         .O_hdmi_de       ( S_hdmi_out_de      ),

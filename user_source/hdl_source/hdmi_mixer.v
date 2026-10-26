@@ -49,6 +49,12 @@ module hdmi_mixer #(
     input wire [11:0] I_track_x0, I_track_y0, I_track_x1, I_track_y1, I_track_cx, I_track_cy,
     input wire signed [12:0] I_track_ex, I_track_ey,
     input wire [6:0]  I_track_area,
+    // 三色（红/绿/蓝）各自的确认框，bit0/1/2 对应 cvalid
+    input wire [2:0]  I_color3_valid,
+    input wire [11:0] I_c3r_x0, I_c3r_y0, I_c3r_x1, I_c3r_y1,
+    input wire [11:0] I_c3g_x0, I_c3g_y0, I_c3g_x1, I_c3g_y1,
+    input wire [11:0] I_c3b_x0, I_c3b_y0, I_c3b_x1, I_c3b_y1,
+    input wire [1:0]  I_target_color,   // 0=红 1=绿 2=蓝（选中目标的框颜色）
 
     output wire       O_video_rd_en,
     input wire [23:0] I_video_rd_data,
@@ -124,6 +130,11 @@ module hdmi_mixer #(
         .I_track_cx      (I_track_cx), .I_track_cy (I_track_cy),
         .I_track_ex      (I_track_ex), .I_track_ey (I_track_ey),
         .I_track_area    (I_track_area),
+        .I_color3_valid  (I_color3_valid),
+        .I_c3r_x0 (I_c3r_x0), .I_c3r_y0 (I_c3r_y0), .I_c3r_x1 (I_c3r_x1), .I_c3r_y1 (I_c3r_y1),
+        .I_c3g_x0 (I_c3g_x0), .I_c3g_y0 (I_c3g_y0), .I_c3g_x1 (I_c3g_x1), .I_c3g_y1 (I_c3g_y1),
+        .I_c3b_x0 (I_c3b_x0), .I_c3b_y0 (I_c3b_y0), .I_c3b_x1 (I_c3b_x1), .I_c3b_y1 (I_c3b_y1),
+        .I_target_color  (I_target_color),
         .O_video_rd_en   (O_video_rd_en),
         .I_video_rd_data (I_video_rd_data),
         .O_hdmi_vsync    (O_hdmi_vsync),

@@ -44,6 +44,15 @@ module mcu_ui_apb_regs #(
     // 31 = 约 194%。5 位，每一步只有旧版的一半，便于半步微调。
     // 复位默认 16（等价于编译期表值）。MCU 开机写一次，之后由菜单维护。
     output reg  [4:0]  O_lsc_ctrl,
+    // 跟踪目标颜色（APB 0xf4）：0=红 1=绿 2=蓝。三色的连通域同时都在跑、
+    // 三个框都会画出来，这一位只决定"伺服跟哪一个"。
+    /* 已停用：output reg [1:0] O_track_color,  见 design_top_wrapper.v 说明 */
+    // 自动对焦的 ROI 尺寸（APB 0xfc）：{5'd0,h[10:0],5'd0,w[10:0]}，单位像素。
+    // 0 = 没设置 -> focus_metric 用默认的 160x120（旧固件行为不变）。
+    // 为什么要可写：写死的 160x120 遇到"比窗口大的目标"时，窗口整个落在目标
+    // 内部（没有边缘可测），清晰度曲线变水平线，对焦就永远找不到峰值。
+    output reg  [10:0] O_focus_roi_w,
+    output reg  [10:0] O_focus_roi_h,
     output reg  [2:0]  O_menu_index,
     output reg  [15:0] O_exposure,
     output reg  [15:0] O_gain,
@@ -147,7 +156,10 @@ module mcu_ui_apb_regs #(
             // （旧值 0x1050 = 伽马开/黑电平16/亮度1.00，固件是 0x108C）。
             // 0x108C = 黑电平12, 伽马关, 亮度1.125x, 饱和度旁路, 白平衡平滑, 降噪0。
             O_picture_ctrl <= 16'h108C;
-            O_lsc_ctrl    <= 5'd16;     // LSC 强度 = 表值原样（旧的 8）
+            O_lsc_ctrl    <= 5'd14;     // 与固件 LSC_STRENGTH_DEFAULT 一致（实测过零点）
+            /* 已停用：O_track_color <= 2'd0;  （0xf4 链路）*/
+            O_focus_roi_w <= 11'd0;     // 0 = focus_metric 用默认 160x120
+            O_focus_roi_h <= 11'd0;
             O_menu_index  <= 3'd0;
             O_exposure    <= AE_INIT;
             O_gain        <= AG_INIT;
@@ -214,12 +226,13 @@ module mcu_ui_apb_regs #(
                     8'h54: if(I_pstrobe[0])
                         O_servo_tilt_us <= (I_pwdata[15:0] < SERVO_MIN) ? SERVO_MIN :
                                            ((I_pwdata[15:0] > SERVO_MAX) ? SERVO_MAX : I_pwdata[15:0]);
-                    // IMAGE_CTRL (0x58): retained IDs 2..5 (OSD 1..4) in bits 2:0, effect in
-                    // bits 5:3, motion target in bits 7:6, logo in bit 8,
-                    // and a tracker reacquire toggle request in bit 9.
+                    // IMAGE_CTRL (0x58): 档位 2..7 在 bits 2:0，effect 在 bits 5:3，
+                    // motion target 在 bits 7:6，logo 在 bit 8，tracker reacquire 在 bit 9。
+                    // 档位是 2..7（6 个模式）——原来是 2..5 的钳位，加了三色追踪后
+                    // 写 6/7 会被夹回 5，导致"选追踪蓝/绿其实都在追踪红"。
+                    // 3 位本身就封顶在 7，所以只需要下限钳位。
                     8'h58: if(I_pstrobe[0]) begin
-                        O_image_step <= (I_pwdata[2:0] < 3'd2) ? 3'd2 :
-                                        ((I_pwdata[2:0] > 3'd5) ? 3'd5 : I_pwdata[2:0]);
+                        O_image_step <= (I_pwdata[2:0] < 3'd2) ? 3'd2 : I_pwdata[2:0];
                         O_image_effect <= (I_pwdata[5:3] > 3'd5) ? 3'd5 : I_pwdata[5:3];
                         O_image_target <= (I_pwdata[7:6] > 2'd2) ? 2'd2 : I_pwdata[7:6];
                         O_image_logo_enable <= I_pwdata[8];
@@ -242,6 +255,13 @@ module mcu_ui_apb_regs #(
                     8'h88: if(I_pstrobe[0]) O_wifi_ctrl<=I_pwdata[1:0];
                     // LSC 强度：5 位，超出 31 会被截断（31 已是约 194% 上限）
                     8'hec: if(I_pstrobe[0]) O_lsc_ctrl<=I_pwdata[4:0];
+                    /* 已停用：8'hf4 跟踪目标颜色写入（0xf4 链路）*/
+                    // 对焦 ROI 尺寸。宽高都要落在一个 32 位字里，所以要两条
+                    // byte lane 同时有效，不能发布"半个设置"。
+                    8'hfc: if(&I_pstrobe[1:0]) begin
+                        O_focus_roi_w <= I_pwdata[10:0];
+                        O_focus_roi_h <= I_pwdata[26:16];
+                    end
                     8'h94: if(&I_pstrobe) O_focus_roi <= {I_pwdata[31],4'd0,
                         (I_pwdata[26:16]>11'd960 ? 11'd960 : I_pwdata[26:16]),5'd0,
                         (I_pwdata[10:0]>11'd1760 ? 11'd1760 : I_pwdata[10:0])};
@@ -317,6 +337,9 @@ module mcu_ui_apb_regs #(
                 8'h90: O_prdata = 32'h57494631; // WIF1: UART0 and boot/reset pads.
                 8'hec: O_prdata = {27'd0, O_lsc_ctrl}; // LSC 强度（读回）
                 8'hf0: O_prdata = 32'h4c534331; // LSC1 capability: runtime LSC strength
+                /* 已停用：8'hf4 跟踪目标颜色读回（0xf4 链路）*/
+                /* 已停用：8'hf8 COL1 能力字（唯一消费者是 0xf4 探测，一并停用）*/
+                8'hfc: O_prdata = {5'd0, O_focus_roi_h, 5'd0, O_focus_roi_w}; // 对焦 ROI 尺寸
                 default: O_prdata = 32'd0;
             endcase
         end

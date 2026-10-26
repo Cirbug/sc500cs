@@ -39,15 +39,24 @@ module ui_osd #(
     input  wire        I_picture_page,
     input  wire        I_mode_page,
     input  wire [31:0] I_focus_roi,
+    // 对焦窗口尺寸（APB 0xfc）。只用来把框画成真实大小；0 = 默认 160x120。
+    input  wire [10:0] I_focus_roi_w,
+    input  wire [10:0] I_focus_roi_h,
     input  wire [2:0]  I_image_step,
     input  wire [2:0]  I_image_effect,
     input  wire        I_shape_valid,
     input  wire [2:0]  I_shape_type,
     input  wire [11:0] I_shape_x0, I_shape_y0, I_shape_y1,
-    // Frame-coherent display metadata from red_track_display.
+    // jop5 的帧同步坐标快照（red_track_display）—— X/Y 坐标读数用。
     input  wire        I_track_valid,I_track_x_negative,I_track_y_negative,
     input  wire [11:0] I_track_x0,I_track_y0,I_track_y1,
     input  wire [15:0] I_track_x_bcd,I_track_y_bcd,
+    // gege 的颜色识别（第 4 档）结果：给结果文字层显示"红色/绿色/蓝色"。
+    // 位置跟着检测框走（优先框下方），文字颜色用该颜色本身。
+    // 复用菜单字库的 ROM 端口，不额外实例化字库、不占 ERAM。
+    input  wire        I_color_valid,
+    input  wire [2:0]  I_color_code,
+    input  wire [11:0] I_color_x0, I_color_y0, I_color_y1,
     input  wire [15:0] I_picture_ctrl,
     input  wire [15:0] I_exposure,
     input  wire [15:0] I_gain,
@@ -70,6 +79,15 @@ module ui_osd #(
     reg [31:0] focus_roi_frame;
     wire [11:0] focus_x={1'b0,focus_roi_frame[10:0]};
     wire [11:0] focus_y={1'b0,focus_roi_frame[26:16]};
+    /* 对焦窗口的尺寸跟着 APB 0xfc 走（0 = focus_metric 的默认 160x120）。
+     * 原来这里把框画死成 160x120，而 focus_metric 实际用的窗口可能是 960x720
+     * —— 框只画出真实窗口的左上角那一小块，看图的人会以为"对焦窗口在这儿"，
+     * 2026-10-26 就因为这个看错了一轮。现在画的就是真实窗口。 */
+    reg  [10:0] focus_rw_frame, focus_rh_frame;
+    wire [11:0] focus_w = (focus_rw_frame==11'd0) ? 12'd160 : {1'b0,focus_rw_frame};
+    wire [11:0] focus_h = (focus_rh_frame==11'd0) ? 12'd120 : {1'b0,focus_rh_frame};
+    wire [11:0] focus_x1 = focus_x + focus_w;
+    wire [11:0] focus_y1 = focus_y + focus_h;
     reg [11:0] x;
     reg [11:0] y;
     reg de_d;
@@ -158,19 +176,23 @@ module ui_osd #(
     // Two 32-pixel coordinate rows beside the existing 32x32 "red" glyphs.
     // Reuse the font ROM and ASCII pixel path; no extra ERAM or MCU work.
     localparam integer TRACK_LABEL_W=304, TRACK_LABEL_H=72;
+    // gege 的"追踪红色/追踪蓝色/追踪绿色"标签（高 40）也锚在跟踪框下沿 y1+2，
+    // 所以坐标读数改为叠在它下面：y = y1 + 2 + 40 + 4 = y1 + 46。框贴到画面底部
+    // 时两者一起翻到框上方，同样要把这 44px 算进去，否则又会重叠。
+    localparam integer TRACK_LABEL_DY=2+40+4;
     wire controls_hit = (I_menu_enable && x>=24 && x<492 && y>=644 && y<1004) ||
                         (x>=24 && x<220 && y>=1016 && y<1076) ||
                         (x>=236 && x<260 && y>=1034 && y<1058) ||
                         (x>=CLOCK_X0 && x<CLOCK_X0+284 && y>=CLOCK_Y0 && y<CLOCK_Y0+80) ||
                         (x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<(stats_detail_frame?276:96));
     wire track_label_enable=RESULT_CHINESE && MENU_CHINESE &&
-                           I_image_step==5 && I_track_valid;
+                           I_image_step>=3'd5 && I_track_valid;
     wire [11:0] track_label_x=(I_track_x0>H_ACTIVE-TRACK_LABEL_W)?
                               H_ACTIVE-TRACK_LABEL_W:I_track_x0;
-    wire [11:0] track_label_y=(I_track_y1<=V_ACTIVE-TRACK_LABEL_H-6)?
-                              I_track_y1+12'd6:
-                              (I_track_y0>=TRACK_LABEL_H+4)?
-                              I_track_y0-TRACK_LABEL_H-4:12'd0;
+    wire [11:0] track_label_y=(I_track_y1<=V_ACTIVE-TRACK_LABEL_H-TRACK_LABEL_DY)?
+                              I_track_y1+TRACK_LABEL_DY:
+                              (I_track_y0>=TRACK_LABEL_H+TRACK_LABEL_DY)?
+                              I_track_y0-TRACK_LABEL_H-TRACK_LABEL_DY:12'd0;
     wire track_label_hit=track_label_enable && !controls_hit &&
                          x>=track_label_x && x<track_label_x+TRACK_LABEL_W &&
                          y>=track_label_y && y<track_label_y+TRACK_LABEL_H;
@@ -185,6 +207,27 @@ module ui_osd #(
         anchor_y=(I_shape_y1<=V_ACTIVE-46)?I_shape_y1+12'd6:
                  (I_shape_y0>=12'd44)?I_shape_y0-12'd44:12'd0;
     end
+    // 颜色识别标签的位置：优先放检测框下方，下面放不下就放上方，整体留在画面内。
+    // 两个字宽 = 4 + 2*32 = 68，留到 72 与形状标签一致。
+    reg [11:0] canchor_x, canchor_y;
+    always @* begin
+        canchor_x = (I_color_x0 > H_ACTIVE-12'd72) ? H_ACTIVE-12'd72 : I_color_x0;
+        canchor_y = (I_color_y1 <= V_ACTIVE-12'd46) ? I_color_y1 + 12'd6 :
+                    (I_color_y0 >= 12'd44)          ? I_color_y0 - 12'd44 : 12'd0;
+    end
+    wire [2:0] color_kind = I_color_code - 3'd1;   // 1/2/3 -> 0/1/2 = 红/绿/蓝
+
+    // 追踪档标签的位置与色标：5/6/7 -> 0/1/2 = 追踪红/追踪蓝/追踪绿。
+    // 紧贴框的下边缘（2 像素），下面放不下就放上边缘上方。
+    wire       track_mode = (I_image_step>=3'd5 && I_image_step<=3'd7);
+    wire [2:0] track_kind = I_image_step - 3'd5;
+    reg [11:0] tanchor_x, tanchor_y;
+    always @* begin
+        tanchor_x = (I_track_x0 > H_ACTIVE-12'd136) ? H_ACTIVE-12'd136 : I_track_x0;
+        tanchor_y = (I_track_y1 <= V_ACTIVE-12'd46) ? I_track_y1 + 12'd2 :
+                    (I_track_y0 >= 12'd42)          ? I_track_y0 - 12'd42 : 12'd0;
+    end
+
     always @(posedge I_clk or negedge I_rst_n) begin
         if(!I_rst_n) begin
             result_enable<=0;result_x<=0;result_y<=0;result_right<=0;result_bottom<=0;
@@ -208,6 +251,30 @@ module ui_osd #(
                     result_chars<={cn_shape_id(I_shape_type,3),cn_shape_id(I_shape_type,2),
                                    cn_shape_id(I_shape_type,1),cn_shape_id(I_shape_type,0)};
                     result_color<=24'hfff200;
+                end else if(I_color_valid &&
+                            I_color_code>=3'd1 && I_color_code<=3'd3) begin
+                    // 三色识别结果："红色/绿色/蓝色"（色标 1/2/3 = 红/绿/蓝）
+                    result_enable<=1;result_x<=canchor_x;result_y<=canchor_y;
+                    result_right<=canchor_x+12'd72;result_bottom<=canchor_y+12'd40;
+                    result_chars<={7'd0,7'd0,cn_color_id(color_kind,1'b1),
+                                   cn_color_id(color_kind,1'b0)};
+                    case(I_color_code)
+                        3'd1: result_color<=24'hff5050;
+                        3'd2: result_color<=24'h50ff50;
+                        default: result_color<=24'h7070ff;
+                    endcase
+                end else if(track_mode && I_track_valid) begin
+                    // 追踪档：在目标框边上写"追踪红色/追踪蓝色/追踪绿色"。
+                    // 颜色与档位对应（0=红 1=蓝 2=绿，跟标签顺序一致）。
+                    result_enable<=1;result_x<=tanchor_x;result_y<=tanchor_y;
+                    result_right<=tanchor_x+12'd136;result_bottom<=tanchor_y+12'd40;
+                    result_chars<={cn_track_id(track_kind,2'd3),cn_track_id(track_kind,2'd2),
+                                   cn_track_id(track_kind,2'd1),cn_track_id(track_kind,2'd0)};
+                    case(track_kind)
+                        3'd0: result_color<=24'hff5050;
+                        3'd1: result_color<=24'h7070ff;
+                        default: result_color<=24'h50ff50;
+                    endcase
                 end
             end
         end
@@ -410,11 +477,11 @@ module ui_osd #(
                 if(row<7 && col<5 && glyph[4-col]) pixel=24'hff4040;
             end
         end
-        // A thin 160x120 focus frame. Draw before menu controls so the UI
-        // keeps priority even when the ROI reaches the edge of the panel.
-        if(focus_roi_frame[31] === 1'b1 && x>=focus_x && x<focus_x+160 &&
-           y>=focus_y && y<focus_y+120 &&
-           (x<focus_x+2 || x>=focus_x+158 || y<focus_y+2 || y>=focus_y+118)) begin
+        // A thin focus frame at the real ROI size (gege). Draw before menu controls
+        // so the UI keeps priority even when the ROI reaches the edge of the panel.
+        if(focus_roi_frame[31] === 1'b1 && x>=focus_x && x<focus_x1 &&
+           y>=focus_y && y<focus_y1 &&
+           (x<focus_x+2 || x>=focus_x1-2 || y<focus_y+2 || y>=focus_y1-2)) begin
             overlay=1; pixel=24'h40ff80;
         end
         // Panel: lower-left, x=24..492, y=644..1004. The lower-left MENU
@@ -727,6 +794,7 @@ module ui_osd #(
         if(!I_rst_n) begin
             x <= 0; y <= 0; de_d <= 0; vs_d <= 0;
             rec1<=0;rec2<=0;rec_frame<=0;focus_roi_frame<=0;
+            focus_rw_frame<=11'd0; focus_rh_frame<=11'd0;
             rtc_hours_frame <= 0; rtc_minutes_frame <= 0; rtc_seconds_frame <= 0;
             rtc_year_frame<=0;rtc_month_frame<=0;rtc_date_frame<=0;rtc_date_valid_frame<=0;
             rtc_valid_frame <= 0;
@@ -763,6 +831,8 @@ module ui_osd #(
             de_d <= I_de;
             if(I_vsync && !vs_d) begin
                 focus_roi_frame<=I_focus_roi;
+                focus_rw_frame<=I_focus_roi_w;
+                focus_rh_frame<=I_focus_roi_h;
                 stats_detail_frame<=!MCU_MENU || !PANEL_STYLE || I_info_enable;
                 fps_frame<=hdmi_fps; fps_valid_frame<=hdmi_fps_valid;
                 latency_frame<=I_latency_bcd; period_frame<=I_camera_period_bcd;

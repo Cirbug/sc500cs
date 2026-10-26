@@ -103,12 +103,18 @@ function [6:0] cn_label_id;
             9'd409: cn_label_id=7'd64;
             9'd410: cn_label_id=7'd65;
             9'd411: cn_label_id=7'd66;
-            9'd416: cn_label_id=7'd67;
-            9'd417: cn_label_id=7'd68;
-            9'd418: cn_label_id=7'd69;
-            9'd419: cn_label_id=7'd19;
-            9'd420: cn_label_id=7'd70;
-            9'd421: cn_label_id=7'd71;
+            9'd416: cn_label_id=7'd108;
+            9'd417: cn_label_id=7'd71;
+            9'd418: cn_label_id=7'd67;
+            9'd419: cn_label_id=7'd68;
+            9'd424: cn_label_id=7'd108;
+            9'd425: cn_label_id=7'd71;
+            9'd426: cn_label_id=7'd123;
+            9'd427: cn_label_id=7'd68;
+            9'd432: cn_label_id=7'd108;
+            9'd433: cn_label_id=7'd71;
+            9'd434: cn_label_id=7'd122;
+            9'd435: cn_label_id=7'd68;
         endcase
     end
 endfunction
@@ -185,6 +191,42 @@ function [6:0] cn_shape_id;
             5'd18: cn_shape_id=7'd60;
             5'd20: cn_shape_id=7'd102;
             5'd21: cn_shape_id=7'd60;
+        endcase
+    end
+endfunction
+
+function [6:0] cn_color_id;
+    input [2:0] kind; input [1:0] cell_id;
+    begin
+        cn_color_id=0;
+        case({kind,cell_id})
+            5'd0: cn_color_id=7'd67;
+            5'd1: cn_color_id=7'd68;
+            5'd4: cn_color_id=7'd122;
+            5'd5: cn_color_id=7'd68;
+            5'd8: cn_color_id=7'd123;
+            5'd9: cn_color_id=7'd68;
+        endcase
+    end
+endfunction
+
+function [6:0] cn_track_id;
+    input [2:0] kind; input [1:0] cell_id;
+    begin
+        cn_track_id=0;
+        case({kind,cell_id})
+            5'd0: cn_track_id=7'd108;
+            5'd1: cn_track_id=7'd71;
+            5'd2: cn_track_id=7'd67;
+            5'd3: cn_track_id=7'd68;
+            5'd4: cn_track_id=7'd108;
+            5'd5: cn_track_id=7'd71;
+            5'd6: cn_track_id=7'd123;
+            5'd7: cn_track_id=7'd68;
+            5'd8: cn_track_id=7'd108;
+            5'd9: cn_track_id=7'd71;
+            5'd10: cn_track_id=7'd122;
+            5'd11: cn_track_id=7'd68;
         endcase
     end
 endfunction

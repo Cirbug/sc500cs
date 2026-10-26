@@ -89,16 +89,18 @@ set_false_path -hold -through [get_nets {u_histogram_equalizer/capture_req u_his
 set_max_delay -datapath_only 8.000 -through [get_nets {u_histogram_equalizer/capture_ack u_histogram_equalizer/map_ack u_histogram_equalizer/capture_valid u_histogram_equalizer/map_valid u_histogram_equalizer/active_enable u_histogram_equalizer/captured_total*}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 set_false_path -hold -through [get_nets {u_histogram_equalizer/capture_ack u_histogram_equalizer/map_ack u_histogram_equalizer/capture_valid u_histogram_equalizer/map_valid u_histogram_equalizer/active_enable u_histogram_equalizer/captured_total*}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 
-# u_recorder: the MCU read-index bundle crosses from the APB clock into the DDR
-# user clock through the same bundled-data handshake as u_camera_settings - the
-# source keeps read_index fixed until read_ack returns, so the bundle only needs
-# to be skew-bounded and the same-edge hold check between these two unrelated
-# clocks is meaningless.  This crossing was the only pair of negative hold
-# endpoints left after the lens-shading / persistence merge.
-set_max_delay -datapath_only 8.000 -through [get_nets {u_recorder/read_index* u_recorder/read_request}] -to [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
-set_false_path -hold -through [get_nets {u_recorder/read_index* u_recorder/read_request}] -to [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
-
-# Read acknowledgement returns to the APB clock.  Only the asynchronous input
-# net is excepted, matching the u_picture_isp/ack treatment above, so the
-# ra1 -> ra2 -> ra3 synchronizer chain stays timed.
-set_false_path -through [get_nets {u_recorder/read_ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+# SD 录像 (u_recorder)：和其它所有块一模一样的"保持型数据 + 请求/应答"协议。
+# APB 侧写 read_index 并翻转 read_request；DDR 侧把请求过 r1/r2/r3 三级，
+# 只在 r3 变化时才 held_addr <= BASE+{read_index,3'b000}，所以锁存时这束数据
+# 已经稳定了至少两个 usr_clk 周期，而且 read_busy 会一直保持到应答回来。
+# 少了这条例外，TD 会把这条只有一级 LUT 的 read_index -> held_addr 路径当成
+# 同步的 APB -> usr_clk 路径：它数据延迟 0.457ns，而单时钟偏斜就有 0.478ns，
+# 于是光靠偏斜就判 hold 失败（-0.083ns）。
+# 反方向（read_hold/read_ack/done_ddr，2~3 级同步）目前 HWNS +0.463ns 有余量，
+# 等它真的违例了再补，这里不预先放宽。
+set_max_delay -datapath_only 8.000 \
+    -through [get_nets {u_recorder/read_index* u_recorder/read_request}] \
+    -to [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
+set_false_path -hold \
+    -through [get_nets {u_recorder/read_index* u_recorder/read_request}] \
+    -to [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]

@@ -81,6 +81,12 @@ module hdmi_mixer_image9 #(
     input wire [11:0] I_track_x0,I_track_y0,I_track_x1,I_track_y1,I_track_cx,I_track_cy,
     input wire signed [12:0] I_track_ex,I_track_ey,
     input wire [6:0] I_track_area,
+    // 三色（红/绿/蓝）各自的确认框，bit0/1/2 对应各色独立的 cvalid
+    input wire [2:0]  I_color3_valid,
+    input wire [11:0] I_c3r_x0,I_c3r_y0,I_c3r_x1,I_c3r_y1,
+    input wire [11:0] I_c3g_x0,I_c3g_y0,I_c3g_x1,I_c3g_y1,
+    input wire [11:0] I_c3b_x0,I_c3b_y0,I_c3b_x1,I_c3b_y1,
+    input wire [1:0]  I_target_color,   // 0=红 1=绿 2=蓝（选中目标的框颜色）
 
     output wire       O_video_rd_en,
     input wire[23:0]  I_video_rd_data,
@@ -620,20 +626,25 @@ module hdmi_mixer_image9 #(
     reg [23:0] S_track_color_1d;
     red_tracking_osd #(.IMG_WIDTH(IMG_WIDTH),.IMG_HEIGHT(IMG_HEIGHT)) u_red_tracking_osd (
         .I_clk(I_clk),.I_rst_n(I_rst_n),
-        .I_enable(I_recog_mode && I_dbg_step==3'd5),.I_de(S_video_de_2d),
+        .I_enable(I_recog_mode && I_dbg_step>=3'd5),.I_de(S_video_de_2d),
         .I_x(S_x),.I_y(S_y_pix),.I_new_result(I_track_new),.I_valid(I_track_valid),
         .I_state(I_track_state),.I_x0(I_track_x0),.I_y0(I_track_y0),
         .I_x1(I_track_x1),.I_y1(I_track_y1),.I_cx(I_track_cx),.I_cy(I_track_cy),
         .I_error_x(I_track_ex),.I_error_y(I_track_ey),
         .I_dir_x(I_track_dx),.I_dir_y(I_track_dy),.I_level_x(I_track_lx),.I_level_y(I_track_ly),
-        .I_area_percent(I_track_area),.O_hit(S_track_hit),.O_color(S_track_color)
+        .I_area_percent(I_track_area),.O_hit(S_track_hit),.O_color(S_track_color),
+        .I_color3_valid(I_color3_valid),
+        .I_r_x0(I_c3r_x0),.I_r_y0(I_c3r_y0),.I_r_x1(I_c3r_x1),.I_r_y1(I_c3r_y1),
+        .I_g_x0(I_c3g_x0),.I_g_y0(I_c3g_y0),.I_g_x1(I_c3g_x1),.I_g_y1(I_c3g_y1),
+        .I_b_x0(I_c3b_x0),.I_b_y0(I_c3b_y0),.I_b_x1(I_c3b_x1),.I_b_y1(I_c3b_y1),
+        .I_target_color(I_target_color)
     );
 
     color_osd_renderer u_color_osd_renderer(
         .I_de     (S_video_de_2d),
         .I_x      (S_x),
         .I_y      (S_y_pix),
-        .I_valid  (I_color_valid && I_recog_mode && (I_dbg_step == 3'd4)),
+        .I_valid  (I_color_valid && I_recog_mode),
         .I_code   (I_color_code),
         .I_x0     (I_color_x0),
         .I_y0     (I_color_y0),

@@ -297,7 +297,10 @@ static void touchscreen_handle(MenuState *s)
                  * 所以先把窗口尺寸复位，否则在追踪档里（窗口是 960x720）
                  * 位置会偏到左上。下一次 tracking_roi_follow 会再把它设回去。 */
                 ui_write(0xfc,0);
-                ui_write(0x94,touch_focus_roi(focus_gesture.x,focus_gesture.y));
+                /* 先点亮（立起"该显示"标志）再写位置：这一次写进去才带 bit31，
+                 * 绿框立刻出现；AF_BOX_SHOW_MS 之后由 af_roi_box_tick() 自动藏掉。 */
+                af_roi_box_show(AF_BOX_SHOW_MS);
+                af_roi_write_word(touch_focus_roi(focus_gesture.x,focus_gesture.y));
             }
             else {
                 actions &= ~MENU_AF;
@@ -460,7 +463,7 @@ AL_S32 main(void)
         ui.image_effect = (g_ui_persist.image_ctrl >> 3) & 7u;
         ui.image_target = (g_ui_persist.image_ctrl >> 6) & 3u;
         ui.logo_enable  = (g_ui_persist.image_ctrl >> 8) & 1u;
-        ui.lsc_strength = g_ui_persist.lsc & 31u;
+        ui.lsc_strength = g_ui_persist.lsc & 255u;
         ui.track_color  = g_ui_persist.track & 3u;
         al_printf("UI: restored picture state (survived the last FPGA reconfig)\r\n");
     }
@@ -499,7 +502,7 @@ AL_S32 main(void)
      * LSC_STRENGTH_DEFAULT，之后由跨复位块带回上次的值。先探测 0xf0 是否为
      * "LSC1"，老 bit 没有这个寄存器就不写。 */
     lsc_available = (ui_read(0xf0)==0x4c534331u);
-    if(lsc_available) ui_write(0xec, ui.lsc_strength & 31u);
+    if(lsc_available) ui_write(0xec, ui.lsc_strength & 255u);
     /* "COL1"（0xf8）：本版 bit 才有三色识别 + 目标跟踪，0xf4 = 伺服跟哪个颜色。
      * 老 bit 没有这个能力位，先探测再写，免得往不存在的寄存器里写东西。 */
     col_available = (ui_read(0xf8)==0x434f4c31u);
@@ -550,8 +553,8 @@ AL_S32 main(void)
          * 菜单里改了值也在这里生效（菜单本身不碰硬件）。
          * 读回必须掩 31 位 —— 以前这里掩的是 15，色度 ≥16 时永远不相等，
          * 于是每轮循环都白写一次。 */
-        if(lsc_available && ((ui_read(0xec) & 31u) != (ui.lsc_strength & 31u)))
-            ui_write(0xec, ui.lsc_strength & 31u);
+        if(lsc_available && ((ui_read(0xec) & 255u) != (ui.lsc_strength & 255u)))
+            ui_write(0xec, ui.lsc_strength & 255u);
         /* 0xf4 跟随菜单"系统 → 目标跟踪"（0=红 1=绿 2=蓝）。 */
         if(col_available && ((ui_read(0xf4) & 3u) != (ui.track_color & 3u)))
             ui_write(0xf4, ui.track_color & 3u);
@@ -592,7 +595,7 @@ AL_S32 main(void)
                     ui.exposure = ui_read(UI_EXPOSURE);
                     ui.gain     = ui_read(UI_GAIN);
                     if(ui.histogram_available) ui_write(HE_BASE+0x1c, 0);
-                    if(lsc_available) ui_write(0xec, ui.lsc_strength & 31u);
+                    if(lsc_available) ui_write(0xec, ui.lsc_strength & 255u);
                     if(col_available) ui_write(0xf4, ui.track_color & 3u);
                     ui_write(UI_INDEX, ui.index);
                     /* OSD/菜单与图像档位同样是 fabric 寄存器，一并还原，

@@ -292,7 +292,10 @@ static void touchscreen_handle(MenuState *s)
                  * 所以先把窗口尺寸复位，否则在追踪档里（窗口是 960x720）
                  * 位置会偏到左上。下一次 tracking_roi_follow 会再把它设回去。 */
                 ui_write(0xfc,0);
-                ui_write(0x94,touch_focus_roi(focus_gesture.x,focus_gesture.y));
+                /* 先点亮（立起"该显示"标志）再写位置：这一次写进去才带 bit31，
+                 * 绿框立刻出现；AF_BOX_SHOW_MS 之后由 af_roi_box_tick() 自动藏掉。 */
+                af_roi_box_show(AF_BOX_SHOW_MS);
+                af_roi_write_word(touch_focus_roi(focus_gesture.x,focus_gesture.y));
             }
             else {
                 actions &= ~MENU_AF;
@@ -406,8 +409,8 @@ AL_S32 main(void)
         ui_write(0x70,picture_effective(&ui));
         ui.picture=(ui_read(0x70) & ~(1u << 6)) | (ui.picture & (1u << 6));
     }
-    /* LSC 运行时强度（APB 0xec）：8 = 编译期表值 100%，0 = 完全旁路。
-     * 现场调试可直接在 GDB 里写 0x700000ec（0..15）实时看画面。 */
+    /* LSC 运行时强度（APB 0xec）：128 = 编译期表值 100%，112 = 旧版 14，0 = 旁路。
+     * 现场调试可直接在 GDB 里写 0x700000ec（0..255）实时看画面。 */
     if(ui_read(0xf0)==0x4c534331u) ui_write(0xec, LSC_STRENGTH_DEFAULT);
     al_printf("SERVO: %s PAN/V6=%u us TILT/V4=%u us\r\n",
               ui.servo_menu_available ? "touch ready" : "new FPGA bit required",
@@ -444,10 +447,10 @@ AL_S32 main(void)
         g_ui_debug_loops++;
         menu_keys_commit(&ui,events);
 
-        /* 0xec 跟随菜单"系统 → 色度"（0..15，0 = 完全旁路）。 */
+        /* 0xec 跟随菜单"系统 → 色度"（0..255，0 = 完全旁路）。 */
         if(ui_read(0xf0)==0x4c534331u &&
-           ((ui_read(0xec) & 31u) != (ui.lsc_strength & 31u)))
-            ui_write(0xec, ui.lsc_strength & 31u);
+           ((ui_read(0xec) & 255u) != (ui.lsc_strength & 255u)))
+            ui_write(0xec, ui.lsc_strength & 255u);
         /* 0xf4 跟随菜单"系统 → 目标跟踪"（0=红 1=绿 2=蓝）。
          * 0xf8 = "COL1" 能力位：老 bit 没有，先探测再写。 */
         if(ui_read(0xf8)==0x434f4c31u &&

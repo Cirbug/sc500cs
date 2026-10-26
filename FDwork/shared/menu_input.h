@@ -76,27 +76,30 @@ enum { MENU_AF = 1, MENU_FOCUS_UP = 2, MENU_FOCUS_DOWN = 4,
  * 后面再给 static 定义就会报 "static declaration follows non-static"。 */
 static inline int tracking_mode(const MenuState *s)
 {
-    return s->image_step>=5u && s->image_step<=7u;
+    return (s->image_step>=5u && s->image_step<=7u) || s->image_step==1u;
 }
 /* MCU startup/DEFAULT profile for PIC1: BLACK=12, gamma off, brightness 1.125x.
  * Firmware explicitly writes this even with the previous FPGA reset profile. */
 #define PICTURE_DEFAULT 0x108cu
 /* LSC（镜头阴影校正）运行时强度：APB 0xec，也就是菜单"系统信息 → 色度"那一项。
- * 0 = 完全旁路，16 = lens_shading_correction.v 编译期表值原样，31 = 约 194%。
+ * 0 = 完全旁路，128 = lens_shading_correction.v 编译期表值原样，255 = 约 199%。
  *
- * 5 位、每步 1/16 —— 精度是旧版（4 位、每步 1/8）的两倍。换算：旧 8 = 新 16，
- * 旧 11 = 新 22，旧 6~9 = 新 12~18。
+ * 【2026-10-26 精度 ×8】8 位、每步 1/128（旧版 5 位每步 1/16，旧 14 = 新 112）。
+ * 现场在过零点 14 附近只有 13/14/15 三档可跳，调不到位，所以把寄存器扩到 8 位，
+ * 在同一个工作点上给出 8 倍的细分。旧值换算：新 = 旧 × 8。
  *
- * 默认 14：2026-10-25 用重新拟合过的 64 档表实测扫档（灰墙均匀面，菜单关），
- * 中心的 R/G 残差按半径分三段：
- *     色度 13 -> 中心 -1.41% / 中环 -0.13% / 外圈 +0.77%   跨度 2.18%（欠补）
- *     色度 14 -> 中心 -0.51% / 中环 +0.20% / 外圈 +0.00%   跨度 0.71%（过零点）
- *     色度 15 -> 中心 +0.99% / 中环 +0.88% / 外圈 -1.38%   跨度 2.37%（过补）
- * 14 是唯一的过零点，且 13/15 两边对称变差 —— 径向到此为止，不要再靠调色度补偿。
+ * 默认 112（= 旧版 14）：2026-10-25 用重新拟合过的 64 档表实测扫档（灰墙均匀面，
+ * 菜单关），中心的 R/G 残差按半径分三段（旧档位）：
+ *     13 -> 中心 -1.41% / 中环 -0.13% / 外圈 +0.77%   跨度 2.18%（欠补）
+ *     14 -> 中心 -0.51% / 中环 +0.20% / 外圈 +0.00%   跨度 0.71%（过零点）
+ *     15 -> 中心 +0.99% / 中环 +0.88% / 外圈 -1.38%   跨度 2.37%（过补）
+ * 也就是说：**纯缩放这条曲线已经到极限了**（再调只会让两头同时变差）。
+ * 现场"中间还偏绿、两边还偏红"是**形状**不对，不是幅度不对 —— 要靠"梯度"
+ * （中心↔边缘重新分配）来修，不是靠色度。
  * 注意：实测残留里还有 ~1.1% 的"上红下绿"方向性偏差、~3.4% 的像素级色噪，
  * 以及 ~1.4% 的固定色斑（镜像自相关仅 0.02/0.19，不对称 -> 是墙面/模组低阶
  * 色阴影，不是径向分量），这些都不是色度旋钮能动的。 */
-#define LSC_STRENGTH_DEFAULT 14u
+#define LSC_STRENGTH_DEFAULT 112u
 static inline uint32_t picture_effective(const MenuState *s)
 {
     /* Hardware IDs 2..5 are displayed as modes 1..4; original ID 1 is removed.
@@ -367,15 +370,26 @@ enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
        PANEL_TRACK, PANEL_RECORD, PANEL_SYSTEM };
 static inline unsigned panel_rows(const MenuState *s)
 {
-    static const uint8_t rows[]={6,7,4,7,3,7,3};
+    static const uint8_t rows[]={6,7,6,8,3,7,3};
     return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
 }
-/* 显示模式在首页"显示模式"那一行显示的名字 = mcu_panel_values 的下标。
- * image_step 2..7 依次是 普通画面/图形识别/运动检测/追踪红色/追踪蓝色/追踪绿色。 */
-static const uint8_t mode_value_kind[6]={1,2,3,4,8,9};
+/* 显示模式页的"行 -> 档位"。8 行正好填满面板（页头 + 8 行 = 9 行是上限）。
+ * 顺序就是现场要的：普通/图形/运动/追踪红/追踪蓝/追踪绿/颜色识别/自动追踪。
+ * 2026-10-26：新增档位 0=颜色识别、1=自动追踪（3 位档位里本来就空着的两个值），
+ * 图像特效那一行因此从显示模式页挪到曝光控制页。 */
+static const uint8_t mode_row_step[8]={2,3,4,5,6,7,0,1};
+/* 档位 -> 首页"显示模式"那一行显示的名字（= mcu_panel_values 的下标）。 */
+static const uint8_t mode_value_kind_by_step[8]={10,11,1,2,3,4,8,9};
 static inline unsigned mode_kind_of(const MenuState *s)
 {
-    return (s->image_step>=2u && s->image_step<=7u) ? mode_value_kind[s->image_step-2u] : 1u;
+    return mode_value_kind_by_step[s->image_step & 7u];
+}
+/* 档位 -> 显示模式页上的行号（含页头，所以从 1 开始）。找不到返回 0。 */
+static inline unsigned mode_row_of(const MenuState *s)
+{
+    unsigned i;
+    for(i=0;i<8;i++) if(mode_row_step[i]==(s->image_step & 7u)) return i+1u;
+    return 0u;
 }
 static __attribute__((noinline)) void panel_open(MenuState *s,unsigned page)
 {
@@ -392,7 +406,7 @@ static __attribute__((noinline)) void panel_back(MenuState *s)
 }
 static inline unsigned panel_adjust(MenuState *s,int direction)
 {
-    unsigned action=0,selected=s->index,old;
+    unsigned action=0,selected=s->index;
     switch(s->panel_page) {
     case PANEL_HOME:
         if((selected==0 && !s->picture_available) ||
@@ -404,14 +418,25 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
             if(s->auto_exposure_available)s->auto_exposure=!s->auto_exposure;
             s->edit=0;break;
         }
+        if(selected==4) {
+            /* 图像特效（2026-10-26 从显示模式页挪过来）：直接循环，不再借用
+             * menu_adjust 的"上下文行"——那套只在普通画面档才动，别的档会变成死键。 */
+            s->image_effect = direction>0 ? (s->image_effect>=5?0:s->image_effect+1)
+                                          : (s->image_effect==0?5:s->image_effect-1);
+            break;
+        }
+        if(selected==5) {
+            /* 运动检测显示几个目标（原来挂在显示模式页那一行上，跟着一起挪过来）。
+             * 只在运动检测档有意义，别的档显示"----"。 */
+            s->image_target = direction>0 ? (s->image_target>=2?0:s->image_target+1)
+                                          : (s->image_target==0?2:s->image_target-1);
+            break;
+        }
         s->index=selected==2?7:selected;
         action=menu_adjust(s,direction);s->index=selected;break;
     case PANEL_MODE:
-        if(selected<6)s->image_step=selected+2;
-        else { /* Reuse effect/target adjustment without interpreting it as a mode. */
-            old=s->picture_page;s->picture_page=0;s->index=5;
-            action=menu_adjust(s,direction);s->index=selected;s->picture_page=old;
-        }
+        /* 8 个模式各占一行，点哪行进哪档。 */
+        if(selected<8)s->image_step=mode_row_step[selected];
         break;
     case PANEL_TRACK:
         if(selected==0)s->image_step=tracking_mode(s)?2:5;
@@ -425,7 +450,7 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
     case PANEL_SYSTEM:
         if(selected==0)s->logo_enable=!s->logo_enable;
         else if(selected==1)s->info=!s->info;
-        else if(selected==2)s->lsc_strength=menu_step(s->lsc_strength,direction,0u,31u,1u);
+        else if(selected==2)s->lsc_strength=menu_step(s->lsc_strength,direction,0u,255u,1u);
         break;
     }
     return action;
@@ -435,8 +460,7 @@ static inline int panel_editable(const MenuState *s)
     return (s->panel_page==PANEL_EXPOSURE && s->index<3) ||
            (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
-           (s->panel_page==PANEL_SYSTEM && s->index==2) ||
-           (s->panel_page==PANEL_MODE && s->index==6);
+           (s->panel_page==PANEL_SYSTEM && s->index==2);
 }
 static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned keys)
 {
@@ -478,7 +502,7 @@ static unsigned panel_range(const MenuState *s,unsigned row,unsigned *v,unsigned
         if(row==5){*v=(s->picture>>14)&3;*hi=3;return 1;}
     }
     if(s->panel_page==PANEL_RECORD && row==3){*v=s->record_interval;*hi=4;return 1;}
-    if(s->panel_page==PANEL_SYSTEM && row==2){*v=s->lsc_strength;*hi=31;return 1;}
+    if(s->panel_page==PANEL_SYSTEM && row==2){*v=s->lsc_strength;*hi=255;return 1;}
     return 0;
 }
 static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)

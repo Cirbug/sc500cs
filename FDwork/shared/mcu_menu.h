@@ -134,18 +134,25 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
             else mcu_panel_value(cells,0);
             return attr;
         }
+        if(row==5) {
+            /* 图像特效（从显示模式页挪过来的那一行）：只写值，点它循环。 */
+            if(!s->image_effect)mcu_panel_value(cells,6);
+            else for(i=0;i<4;i++)cells[8+i]=mcu_effects[0][s->image_effect][i];
+            return attr;
+        }
+        if(row==6) {
+            /* 运动检测档显示几个目标（同一批挪过来的控制）。 */
+            if(s->image_step==4)mcu_panel_number(cells,3-s->image_target);
+            else mcu_menu_text(cells,"----");
+            return attr;
+        }
         unsigned v=row==1?s->exposure:row==2?s->gain:s->vts;
         mcu_panel_number(cells,v);
         if(row==3 && !s->vts_available)mcu_menu_text(cells,"----");
     } else if(page==PANEL_MODE) {
-        if(row<=6 && s->image_step==row+1)mcu_panel_value(cells,7);
-        else if(row==7) {
-            if(s->image_step==2 && s->image_effect<=5) {
-                if(!s->image_effect)mcu_panel_value(cells,6);
-                else for(i=0;i<4;i++)cells[8+i]=mcu_effects[0][s->image_effect][i];
-            } else if(s->image_step==4)mcu_panel_number(cells,3-s->image_target);
-            else mcu_menu_text(cells,"----");
-        }
+        /* 8 个模式各一行：当前档那一行显示"开启"，其余留空。 */
+        if(row>=1 && row<=8 && mode_row_step[row-1]==(s->image_step & 7u))
+            mcu_panel_value(cells,7);
     } else if(page==PANEL_TRACK) {
         if(row==1)mcu_panel_value(cells,tracking_mode(s)?7:6);
         else cells[11]=MENU_ASCII|'>';

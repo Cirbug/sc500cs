@@ -626,7 +626,7 @@ module hdmi_mixer_image9 #(
     reg [23:0] S_track_color_1d;
     red_tracking_osd #(.IMG_WIDTH(IMG_WIDTH),.IMG_HEIGHT(IMG_HEIGHT)) u_red_tracking_osd (
         .I_clk(I_clk),.I_rst_n(I_rst_n),
-        .I_enable(I_recog_mode && I_dbg_step>=3'd5),.I_de(S_video_de_2d),
+        .I_enable(I_recog_mode && (I_dbg_step>=3'd5 || I_dbg_step==3'd1)),.I_de(S_video_de_2d),
         .I_x(S_x),.I_y(S_y_pix),.I_new_result(I_track_new),.I_valid(I_track_valid),
         .I_state(I_track_state),.I_x0(I_track_x0),.I_y0(I_track_y0),
         .I_x1(I_track_x1),.I_y1(I_track_y1),.I_cx(I_track_cx),.I_cy(I_track_cy),
@@ -661,7 +661,10 @@ module hdmi_mixer_image9 #(
     reg [2:0]  S_num_row;
     reg [4:0]  S_num_bits;
     reg        S_num_on;
-    wire [2:0] S_display_step = (I_dbg_step >= 3'd2) ? I_dbg_step - 3'd1 : 3'd1;
+    // 0=颜色识别 -> "7"，1=自动追踪 -> "0"，2..7 -> 1..6。3 位装不下 8，
+    // 所以给新档挑两个不冲突的数字（这个数字只是调试指示框里的那位）。
+    wire [2:0] S_display_step = (I_dbg_step >= 3'd2) ? (I_dbg_step - 3'd1) :
+                                (I_dbg_step == 3'd0) ? 3'd7 : 3'd0;
 
     always @(posedge I_clk or negedge I_rst_n) begin
         if(!I_rst_n) begin

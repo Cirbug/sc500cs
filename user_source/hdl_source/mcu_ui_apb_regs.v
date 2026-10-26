@@ -42,7 +42,7 @@ module mcu_ui_apb_regs #(
     // LSC 运行时强度（菜单"系统信息 -> 色度"）：0 = 旁路，16 = 表值原样，
     // 31 = 约 194%。5 位，每一步只有旧版的一半，便于半步微调。
     // 复位默认 16（等价于编译期表值）。MCU 开机写一次，之后由菜单维护。
-    output reg  [4:0]  O_lsc_ctrl,
+    output reg  [7:0]  O_lsc_ctrl,
     // 跟踪目标颜色（APB 0xf4）：0=红 1=绿 2=蓝。三色的连通域同时都在跑、
     // 三个框都会画出来，这一位只决定"伺服跟哪一个"。
     output reg  [1:0]  O_track_color,
@@ -154,7 +154,7 @@ module mcu_ui_apb_regs #(
             // （旧值 0x1050 = 伽马开/黑电平16/亮度1.00，固件是 0x108C）。
             // 0x108C = 黑电平12, 伽马关, 亮度1.125x, 饱和度旁路, 白平衡平滑, 降噪0。
             O_picture_ctrl <= 16'h108C;
-            O_lsc_ctrl    <= 5'd14;     // 与固件 LSC_STRENGTH_DEFAULT 一致（实测过零点）
+            O_lsc_ctrl    <= 8'd112;    // 与固件 LSC_STRENGTH_DEFAULT 一致（= 旧版 14，实测过零点）
             O_track_color <= 2'd0;      // 默认跟红色（原有行为）
             O_focus_roi_w <= 11'd0;     // 0 = focus_metric 用默认 160x120
             O_focus_roi_h <= 11'd0;
@@ -224,13 +224,14 @@ module mcu_ui_apb_regs #(
                     8'h54: if(I_pstrobe[0])
                         O_servo_tilt_us <= (I_pwdata[15:0] < SERVO_MIN) ? SERVO_MIN :
                                            ((I_pwdata[15:0] > SERVO_MAX) ? SERVO_MAX : I_pwdata[15:0]);
-                    // IMAGE_CTRL (0x58): 档位 2..7 在 bits 2:0，effect 在 bits 5:3，
+                    // IMAGE_CTRL (0x58): 档位在 bits 2:0，effect 在 bits 5:3，
                     // motion target 在 bits 7:6，logo 在 bit 8，tracker reacquire 在 bit 9。
-                    // 档位是 2..7（6 个模式）——原来是 2..5 的钳位，加了三色追踪后
-                    // 写 6/7 会被夹回 5，导致"选追踪蓝/绿其实都在追踪红"。
-                    // 3 位本身就封顶在 7，所以只需要下限钳位。
+                    // 档位现在有 8 个：0=颜色识别 1=自动追踪 2=普通画面 3=图形识别
+                    // 4=运动检测 5/6/7=追踪红/蓝/绿。3 位正好装得下 8 个值，
+                    // 所以**位布局不用动** —— 原来把 <2 的写入夹到 2（那时 0/1 是非法值），
+                    // 现在 0/1 是正经档位，直接放行。
                     8'h58: if(I_pstrobe[0]) begin
-                        O_image_step <= (I_pwdata[2:0] < 3'd2) ? 3'd2 : I_pwdata[2:0];
+                        O_image_step <= I_pwdata[2:0];
                         O_image_effect <= (I_pwdata[5:3] > 3'd5) ? 3'd5 : I_pwdata[5:3];
                         O_image_target <= (I_pwdata[7:6] > 2'd2) ? 2'd2 : I_pwdata[7:6];
                         O_image_logo_enable <= I_pwdata[8];
@@ -248,8 +249,10 @@ module mcu_ui_apb_regs #(
                     8'h7c: if(&I_pstrobe) O_rtc_set_time1<=I_pwdata;
                     8'h80: if(&I_pstrobe && I_pwdata==32'h53455431 && !I_rtc_set_status[0]) O_rtc_set<=1;
                     8'h88: if(I_pstrobe[0]) O_wifi_ctrl<=I_pwdata[1:0];
-                    // LSC 强度：5 位，超出 31 会被截断（31 已是约 194% 上限）
-                    8'hec: if(I_pstrobe[0]) O_lsc_ctrl<=I_pwdata[4:0];
+                    // LSC 强度：8 位（2026-10-26 由 5 位扩到 8 位，128 = 表值原样、
+    // 112 = 原来的 14，在过零点附近精度提高 8 倍）。
+    // 超出 255 会被截断（255 约 199% 已是上限）
+                    8'hec: if(I_pstrobe[0]) O_lsc_ctrl<=I_pwdata[7:0];
                     8'hf4: if(I_pstrobe[0]) O_track_color<=I_pwdata[1:0];
                     // 对焦 ROI 尺寸。宽高都要落在一个 32 位字里，所以要两条
                     // byte lane 同时有效，不能发布"半个设置"。
@@ -329,7 +332,7 @@ module mcu_ui_apb_regs #(
                 8'h94: O_prdata = O_focus_roi;
                 8'h98: O_prdata = 32'h41465231; // AFR1: touch focus ROI
                 8'h90: O_prdata = 32'h57494631; // WIF1: UART0 and boot/reset pads.
-                8'hec: O_prdata = {27'd0, O_lsc_ctrl}; // LSC 强度（读回）
+                8'hec: O_prdata = {24'd0, O_lsc_ctrl}; // LSC 强度（读回，8 位）
                 8'hf0: O_prdata = 32'h4c534331; // LSC1 capability: runtime LSC strength
                 8'hf4: O_prdata = {30'd0, O_track_color}; // 跟踪目标颜色（读回）
                 8'hf8: O_prdata = 32'h434f4c31; // COL1 capability: 三色识别 + 目标跟踪

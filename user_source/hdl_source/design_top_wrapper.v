@@ -442,17 +442,17 @@ module design_top_wrapper (
     // LSC 运行时强度（APB 0xec）跨到像素时钟域。
     // 它是慢变控制量，逐位两级同步就够：即使切换瞬间混进一拍，
     // 也只是一个帧内强度差 1/16，肉眼不可见，不存在功能风险。
-    // 5 位：0 = 旁路，16 = 表值原样，31 = 约 194%（半档精度）。
-    wire [4:0] S_lsc_ctrl_apb;
-    reg  [4:0] S_lsc_ctrl_p1, S_lsc_ctrl_p2;
+    // 8 位：0 = 旁路，128 = 表值原样，112 = 旧版 14（过零点），255 = 约 199%。
+    wire [7:0] S_lsc_ctrl_apb;
+    reg  [7:0] S_lsc_ctrl_p1, S_lsc_ctrl_p2;
     // 跟踪目标颜色（APB 0xf4）：同样是慢变控制量，两级同步即可。
     // 它只影响"伺服跟哪一个颜色"，切换瞬间混进一拍没有任何风险。
     wire [1:0] S_track_color_apb;
     reg  [1:0] S_track_color_p1, S_track_color_p2;
     always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
         if(!S_hdmi_rst_n) begin
-            S_lsc_ctrl_p1 <= 5'd14;
-            S_lsc_ctrl_p2 <= 5'd14;
+            S_lsc_ctrl_p1 <= 8'd112;
+            S_lsc_ctrl_p2 <= 8'd112;
             S_track_color_p1 <= 2'd0;
             S_track_color_p2 <= 2'd0;
         end else begin
@@ -499,25 +499,79 @@ module design_top_wrapper (
     wire        S_osd_de;
     wire [23:0] S_osd_data;
 
-    // MCU retains _9 hardware IDs 2..5: normal, shape, motion, red tracking.
-    // Original ID 1 is removed; the OSD numbers the remaining modes 1..4.
+    // 档位 image_step（3 位 = 8 个值，位布局没变）：
+    //   0=颜色识别  1=自动追踪  2=普通画面  3=图形识别
+    //   4=运动检测  5=追踪红色  6=追踪蓝色  7=追踪绿色
+    // 2026-10-26 新增 0/1：3 位正好装 8 个值，所以 0x58 的位布局不用动，
+    // 只是 mcu_ui_apb_regs 里原来把 <2 夹到 2 的那个下限钳位要去掉。
     assign S_dbg_step       = S_image_step_p2;
-    assign S_dbg_disp_mode  = (S_image_step_p2 >= 3'd3) ? 3'd0 : 3'd5;
-    assign S_dbg_recog_mode = (S_image_step_p2 >= 3'd3);
-    assign S_dbg_effect_sel = (S_image_step_p2 >= 3'd3) ? 3'd0 : S_image_effect_p2;
-    // 颜色识别（主色框 + R/G/B 字母 + 样点计数）从"运动检测"里摘出来：
-    // 运动检测那一档只画运动框，不要再混进颜色框。颜色识别需要单独一档，
-    // 档位分配待定，先置 0 停用 —— 一旦这里给出来，色框、字母、以及
-    // ui_osd 的"红色/绿色/蓝色"文字会一起生效（三处都只看 I_color_valid）。
-    wire S_color_recog_mode = 1'b0;
-    // 目标跟踪档：5=追踪红色 6=追踪蓝色 7=追踪绿色（按现场给的顺序）。
-    // 选中颜色就由档位决定，不在跟踪档时退回 APB 0xf4 的值（给调试器留的入口）。
-    wire [1:0] S_track_color_sel = (S_image_step_p2 == 3'd5) ? 2'd0 :
-                                   (S_image_step_p2 == 3'd6) ? 2'd2 :
-                                   (S_image_step_p2 == 3'd7) ? 2'd1 : S_track_color_p2;
+    wire S_color_only_mode  = (S_image_step_p2 == 3'd0);   // 颜色识别：只认颜色，不动伺服
+    wire S_auto_track_mode  = (S_image_step_p2 == 3'd1);   // 自动追踪：颜色自动挑
+    wire S_fixed_track_mode = (S_image_step_p2 >= 3'd5);   // 追踪红/蓝/绿：颜色由档位定
+    wire S_any_track_mode   = S_fixed_track_mode || S_auto_track_mode;
+    wire S_recog_any_mode   = (S_image_step_p2 >= 3'd3) || S_color_only_mode || S_auto_track_mode;
+    assign S_dbg_disp_mode  = S_recog_any_mode ? 3'd0 : 3'd5;
+    assign S_dbg_recog_mode = S_recog_any_mode;
+    assign S_dbg_effect_sel = S_recog_any_mode ? 3'd0 : S_image_effect_p2;
     assign S_dbg_awb_bypass = 1'b0;
     assign S_motion_target  = S_image_target_p2;
     assign S_logo_enable    = S_image_logo_p2;
+
+    /* ---- 颜色识别档（0）：把 color_detect 打开 ----
+     * 它就是原来"从运动检测里摘出来"的那个主色框 + R/G/B 字母 + 样点计数，
+     * 之前因为没有档位而写死 0 停用。现在有档位了，直接接上：
+     * 色框/字母/计数在 hdmi_mixer_image9 里已经全接好，ui_osd 的
+     * "红色/绿色/蓝色"文字、底部位置行也都只看 I_color_valid。 */
+    wire S_color_recog_mode = S_color_only_mode;
+
+    /* ---- 自动追踪档（1）：自动挑颜色 ----
+     * 三个颜色的连通域在 red_shape_tracker 里每帧都在跑（S_color3_valid + 三个框），
+     * 这里挑"确认了的、包围盒面积最大"的那个来驱动伺服。
+     * 关键：**锁定一个颜色，直到它消失才重新挑** —— 否则两个颜色都在画面里时
+     * 会来回换目标，目标跟踪会一直重启。
+     * 面积在寄存器里算（乘法只喂寄存器），判断只用寄存后的值，别把乘法塞进
+     * 组合路径里。 */
+    wire [11:0] S_c3_dx_r = (S_c3r_x1 > S_c3r_x0) ? (S_c3r_x1 - S_c3r_x0) : 12'd0;
+    wire [11:0] S_c3_dy_r = (S_c3r_y1 > S_c3r_y0) ? (S_c3r_y1 - S_c3r_y0) : 12'd0;
+    wire [11:0] S_c3_dx_g = (S_c3g_x1 > S_c3g_x0) ? (S_c3g_x1 - S_c3g_x0) : 12'd0;
+    wire [11:0] S_c3_dy_g = (S_c3g_y1 > S_c3g_y0) ? (S_c3g_y1 - S_c3g_y0) : 12'd0;
+    wire [11:0] S_c3_dx_b = (S_c3b_x1 > S_c3b_x0) ? (S_c3b_x1 - S_c3b_x0) : 12'd0;
+    wire [11:0] S_c3_dy_b = (S_c3b_y1 > S_c3b_y0) ? (S_c3b_y1 - S_c3b_y0) : 12'd0;
+    reg  [23:0] S_c3_area_r, S_c3_area_g, S_c3_area_b;
+    reg  [2:0]  S_c3_valid_f;
+    reg  [1:0]  S_auto_color_lock;
+    reg         S_auto_color_have;
+    wire [1:0]  S_auto_color = S_auto_color_lock;
+    always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
+        if(!S_hdmi_rst_n) begin
+            S_c3_area_r<=24'd0; S_c3_area_g<=24'd0; S_c3_area_b<=24'd0;
+            S_c3_valid_f<=3'd0; S_auto_color_lock<=2'd0; S_auto_color_have<=1'b0;
+        end else begin
+            S_c3_area_r  <= S_c3_dx_r * S_c3_dy_r;
+            S_c3_area_g  <= S_c3_dx_g * S_c3_dy_g;
+            S_c3_area_b  <= S_c3_dx_b * S_c3_dy_b;
+            S_c3_valid_f <= S_color3_valid;
+            if(!S_auto_track_mode) S_auto_color_have <= 1'b0;      /* 出档就放松 */
+            else if(!S_auto_color_have) begin
+                /* 没锁定：挑确认了的里面最大的（并列时红优先） */
+                if(S_c3_valid_f[0] && S_c3_area_r>=S_c3_area_g && S_c3_area_r>=S_c3_area_b) begin
+                    S_auto_color_lock<=2'd0; S_auto_color_have<=1'b1;
+                end else if(S_c3_valid_f[1] && S_c3_area_g>=S_c3_area_b) begin
+                    S_auto_color_lock<=2'd1; S_auto_color_have<=1'b1;
+                end else if(S_c3_valid_f[2]) begin
+                    S_auto_color_lock<=2'd2; S_auto_color_have<=1'b1;
+                end
+            end else if(!S_c3_valid_f[S_auto_color_lock]) begin
+                S_auto_color_have <= 1'b0;                          /* 锁的那个没了 -> 重挑 */
+            end
+        end
+    end
+    /* 选中颜色：自动档用锁定的颜色；5/6/7 由档位定；不在追踪档时退回 APB 0xf4
+     * 的值（给调试器留的入口）。 */
+    wire [1:0] S_track_color_sel = S_auto_track_mode ? S_auto_color :
+                                   (S_image_step_p2 == 3'd5) ? 2'd0 :
+                                   (S_image_step_p2 == 3'd6) ? 2'd2 :
+                                   (S_image_step_p2 == 3'd7) ? 2'd1 : S_track_color_p2;
 
     assign S_focus_metric_apb = S_focus_metric_sync2;
 
@@ -1802,7 +1856,7 @@ isp_top u_isp_top (
     ) u_red_target_tracker_99 (
         .I_clk       ( S_hdmi_pixel_clk ),
         .I_rst_n     ( S_hdmi_rst_n ),
-        .I_enable    ( S_dbg_recog_mode && ((S_dbg_step >= 3'd5) || S_shape_mode) ),
+        .I_enable    ( S_recog_any_mode && (S_any_track_mode || S_shape_mode) ),
         .I_shape_mode(S_shape_mode), .O_shape_type(S_component_shape),
         .I_reacquire ( S_track_reacquire ),
         .I_user      ( S_hdmi_user ),
@@ -1832,7 +1886,7 @@ isp_top u_isp_top (
     red_track_mailbox u_red_track_mailbox (
         .pixel_clk(S_hdmi_pixel_clk), .apb_clk(S_mcu_apb_clk),
         .rst_n(S_hdmi_rst_n && S_rst_n),
-        .enable(S_dbg_step >= 3'd5), .reacquire(S_track_reacquire),
+        .enable(S_any_track_mode), .reacquire(S_track_reacquire),
         .new_result(S_track_new), .valid(S_track_valid), .state(S_track_state),
         .dir_x(S_track_dx), .dir_y(S_track_dy),
         .level_x(S_track_lx), .level_y(S_track_ly),
@@ -2086,6 +2140,13 @@ isp_top u_isp_top (
         .I_track_x0     ( S_track_x0 ),
         .I_track_y0     ( S_track_y0 ),
         .I_track_y1     ( S_track_y1 ),
+        // 底部"位置"行的中心坐标：追踪用跟踪器质心（和伺服闭环同一个数），
+        // 形状/颜色用各自滤波后的框中心。
+        .I_track_cx     ( S_track_cx ),
+        .I_track_cy     ( S_track_cy ),
+        .I_track_color  ( S_track_color_sel ),
+        .I_shape_x1     ( S_shape_x1 ),
+        .I_color_x1     ( S_color_x1 ),
         .I_picture_ctrl ( S_picture_pixel ),
         .I_exposure     ( S_ui_ae_p2 ),
         .I_gain         ( S_ui_ag_p2 ),

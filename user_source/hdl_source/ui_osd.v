@@ -57,6 +57,14 @@ module ui_osd #(
     // 四个字正好填满结果文字层的四格，不用再加一层。
     input  wire        I_track_valid,
     input  wire [11:0] I_track_x0, I_track_y0, I_track_y1,
+    // 底部"位置"行要用的中心坐标。都是检测器给的原值：
+    //   追踪档用跟踪器的质心（和伺服闭环、串口读的是同一个数），
+    //   形状/颜色用滤波后那套框的中心（也就是屏幕上画框用的那套）。
+    input  wire [11:0] I_track_cx, I_track_cy,
+    // 实际在跟的颜色（0红/1绿/2蓝）：自动追踪档没有固定颜色，标签/色标要用它。
+    input  wire [1:0]  I_track_color,
+    input  wire [11:0] I_shape_x1,
+    input  wire [11:0] I_color_x1,
     input  wire [15:0] I_picture_ctrl,
     input  wire [15:0] I_exposure,
     input  wire [15:0] I_gain,
@@ -88,6 +96,38 @@ module ui_osd #(
     wire [11:0] focus_h = (focus_rh_frame==11'd0) ? 12'd120 : {1'b0,focus_rh_frame};
     wire [11:0] focus_x1 = focus_x + focus_w;
     wire [11:0] focus_y1 = focus_y + focus_h;
+
+    /* ---- 底部"位置"行（2026-10-26 现场要求）----------------------------
+     * 显示当前档位正在检测的那个目标的中心坐标：
+     *   追踪档(5/6/7) -> 跟踪目标质心，和伺服闭环/串口 AF 用的是同一个数
+     *   图形识别(3)   -> 形状框中心
+     *   颜色识别      -> 主色框中心（该档在 RTL 里目前 S_color_recog_mode=0 停用）
+     * 数字在 vsync 时算好 BCD 存起来，一帧内不变 —— 常量除法不进像素路径
+     * （和黑电平 /10 一个套路）。 */
+    reg  [15:0] pos_x_bcd, pos_y_bcd;
+    reg         pos_valid_frame;
+    reg  [1:0]  pos_src_frame;              // 0=追踪 1=形状 2=颜色
+    wire        pos_mode = (I_image_step == 3'd0) || (I_image_step == 3'd1) ||
+                           (I_image_step == 3'd3) || (I_image_step >= 3'd5);
+    wire [1:0]  pos_src  = (I_image_step == 3'd0) ? 2'd2 :
+                           (I_image_step == 3'd3) ? 2'd1 : 2'd0;
+    wire [11:0] pos_cx = (pos_src == 2'd0) ? I_track_cx :
+                         (pos_src == 2'd1) ? (I_shape_x0 + ((I_shape_x1 - I_shape_x0) >> 1)) :
+                                             (I_color_x0 + ((I_color_x1 - I_color_x0) >> 1));
+    wire [11:0] pos_cy = (pos_src == 2'd0) ? I_track_cy :
+                         (pos_src == 2'd1) ? (I_shape_y0 + ((I_shape_y1 - I_shape_y0) >> 1)) :
+                                             (I_color_y0 + ((I_color_y1 - I_color_y0) >> 1));
+    wire        pos_valid = (pos_src == 2'd0) ? I_track_valid :
+                            (pos_src == 2'd1) ? I_shape_valid : I_color_valid;
+    /* 先落到 4 位线上再拼，别直接索引表达式（Verilog-2001 不允许） */
+    wire [3:0] pos_x_th = (pos_cx / 12'd1000) % 10;
+    wire [3:0] pos_x_hu = (pos_cx / 12'd100) % 10;
+    wire [3:0] pos_x_te = (pos_cx / 12'd10) % 10;
+    wire [3:0] pos_x_on = pos_cx % 10;
+    wire [3:0] pos_y_th = (pos_cy / 12'd1000) % 10;
+    wire [3:0] pos_y_hu = (pos_cy / 12'd100) % 10;
+    wire [3:0] pos_y_te = (pos_cy / 12'd10) % 10;
+    wire [3:0] pos_y_on = pos_cy % 10;
     reg [11:0] x;
     reg [11:0] y;
     reg de_d;
@@ -197,8 +237,12 @@ module ui_osd #(
 
     // 追踪档标签的位置与色标：5/6/7 -> 0/1/2 = 追踪红/追踪蓝/追踪绿。
     // 紧贴框的下边缘（2 像素），下面放不下就放上边缘上方。
-    wire       track_mode = (I_image_step>=3'd5 && I_image_step<=3'd7);
-    wire [2:0] track_kind = I_image_step - 3'd5;
+    // 自动追踪档（1）没有固定颜色，标签跟着**实际锁定的颜色**走（I_track_color）。
+    wire       track_mode = (I_image_step>=3'd5 && I_image_step<=3'd7) || (I_image_step==3'd1);
+    /* 0红/1绿/2蓝（I_track_color 的编码）-> 0/1/2 = 追踪红/追踪蓝/追踪绿（字库下标） */
+    wire [2:0] track_kind = (I_image_step == 3'd1) ?
+                            ((I_track_color==2'd2) ? 3'd1 : (I_track_color==2'd1) ? 3'd2 : 3'd0) :
+                            (I_image_step - 3'd5);
     reg [11:0] tanchor_x, tanchor_y;
     always @* begin
         tanchor_x = (I_track_x0 > H_ACTIVE-12'd136) ? H_ACTIVE-12'd136 : I_track_x0;
@@ -434,6 +478,38 @@ module ui_osd #(
            y>=focus_y && y<focus_y1 &&
            (x<focus_x+2 || x>=focus_x1-2 || y<focus_y+2 || y>=focus_y1-2)) begin
             overlay=1; pixel=24'h40ff80;
+        end
+        // ---- 底部位置行：贴底偏右（左下角 90..154 x 1030..1062 是"菜单"按钮
+        // 的触摸区，避开它）。有目标=绿字，没有=红字，一眼能看出锁没锁上。 ----
+        if(pos_mode && x>=12'd632 && x<12'd1144 && y>=12'd1020 && y<12'd1068) begin
+            overlay=1;
+            pixel=24'h101820;
+            if(x<12'd634 || x>=12'd1142 || y<12'd1022 || y>=12'd1066)
+                pixel=24'h304652;
+            else if(x>=12'd640 && x<12'd1120 && y>=12'd1028 && y<12'd1056) begin
+                text_x=x-12'd640; char_no=text_x[8:5]; col=text_x[4:2];
+                row=(y-12'd1028)>>2;
+                ch=" ";
+                case(char_no)
+                    4'd0: ch=(pos_src_frame==2'd0) ? "T" : (pos_src_frame==2'd1) ? "S" : "C";
+                    4'd1: ch=(pos_src_frame==2'd0) ? "R" : (pos_src_frame==2'd1) ? "H" : "O";
+                    4'd2: ch=(pos_src_frame==2'd0) ? "K" : (pos_src_frame==2'd1) ? "P" : "L";
+                    4'd4:  ch="X";
+                    4'd5:  ch="0"+pos_x_bcd[15:12];
+                    4'd6:  ch="0"+pos_x_bcd[11:8];
+                    4'd7:  ch="0"+pos_x_bcd[7:4];
+                    4'd8:  ch="0"+pos_x_bcd[3:0];
+                    4'd10: ch="Y";
+                    4'd11: ch="0"+pos_y_bcd[15:12];
+                    4'd12: ch="0"+pos_y_bcd[11:8];
+                    4'd13: ch="0"+pos_y_bcd[7:4];
+                    4'd14: ch="0"+pos_y_bcd[3:0];
+                    default: ch=" ";
+                endcase
+                glyph=glyph_bits(ch,row);
+                if(col<5 && ((glyph & (5'b10000 >> col))!=0))
+                    pixel = pos_valid_frame ? 24'h80ffb0 : 24'hff9080;
+            end
         end
         // Panel: lower-left, x=24..492, y=644..1004. The lower-left MENU
         // button remains visible even when this panel is hidden.
@@ -746,6 +822,8 @@ module ui_osd #(
             x <= 0; y <= 0; de_d <= 0; vs_d <= 0;
             rec1<=0;rec2<=0;rec_frame<=0;focus_roi_frame<=0;
             focus_rw_frame<=11'd0; focus_rh_frame<=11'd0;
+            pos_x_bcd<=16'd0; pos_y_bcd<=16'd0;
+            pos_valid_frame<=1'b0; pos_src_frame<=2'd0;
             rtc_hours_frame <= 0; rtc_minutes_frame <= 0; rtc_seconds_frame <= 0;
             rtc_year_frame<=0;rtc_month_frame<=0;rtc_date_frame<=0;rtc_date_valid_frame<=0;
             rtc_valid_frame <= 0;
@@ -784,6 +862,10 @@ module ui_osd #(
                 focus_roi_frame<=I_focus_roi;
                 focus_rw_frame<=I_focus_roi_w;
                 focus_rh_frame<=I_focus_roi_h;
+                pos_x_bcd<={pos_x_th,pos_x_hu,pos_x_te,pos_x_on};
+                pos_y_bcd<={pos_y_th,pos_y_hu,pos_y_te,pos_y_on};
+                pos_valid_frame<=pos_valid;
+                pos_src_frame<=pos_src;
                 stats_detail_frame<=!MCU_MENU || !PANEL_STYLE || I_info_enable;
                 fps_frame<=hdmi_fps; fps_valid_frame<=hdmi_fps_valid;
                 latency_frame<=I_latency_bcd; period_frame<=I_camera_period_bcd;

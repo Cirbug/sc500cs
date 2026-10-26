@@ -54,12 +54,15 @@ module lens_shading_correction #(
     input  wire        I_hs,
     input  wire        I_de,
     input  wire [23:0] I_data,       // {R[23:16], G[15:8], B[7:0]}
-    // 运行时强度：0 = 完全旁路，16 = 表值原样，31 = 表值偏离量的约 194%。
-    // 5 位：每一步只有旧版（0..15）的一半，现场可以在 12~18 之间做半步微调。
+    // 运行时强度：0 = 完全旁路，128 = 表值原样，255 = 表值偏离量的约 199%。
+    // 【2026-10-26 精度 ×8】原来 5 位（0..31，16 = 表值原样，每步 6.25%），
+    // 现场在过零点 14 附近只能 13/14/15 三档跳，调不到位。现在改成 8 位：
+    //   128 = 表值原样，**112 = 原来的 14**（同一个工作点），每步 0.78%，
+    // 相当于在 14 附近把精度提高 8 倍。0 仍然是真旁路。
     // 缩放以"表的加权均值"为支点，不是以 1.0 为支点 —— 所以调强度只改空间
     // 形状，不会顺带把整个画面调暖或调冷（实测旧版 6->11 会暖 2.9%）。
     // 由 APB 寄存器 0xec 给出（MCU 开机写默认值，菜单"系统信息->色度"可改）。
-    input  wire [4:0]  I_strength,
+    input  wire [7:0]  I_strength,
 
     output reg         O_vs,
     output reg         O_hs,
@@ -181,30 +184,31 @@ module lens_shading_correction #(
     end
 
     // ------------------------------------------------ 强度缩放（纯无符号）
-    // gain = PIVOT + (base - PIVOT) * strength / 16
-    //   strength = 0  -> 真旁路（增益 256）
-    //   strength = 16 -> 表值原样（等价于旧版的 8）
-    //   strength = 22 -> 旧版的 11；strength = 31 -> 约 194%
+    // gain = PIVOT + (base - PIVOT) * strength / 128
+    //   strength = 0   -> 真旁路（增益 256）
+    //   strength = 128 -> 表值原样
+    //   strength = 112 -> 旧版 14（现场过零点）
+    //   strength = 255 -> 约 199%
     // 支点取"表的加权均值"而不是 1.0：这样调强度只放大/缩小空间形状，
     // 加权平均增益恒定 ≈ 264，不会顺带把整个画面调暖或调冷。
-    // 位宽：mag 最大 264-244 = 20；20*31 = 620 落在 13 位内；
-    // >>4 后最大 38，所以增益范围 226..302，加上倾斜偏移后仍恒为正、不超 9 位。
+    // 位宽：mag 最大 264-244 = 20；20*255 = 5100 落在 13 位内；
+    // >>7 后最大 39，所以增益范围 225..303，加上倾斜偏移后仍恒为正、不超 9 位。
     // 先判符号再取绝对值，避免用到有符号运算。
     localparam [8:0] STRENGTH_PIVOT = 9'd264;
     function [8:0] scale_gain;
         input [8:0] base;
-        input [4:0] s;
+        input [7:0] s;
         reg         neg;
         reg [8:0]   mag;
         reg [12:0]  prod;
         begin
-            if(s == 5'd0) begin
+            if(s == 8'd0) begin
                 scale_gain = 9'd256;              // 0 = 完全旁路，保持原语义
             end else begin
                 neg  = (base < STRENGTH_PIVOT);
                 mag  = neg ? (STRENGTH_PIVOT - base) : (base - STRENGTH_PIVOT);
                 prod = mag * s;
-                mag  = prod[12:4];
+                mag  = prod[12:7];
                 scale_gain = neg ? (STRENGTH_PIVOT - mag) : (STRENGTH_PIVOT + mag);
             end
         end

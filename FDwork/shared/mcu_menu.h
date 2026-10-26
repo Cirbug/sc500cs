@@ -124,8 +124,8 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
         cells[11]=MENU_ASCII|'>';
         if(row==1 && !s->picture_available)mcu_menu_text(cells,"----");
         if(row==2){if(s->auto_exposure)mcu_menu_text(cells,"AUTO");else mcu_panel_value(cells,0);}
-        if(row==3)mcu_panel_value(cells,s->image_step>=2 && s->image_step<=5?s->image_step-1:1);
-        if(row==4)mcu_panel_value(cells,s->image_step==5?7:6);
+        if(row==3)mcu_panel_value(cells,mode_kind_of(s));
+        if(row==4)mcu_panel_value(cells,tracking_mode(s)?7:6);
         if(row==5 && !s->record_available)mcu_menu_text(cells,"----");
     } else if(page==PANEL_EXPOSURE) {
         if(row==4) {
@@ -138,8 +138,8 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
         mcu_panel_number(cells,v);
         if(row==3 && !s->vts_available)mcu_menu_text(cells,"----");
     } else if(page==PANEL_MODE) {
-        if(row<=4 && s->image_step==row+1)mcu_panel_value(cells,7);
-        else if(row==5) {
+        if(row<=6 && s->image_step==row+1)mcu_panel_value(cells,7);
+        else if(row==7) {
             if(s->image_step==2 && s->image_effect<=5) {
                 if(!s->image_effect)mcu_panel_value(cells,6);
                 else for(i=0;i<4;i++)cells[8+i]=mcu_effects[0][s->image_effect][i];
@@ -147,7 +147,7 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
             else mcu_menu_text(cells,"----");
         }
     } else if(page==PANEL_TRACK) {
-        if(row==1)mcu_panel_value(cells,s->image_step==5?7:6);
+        if(row==1)mcu_panel_value(cells,tracking_mode(s)?7:6);
         else cells[11]=MENU_ASCII|'>';
     } else if(page==PANEL_SYSTEM) {
         /* 第 3 行是"色度"（LSC 强度）：数值由 mcu_menu_row() 统一画。 */
@@ -189,7 +189,8 @@ static void mcu_menu_publish(const MenuState *s,uint32_t rec)
                 word&=~(7u<<9);
                 word|=(col<8?0u:(attr&(1u<<14))?(attr&(7u<<9)):(1u<<9));
                 if((!MENU_LEGACY_COMPAT || s->panel_ui) && col<8 && (attr&(3u<<12)))word|=1u<<9;
-                if(s->picture_page==2 && row>=1 && row<=4 && s->image_step==row+1 && col<8)word|=1u<<9;
+                /* 选中的模式行高亮：档位 2..7 对应 menu 行 1..6，别再用旧的 row<=4。 */
+                if(s->picture_page==2 && row>=1 && row<=6 && s->image_step==row+1 && col<8)word|=1u<<9;
             }
             ui_write(MCU_MENU_BASE+12,word);
         }

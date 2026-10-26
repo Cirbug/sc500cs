@@ -136,7 +136,16 @@ static __attribute__((noinline)) void image_ctrl_write(uint32_t step, uint32_t e
 /* FireWater fixed six channels: target, metric, status, raw84, raw85, valid.
  * Raw ADC byte order/bit alignment is not documented; do NOT label a decoded
  * position or invent a value on failed reads. -1,-1,0 means unavailable. */
-#if !UI_QUIET_SERIAL
+#ifndef AF_PLOT
+#define AF_PLOT 1
+#endif
+/* 注意：上面 UI_QUIET_SERIAL 把 al_printf 整个定义成了 ((void)0)，
+ * 所以 main.c 里所有打印都是空的 —— 直接写 focus_plot 也会被编掉（实测：
+ * 镜像里连 "AF:" 这个串都不存在）。这里必须先把宏还原成真函数。
+ * 只还原、不再关回去：从这一行往后（含 autofocus_control.h 的 AFDONE: 行）
+ * 打印才是活的；前面的 UI/镜头诊断仍然被各自的 #if !UI_QUIET_SERIAL 挡着。 */
+#undef al_printf
+#if AF_PLOT
 static void focus_plot(uint32_t position, uint32_t metric, uint32_t status)
 {
     uint32_t adc = (lens_diag_available == 3) ? ui_read(UI_LENS_ADC_RAW) : 0;
@@ -283,8 +292,13 @@ static void touchscreen_handle(MenuState *s)
         actions |= menu_touch(s, &event);
         if(actions & MENU_AF) {
             /* Gate new behavior on the matching FPGA ROI capability. */
-            if(ui_read(0x98)==0x41465231u)
+            if(ui_read(0x98)==0x41465231u) {
+                /* touch_focus_roi() 是按固定的 160x120 扣偏移的，
+                 * 所以先把窗口尺寸复位，否则在追踪档里（窗口是 960x720）
+                 * 位置会偏到左上。下一次 tracking_roi_follow 会再把它设回去。 */
+                ui_write(0xfc,0);
                 ui_write(0x94,touch_focus_roi(focus_gesture.x,focus_gesture.y));
+            }
             else {
                 actions &= ~MENU_AF;
                 g_af_debug.reason=AF_REASON_ROI_UNSUPPORTED;
@@ -304,9 +318,21 @@ static __attribute__((noinline)) void ui_controls_poll(MenuState *s)
 }
 
 static MenuState *record_ui;
+/* WiFi（UART 上的安路 WiFi 模组）编译开关。
+ * anlu_app 的 TCM 只剩不到 100 字节，而 wifi_dispatch(2476) + wifi_mcu_poll(974)
+ * + wifi_link(732) 合计约 4.2 KB，是最大的一块可选项，所以默认关掉；
+ * 要用就在 Makefile 里加 -DAL_CAMERA_WIFI=1（anlu_app2 是 XIP，那边默认开着）。
+ * 关掉不影响 .wifi_noinit 段 —— 跨复位状态块 g_ui_persist 仍然在那一节里。 */
+#ifndef AL_CAMERA_WIFI
+#define AL_CAMERA_WIFI 0
+#endif
+#if AL_CAMERA_WIFI
 #include "../shared/wifi_mcu.h"
+#endif
 static void recorder_service(void) {
+#if AL_CAMERA_WIFI
     wifi_mcu_poll(1);
+#endif
     rtc_diag_poll((uint32_t)UI_APB_BASE);
     video_diag_poll((uint32_t)UI_APB_BASE);
     max3421e_touch_poll();
@@ -344,14 +370,14 @@ static void recorder_service(void) {
 #define UI_PERSIST_MAGIC 0x55495031u          /* "UIP1" */
 typedef struct {
     uint32_t magic, sum;
-    uint32_t picture, exposure, gain, vts, auto_exposure, lsc, image_ctrl, index;
+    uint32_t picture, exposure, gain, vts, auto_exposure, lsc, track, image_ctrl, index;
 } UiPersist;
 static UiPersist __attribute__((section(".wifi_noinit"))) g_ui_persist;
 
 static uint32_t ui_persist_sum(const UiPersist *p)
 {
     return p->picture + p->exposure + p->gain + p->vts +
-           p->auto_exposure + p->lsc + p->image_ctrl + p->index;
+           p->auto_exposure + p->lsc + p->track + p->image_ctrl + p->index;
 }
 
 /* 更新期间先把 magic 清掉，避免"半写"状态被下一次开机当成有效值。 */
@@ -364,6 +390,7 @@ static void ui_persist_save(const MenuState *s)
     g_ui_persist.vts      = s->vts;
     g_ui_persist.auto_exposure = s->auto_exposure;
     g_ui_persist.lsc      = s->lsc_strength;
+    g_ui_persist.track    = s->track_color;
     g_ui_persist.image_ctrl = (s->image_step & 7u) | ((s->image_effect & 7u) << 3) |
                               ((s->image_target & 3u) << 6) | (s->logo_enable ? (1u << 8) : 0u);
     g_ui_persist.index    = s->index;
@@ -379,10 +406,11 @@ AL_S32 main(void)
         .menu = 1, .exposure = 3990, .gain = 80,
         .servo_pan_us = 1500, .servo_tilt_us = 1500,
         .image_step = 2, .logo_enable = 1, .touch_capture = -1,
-        .lsc_strength = LSC_STRENGTH_DEFAULT
+        .lsc_strength = LSC_STRENGTH_DEFAULT,
+        .track_color = 0
     };
     uint32_t last_report = 0;
-    uint32_t restored, lsc_available;
+    uint32_t restored, lsc_available, col_available;
 
     g_ui_debug_stage = 1;
     al_printf("UI boot: USART1 115200; before APB read at 0x%08x\r\n",
@@ -433,6 +461,7 @@ AL_S32 main(void)
         ui.image_target = (g_ui_persist.image_ctrl >> 6) & 3u;
         ui.logo_enable  = (g_ui_persist.image_ctrl >> 8) & 1u;
         ui.lsc_strength = g_ui_persist.lsc & 31u;
+        ui.track_color  = g_ui_persist.track & 3u;
         al_printf("UI: restored picture state (survived the last FPGA reconfig)\r\n");
     }
 
@@ -471,6 +500,10 @@ AL_S32 main(void)
      * "LSC1"，老 bit 没有这个寄存器就不写。 */
     lsc_available = (ui_read(0xf0)==0x4c534331u);
     if(lsc_available) ui_write(0xec, ui.lsc_strength & 31u);
+    /* "COL1"（0xf8）：本版 bit 才有三色识别 + 目标跟踪，0xf4 = 伺服跟哪个颜色。
+     * 老 bit 没有这个能力位，先探测再写，免得往不存在的寄存器里写东西。 */
+    col_available = (ui_read(0xf8)==0x434f4c31u);
+    if(col_available) ui_write(0xf4, ui.track_color & 3u);
     al_printf("SERVO: %s PAN/V6=%u us TILT/V4=%u us\r\n",
               ui.servo_menu_available ? "touch ready" : "new FPGA bit required",
               ui.servo_pan_us, ui.servo_tilt_us);
@@ -500,7 +533,9 @@ AL_S32 main(void)
     record_ui=&ui;
     rtc_diag_init((uint32_t)UI_APB_BASE);
     ui.record_available=recorder_init(recorder_service);
+#if AL_CAMERA_WIFI
     wifi_mcu_init();
+#endif
 
     while(1) {
         g_ui_debug_stage = 5;
@@ -512,9 +547,14 @@ AL_S32 main(void)
         /* 跨复位块始终跟随当前状态（包括 GDB 里现场改的 0xec），
          * 这样下一次 TD 重配后 main() 能把画面原样恢复。 */
         /* 0xec 跟随菜单"系统 → 色度"：TD 重配后它会回到复位值，这里自动写回；
-         * 菜单里改了值也在这里生效（菜单本身不碰硬件）。 */
-        if(lsc_available && ((ui_read(0xec) & 15u) != (ui.lsc_strength & 31u)))
+         * 菜单里改了值也在这里生效（菜单本身不碰硬件）。
+         * 读回必须掩 31 位 —— 以前这里掩的是 15，色度 ≥16 时永远不相等，
+         * 于是每轮循环都白写一次。 */
+        if(lsc_available && ((ui_read(0xec) & 31u) != (ui.lsc_strength & 31u)))
             ui_write(0xec, ui.lsc_strength & 31u);
+        /* 0xf4 跟随菜单"系统 → 目标跟踪"（0=红 1=绿 2=蓝）。 */
+        if(col_available && ((ui_read(0xf4) & 3u) != (ui.track_color & 3u)))
+            ui_write(0xf4, ui.track_color & 3u);
         ui_persist_save(&ui);
 
         /* ---------------------------------------------------------------
@@ -553,6 +593,7 @@ AL_S32 main(void)
                     ui.gain     = ui_read(UI_GAIN);
                     if(ui.histogram_available) ui_write(HE_BASE+0x1c, 0);
                     if(lsc_available) ui_write(0xec, ui.lsc_strength & 31u);
+                    if(col_available) ui_write(0xf4, ui.track_color & 3u);
                     ui_write(UI_INDEX, ui.index);
                     /* OSD/菜单与图像档位同样是 fabric 寄存器，一并还原，
                      * 否则重配后菜单会自己关掉、logo/特效档位回默认。 */
@@ -607,7 +648,9 @@ AL_S32 main(void)
         video_diag_poll((uint32_t)UI_APB_BASE);
         lens_serial_poll();
         recorder_poll();
+#if AL_CAMERA_WIFI
         wifi_mcu_poll(0);
+#endif
         ui_controls_poll(&ui);
         g_ui_debug_stage = 6;
         AlSys_MDelay(1);

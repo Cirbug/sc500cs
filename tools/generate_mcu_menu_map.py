@@ -18,16 +18,16 @@ lines.append('static const unsigned char mcu_labels[4][9] = {')
 for group in m['labels']:
     lines.append('{'+','.join(str(offsets[s]) for s in group)+'},')
 lines.append('};')
-for name, groups, rows, cols in [
-                                 ('panel_values',[m['panel_values']],8,4),
-                                 ('effects',[m['effects']],6,4),
-                                 ('values', [m['values']], 14, 4)]:
-    lines.append(f'static const unsigned char mcu_{name}[{len(groups)}][{rows}][{cols}] = {{')
-    for group in groups:
-        lines.append('{')
-        for s in group:
-            lines.append('{' + ','.join(str(m['glyph_ids'][c]) for c in s) + '},')
-        lines.append('},')
+for name, group, cols in [('panel_values', m['panel_values'], 4),
+                          ('effects',      m['effects'],      4),
+                          ('values',       m['values'],       4)]:
+    # 行数按列表实际长度走：panel_values 会因为新增模式名变长，
+    # 写死 8 会变成"初始化项过多"，C 编译直接报错。
+    lines.append(f'static const unsigned char mcu_{name}[1][{len(group)}][{cols}] = {{')
+    lines.append('{')
+    for s in group:
+        lines.append('{' + ','.join(str(m['glyph_ids'][c]) for c in s) + '},')
+    lines.append('},')
     lines.append('};')
 assert all(len(s)<=8 for groups in (m['labels'],m['panel_labels']) for group in groups for s in group)
 for page,group in enumerate(m['panel_labels']):

@@ -24,8 +24,10 @@ module tb_red_track_label;
             .I_mipi_frames(32'd0),.I_mipi_fps(12'd0),.I_mipi_fps_valid(1'b0),
             .I_record_status(32'd0),.I_menu_enable(menu),.I_edit_enable(1'b0),.I_info_enable(1'b0),
             .I_menu_index(3'd0),.I_picture_page(1'b0),.I_mode_page(1'b0),.I_focus_roi(32'd0),
+            .I_focus_roi_w(11'd0),.I_focus_roi_h(11'd0),   /* 0 = 默认 160x120 */
             .I_image_step(step),.I_image_effect(3'd0),.I_shape_valid(1'b0),.I_shape_type(3'd0),
             .I_shape_x0(12'd0),.I_shape_y0(12'd0),.I_shape_y1(12'd0),
+            /* gege 8f21399 新增：颜色结果文字层与可变对焦窗口。悬空会成 X 并污染像素比对。 */             .I_color_valid(1'b0),.I_color_code(3'd0),             .I_color_x0(12'd0),.I_color_y0(12'd0),.I_color_y1(12'd0),
             .I_track_valid(valid),.I_track_x0(x0),.I_track_y0(y0),.I_track_y1(y1),
             .I_track_x_negative(xneg),.I_track_y_negative(yneg),.I_track_x_bcd(xb),.I_track_y_bcd(yb),
             .I_picture_ctrl(16'h108c),.I_exposure(16'd3990),.I_gain(16'd80),
@@ -35,7 +37,7 @@ module tb_red_track_label;
             .I_rtc_valid(1'b1),.I_rtc_error(1'b0),.I_rtc_osf(1'b0),
             .I_latency_bcd(16'd0),.I_camera_period_bcd(16'd0),.I_repeat_bcd(16'd0),
             .I_latency_valid(1'b0),.I_camera_period_valid(1'b0),
-            .O_vsync(ovs[n]),.O_hsync(ohs[n]),.O_de(ode[n]),.O_data(data_out[n]));
+            .O_menu_prdata(),.O_vsync(ovs[n]),.O_hsync(ohs[n]),.O_de(ode[n]),.O_data(data_out[n]));
         // Probe actual rendered pixels while retaining both real output pipelines.
         initial begin force dut.x=px;force dut.y=py;end
     end endgenerate
@@ -118,7 +120,7 @@ module tb_red_track_label;
                 7:begin x0=1500;y0=0;x1=1600;y1=60;end
                 8:de=0;
             endcase
-            tx=x0>1616?1616:x0;ty=y1<=1002?y1+6:(y0>=76?y0-76:0);
+            tx=x0>1616?1616:x0;ty=y1<=962?y1+46:(y0>=118?y0-118:0);
             vs=1;repeat(5) tick;vs=0;repeat(5) tick;
             for(j=ty;j<ty+72;j=j+1)
                 for(i=tx;i<tx+304;i=i+1) probe(i,j);

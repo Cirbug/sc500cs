@@ -38,6 +38,9 @@ static void ui_write(uint32_t offset,uint32_t value)
 }
 static void lens_diag_report(void) {}
 static void focus_plot(uint32_t p,uint32_t m,uint32_t s) {(void)p;(void)m;(void)s;}
+/* gege 8f21399 在 autofocus_control.h 的 autofocus_park() 里新增了 al_printf 诊断，
+ * 主机测试没有 SDK 的格式化器，这里补一个最小桩（否则链接期 undefined reference）。 */
+static void al_printf(const char *fmt,...) {(void)fmt;}
 #include "../FDwork/shared/autofocus_control.h"
 
 static void reset(void)
@@ -61,9 +64,15 @@ static void start_scan(void)
 }
 static void finish(unsigned cadence)
 {
-    for(unsigned i=0;i<20000 && af_state!=AF_IDLE;i++) poll_at(ms+cadence);
-    assert(af_state==AF_IDLE && g_af_debug.reason==AF_REASON_DONE);
-    assert(af_best_position==6976u && regs[UI_LENS_POS/4]==6976u);
+    /* gege 8f21399：细扫结束不再走 AF_RETURN/autofocus_stop()，而是 autofocus_park()
+     * 就地停在峰值上（AF_HOLD，reason 7=DONE 或 16=FLAT）。旧版终点是 AF_IDLE+DONE。 */
+    for(unsigned i=0;i<20000 && af_state!=AF_IDLE && af_state!=AF_HOLD;i++) poll_at(ms+cadence);
+    assert((af_state==AF_IDLE || af_state==AF_HOLD) &&
+           (g_af_debug.reason==AF_REASON_DONE || g_af_debug.reason==AF_REASON_FLAT));
+    /* 细扫步长 gege 由 64 改为 256（AF_FINE_STEP），合成曲线的真峰 7000 因此落到最近
+     * 的 256 网格点 6912。用"距真峰不超过一个细扫步长"断言，以后再调步长也不会误报。 */
+    assert(af_best_position<=7000u+AF_FINE_STEP && 7000u<=af_best_position+AF_FINE_STEP);
+    assert(regs[UI_LENS_POS/4]==af_best_position);
 }
 int main(void)
 {
@@ -137,21 +146,28 @@ int main(void)
     puts("PASS unsigned hardware-timer wrap and cooperative 5 ms service");
 
     reset();start_scan();
-    for(unsigned i=0;i<20000 && af_state!=AF_RETURN;i++) poll_at(ms+1);
-    assert(af_state==AF_RETURN && g_af_debug.reason!=AF_REASON_DONE);
+    /* gege 8f21399：细扫结束直接 autofocus_park()->AF_HOLD，AF_RETURN 已不可达；
+     * 落点写入改由 park 内的 autofocus_command() 发出，失败仍须报 I2C_ERROR。 */
+    for(unsigned i=0;i<20000 && af_state!=AF_HOLD && af_state!=AF_IDLE;i++) poll_at(ms+1);
+    assert(af_state==AF_HOLD || af_state==AF_IDLE);
     move_fails=1;lens_diag_available=0;poll_at(ms+3);
     assert(af_state==AF_IDLE && g_af_debug.reason==AF_REASON_I2C_ERROR);
     puts("PASS final best-position write failure is not reported as focus completion");
 
     reset();start_scan();poll_at(ms+3);
     manual_focus_step(1);assert(af_state==AF_IDLE && g_af_debug.reason==AF_REASON_MANUAL);
-    assert(regs[UI_LENS_POS/4]==64u);
+    /* manual_focus_step() 走 AF_FINE_STEP（gege 由 64 改为 256），按宏断言。 */
+    assert(regs[UI_LENS_POS/4]==AF_FINE_STEP);
     poll_at(ms+3);assert(moves==2);
     puts("PASS manual focus cancels queued/active AF");
 
+    /* 本用例要验证的是"结果与循环节拍无关"，不是写死绝对次数：gege 把粗扫 512->2048、
+     * 细扫 64->256，总线事务总数必然改变。改为以第一节拍为基准做一致性比较。 */
+    unsigned base_reads=0,base_moves=0;
     for(unsigned cadence=1;cadence<=17;cadence+=4) {
         reset();autofocus_restart();finish(cadence);
-        assert(reads==150 && moves==51);
+        if(!base_reads) { base_reads=reads;base_moves=moves;assert(base_reads && base_moves); }
+        else assert(reads==base_reads && moves==base_moves);
     }
     puts("PASS coarse/fine peak and sample count independent of 1/5/9/13/17 ms loop cadence");
 }

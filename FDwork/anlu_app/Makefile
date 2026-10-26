@@ -117,6 +117,8 @@ LDFLAGS += -flto
 # vim: syntax=make
 
 # Stack for FatFs plus cooperative touch service.
+# 2026-10-25：先因为 TCM 满被削到 1792，随后把 WiFi 编掉（见 Makefile 末尾的
+# AL_CAMERA_WIFI）腾出 5 KB，这里还原成原来的 2 KiB。
 LDFLAGS += -Wl,--defsym=__STACK_SIZE=2048
 
 # TCM is 48 KiB and this image had exactly 0 bytes of slack: .heap (1 KiB) ended
@@ -127,6 +129,20 @@ LDFLAGS += -Wl,--defsym=__STACK_SIZE=2048
 # The application has no malloc caller of its own: the only one in the SDK
 # (al_chip.c's QSPI device struct) is removed by --gc-sections, and the map
 # shows no malloc/_sbrk symbol in the image at all. So the heap is dead
-# weight; 256 B keeps a safety net and hands the rest back to the image
-# (needed by main.c's cross-reset state block in .wifi_noinit).
-LDFLAGS += -Wl,--defsym=__HEAP_SIZE=256
+# weight; it only exists as a safety net.
+#
+# 2026-10-25: the three-colour work (MenuState.track_color, the UiPersist field,
+# the extra menu row and the 0xf4 sync) pushed _end +0xD0, and 256 B of heap no
+# longer fit: ".heap [0800b780,0800b87f] overlaps .stack [0800b800,...]".
+# 64 B still leaves a valid non-empty .heap and hands 192 B back to the image.
+# 2026-10-25 第二次：直接归零。堆在本镜像里彻底是空的（--gc-sections 之后连
+# malloc/_sbrk 符号都没有），留 64 B 只是为了"非空段"，现在连这个也不需要了。
+LDFLAGS += -Wl,--defsym=__HEAP_SIZE=0
+
+# ---------------------------------------------------------------------------
+# WiFi 编译开关：anlu_app 默认关（0），anlu_app2 默认开（1）。
+# 为什么要关：anlu_app 把代码放在 48 KiB TCM 里，而爬山法自动对焦把 .text 又推了
+# 456 B，第三次撞上栈底。wifi_dispatch(2476) + wifi_mcu_poll(974) + wifi_link(732)
+# 约 4.2 KB，是最大的一块可选项，所以让 anlu_app 让出它。
+# 要用就把下面这行改成 1（或直接删掉），注意 TCM 余量只剩约 6.5 KB。
+CFLAGS += -DAL_CAMERA_WIFI=0

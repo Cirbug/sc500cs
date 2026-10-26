@@ -62,6 +62,12 @@ typedef struct {
     /* 系统页"色度"：镜头色晕校正（LSC）强度 0..31（5 位），直接写 APB 0xec。
      * 0 = 完全旁路，16 = 表值原样，31 = 约 194%。现场调色偏不用再重编固件。 */
     uint32_t lsc_strength;
+    /* --- 已停用（2026-10-26）：gege 的 track_color / APB 0xf4 链路 ----------
+     * 没有任何菜单代码给它赋值，FPGA 也只按 image_step 5/6/7 选色，
+     * 永远影响不到可见行为，还要占 TCM。
+     * 恢复时见 anlu_app/main.c 的 UiPersist 说明。
+    uint32_t track_color;
+    ------------------------------------------------------------------------ */
     uint32_t record_page, record_available, record_interval;
     uint32_t histogram_mode, histogram_available; /* 0 off, 1 half, 2 full, 3 auto */
     int touch_capture; /* -1:none; panel 16..23:slider */
@@ -72,6 +78,15 @@ typedef struct {
 } MenuState;
 enum { MENU_AF = 1, MENU_FOCUS_UP = 2, MENU_FOCUS_DOWN = 4,
        MENU_REACQUIRE = 8, MENU_PHOTO=16, MENU_RECORD=32, MENU_STOP=64, MENU_INTERVAL=128 };
+/* 三个追踪档：5 = 追踪红色、6 = 追踪蓝色、7 = 追踪绿色。
+ * 凡是"是不是在追踪"的判断都必须走这个，别再写 image_step==5 ——
+ * 写死 ==5 会让绿/蓝档选得上、框也画，但伺服完全不动。
+ * 定义必须放在本文件所有调用之前：C 会把前面的调用当成隐式非 static 声明，
+ * 后面再给 static 定义就会报 "static declaration follows non-static"。 */
+static inline int tracking_mode(const MenuState *s)
+{
+    return s->image_step>=5u && s->image_step<=7u;
+}
 /* MCU startup/DEFAULT profile for PIC1: BLACK=12, gamma off, brightness 1.125x.
  * Firmware explicitly writes this even with the previous FPGA reset profile. */
 #define PICTURE_DEFAULT 0x108cu
@@ -81,12 +96,16 @@ enum { MENU_AF = 1, MENU_FOCUS_UP = 2, MENU_FOCUS_DOWN = 4,
  * 5 位、每步 1/16 —— 精度是旧版（4 位、每步 1/8）的两倍。换算：旧 8 = 新 16，
  * 旧 11 = 新 22，旧 6~9 = 新 12~18。
  *
- * 默认 16：2026-10-24 现场（黑电平 0、均匀亮面）手调下来觉得合适的区间是
- * 旧 6~9，取中间值。量出来的径向最平点在新 22 附近，但旧版缩放以 1.0 为支点，
- * 调高会顺带把整个画面调暖（旧 6→11 全画面 R/G 涨 2.9%），所以现场看 22 会
- * 偏红 —— HDL 现已改成以"表的加权均值"为支点，调强度只改空间形状、不再动
- * 整体色调，可以放心往上试半步/一档，定下来再写死默认值。 */
-#define LSC_STRENGTH_DEFAULT 16u
+ * 默认 14：2026-10-25 用重新拟合过的 64 档表实测扫档（灰墙均匀面，菜单关），
+ * 中心的 R/G 残差按半径分三段：
+ *     色度 13 -> 中心 -1.41% / 中环 -0.13% / 外圈 +0.77%   跨度 2.18%（欠补）
+ *     色度 14 -> 中心 -0.51% / 中环 +0.20% / 外圈 +0.00%   跨度 0.71%（过零点）
+ *     色度 15 -> 中心 +0.99% / 中环 +0.88% / 外圈 -1.38%   跨度 2.37%（过补）
+ * 14 是唯一的过零点，且 13/15 两边对称变差 —— 径向到此为止，不要再靠调色度补偿。
+ * 注意：实测残留里还有 ~1.1% 的"上红下绿"方向性偏差、~3.4% 的像素级色噪，
+ * 以及 ~1.4% 的固定色斑（镜像自相关仅 0.02/0.19，不对称 -> 是墙面/模组低阶
+ * 色阴影，不是径向分量），这些都不是色度旋钮能动的。 */
+#define LSC_STRENGTH_DEFAULT 14u
 static inline uint32_t picture_effective(const MenuState *s)
 {
     /* Hardware IDs 2..5 are displayed as modes 1..4; original ID 1 is removed.
@@ -194,10 +213,10 @@ static inline unsigned menu_adjust(MenuState *s, int direction)
      * remains controlled by relative dragging outside the menu. */
     case 2: if(s->picture_available) { s->picture_page=1; s->index=0; s->edit=0; } break;
     case 3: if(s->record_available) {s->record_page=1;s->index=0;s->edit=0;} break;
-    case 4: s->picture_page=2; s->index=s->image_step>=2 && s->image_step<=5?s->image_step-2:0;
+    case 4: s->picture_page=2; s->index=s->image_step>=2 && s->image_step<=7?s->image_step-2:0;
             s->edit=0; break;
 #endif
-    case 5: if(s->image_step == 5) return MENU_REACQUIRE;
+    case 5: if(tracking_mode(s)) return MENU_REACQUIRE;
             if(s->image_step == 4)
                 s->image_target = direction > 0 ? (s->image_target >= 2 ? 0 : s->image_target + 1)
                                                 : (s->image_target == 0 ? 2 : s->image_target - 1);
@@ -382,8 +401,15 @@ enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
        PANEL_TRACK, PANEL_RECORD, PANEL_SYSTEM };
 static inline unsigned panel_rows(const MenuState *s)
 {
-    static const uint8_t rows[]={6,7,4,5,3,7,3};
+    static const uint8_t rows[]={6,7,4,7,3,7,3};
     return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
+}
+/* 显示模式在首页"显示模式"那一行显示的名字 = mcu_panel_values 的下标。
+ * image_step 2..7 依次是 普通画面/图形识别/运动检测/追踪红色/追踪蓝色/追踪绿色。 */
+static const uint8_t mode_value_kind[6]={1,2,3,4,8,9};
+static inline unsigned mode_kind_of(const MenuState *s)
+{
+    return (s->image_step>=2u && s->image_step<=7u) ? mode_value_kind[s->image_step-2u] : 1u;
 }
 static __attribute__((noinline)) void panel_open(MenuState *s,unsigned page)
 {
@@ -415,15 +441,15 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
         s->index=selected==2?7:selected;
         action=menu_adjust(s,direction);s->index=selected;break;
     case PANEL_MODE:
-        if(selected<4)s->image_step=selected+2;
+        if(selected<6)s->image_step=selected+2;
         else { /* Reuse effect/target adjustment without interpreting it as a mode. */
             old=s->picture_page;s->picture_page=0;s->index=5;
             action=menu_adjust(s,direction);s->index=selected;s->picture_page=old;
         }
         break;
     case PANEL_TRACK:
-        if(selected==0)s->image_step=s->image_step==5?2:5;
-        else if(selected==1 && s->image_step==5)action=MENU_REACQUIRE;
+        if(selected==0)s->image_step=tracking_mode(s)?2:5;
+        else if(selected==1 && tracking_mode(s))action=MENU_REACQUIRE;
         else if(selected==2)action=MENU_AF;
         break;
     case PANEL_RECORD:
@@ -433,7 +459,7 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
     case PANEL_SYSTEM:
         if(selected==0)s->logo_enable=!s->logo_enable;
         else if(selected==1)s->info=!s->info;
-        else s->lsc_strength=menu_step(s->lsc_strength,direction,0u,31u,1u);
+        else if(selected==2)s->lsc_strength=menu_step(s->lsc_strength,direction,0u,31u,1u);
         break;
     }
     return action;
@@ -446,13 +472,13 @@ static inline int panel_editable(const MenuState *s)
             (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
            (s->panel_page==PANEL_SYSTEM && s->index==2) ||
-           (s->panel_page==PANEL_MODE && s->index==4);
+           (s->panel_page==PANEL_MODE && s->index==6);
 #else
     return (s->panel_page==PANEL_EXPOSURE && s->index<3) ||
            (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
            (s->panel_page==PANEL_SYSTEM && s->index==2) ||
-           (s->panel_page==PANEL_MODE && s->index==4);
+           (s->panel_page==PANEL_MODE && s->index==6);
 #endif
 }
 static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned keys)

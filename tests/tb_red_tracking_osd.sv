@@ -5,6 +5,8 @@ module tb_red_tracking_osd;
     wire hit;wire [23:0] color;
     red_tracking_osd dut(
         .I_clk(1'b0),.I_rst_n(1'b1),.I_enable(enable),.I_de(de),.I_new_result(1'b0),.I_valid(valid),
+        // gege 8f21399 起框色跟随选中颜色；不接该端口会得到 X 并误判。0=红。
+        .I_target_color(2'd0),
         .I_x(x),.I_y(y),.I_x0(12'd1000),.I_y0(12'd300),.I_x1(12'd1300),.I_y1(12'd500),
         .I_cx(12'd1150),.I_cy(12'd400),.I_state(2'd0),.I_dir_x(2'd0),.I_dir_y(2'd0),
         .I_level_x(2'd0),.I_level_y(2'd0),.I_error_x(13'sd0),.I_error_y(13'sd0),.I_area_percent(7'd0),
@@ -24,10 +26,10 @@ module tb_red_tracking_osd;
         pixel(920,510,0,0);
         pixel(1000,300,0,0); // No stale target box after loss.
         valid=1;
-        pixel(1000,300,1,24'h00ff80);
-        pixel(1001,350,1,24'h00ff80);
+        pixel(1000,300,1,24'hff3030);
+        pixel(1001,350,1,24'hff3030);
         pixel(1002,350,0,0);
-        pixel(1300,500,1,24'h00ff80);
+        pixel(1300,500,1,24'hff3030);
         pixel(1100,450,0,0); // Box interior remains video.
         pixel(1150,400,1,24'hffff00);
         pixel(1158,400,1,24'hffff00);

@@ -74,7 +74,11 @@ for name in ['blank','full_dark','coloured_speckles']:
 for top in ['tb_red_target_tracker','tb_red_tracker_1080p']:
     source=(root/'tests'/(top+'.sv')).read_text()
     source=source.replace('module '+top,'module '+top+'_shared').replace('red_target_tracker #','red_shape_tracker #')
-    source=source.replace('dx,dy,lx,ly,area);',"dx,dy,lx,ly,area,1'b0,);")
+    # red_shape_tracker 比 wrapper 多两个输入（I_shape_mode / I_target_color）。
+    # 原来的位置补位 hack 在 gege 往端口列表中段插入 I_target_color 之后就错位了，
+    # 改为按端口名追加，端口顺序再变也不会坏。
+    source=source.replace('.O_area_percent(area)',
+        ".O_area_percent(area)," + chr(10) + "          .I_shape_mode(1'b0),.I_target_color(2'd0)")
     generated=out/(top+'_shared.sv');generated.write_text(source)
     script=out/(top+'_shared.do');log=out/(top+'_shared.log')
     script.write_text('onerror {quit -code 1 -force}\nvlog -sv -work {'+lib.as_posix()+'} {'+generated.as_posix()+'}\n'+

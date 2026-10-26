@@ -133,7 +133,13 @@ static __attribute__((noinline)) void image_ctrl_write(uint32_t step, uint32_t e
 /* FireWater fixed six channels: target, metric, status, raw84, raw85, valid.
  * Raw ADC byte order/bit alignment is not documented; do NOT label a decoded
  * position or invent a value on failed reads. -1,-1,0 means unavailable. */
-#if !UI_QUIET_SERIAL
+#ifndef AF_PLOT
+#define AF_PLOT 1
+#endif
+/* 见 anlu_app/main.c 的说明：UI_QUIET_SERIAL 把 al_printf 定义成了空，
+ * 必须先还原，否则 focus_plot 和 AFDONE: 都会被编掉。 */
+#undef al_printf
+#if AF_PLOT
 static void focus_plot(uint32_t position, uint32_t metric, uint32_t status)
 {
     uint32_t adc = (lens_diag_available == 3) ? ui_read(UI_LENS_ADC_RAW) : 0;
@@ -294,8 +300,13 @@ static void touchscreen_handle(MenuState *s)
         actions |= menu_touch(s, &event);
         if(actions & MENU_AF) {
             /* Gate new behavior on the matching FPGA ROI capability. */
-            if(ui_read(0x98)==0x41465231u)
+            if(ui_read(0x98)==0x41465231u) {
+                /* touch_focus_roi() 是按固定的 160x120 扣偏移的，
+                 * 所以先把窗口尺寸复位，否则在追踪档里（窗口是 960x720）
+                 * 位置会偏到左上。下一次 tracking_roi_follow 会再把它设回去。 */
+                ui_write(0xfc,0);
                 ui_write(0x94,touch_focus_roi(focus_gesture.x,focus_gesture.y));
+            }
             else {
                 actions &= ~MENU_AF;
                 g_af_debug.reason=AF_REASON_ROI_UNSUPPORTED;
@@ -339,7 +350,8 @@ AL_S32 main(void)
         .menu = 0, .exposure = 3990, .gain = 80,
         .servo_pan_us = 1500, .servo_tilt_us = 1500,
         .image_step = 2, .logo_enable = 1, .touch_capture = -1,
-        .lsc_strength = LSC_STRENGTH_DEFAULT
+        .lsc_strength = LSC_STRENGTH_DEFAULT,
+        /* 已停用：.track_color = 0   （见 anlu_app 的 UiPersist 说明） */
     };
     uint32_t last_report = 0;
 
@@ -456,6 +468,15 @@ AL_S32 main(void)
         if(ui_read(0xf0)==0x4c534331u &&
            ((ui_read(0xec) & 31u) != (ui.lsc_strength & 31u)))
             ui_write(0xec, ui.lsc_strength & 31u);
+        /* --- 已停用（2026-10-26）：gege 的 COL1 / 0xf4 track_color 链路，
+         * 见 anlu_app/main.c 的 UiPersist 说明 --- */
+#if 0
+        /* 0xf4 跟随菜单"系统 → 目标跟踪"（0=红 1=绿 2=蓝）。
+         * 0xf8 = "COL1" 能力位：老 bit 没有，先探测再写。 */
+        if(ui_read(0xf8)==0x434f4c31u &&
+           ((ui_read(0xf4) & 3u) != (ui.track_color & 3u)))
+            ui_write(0xf4, ui.track_color & 3u);
+#endif
 
         lens_diag_report();
         autofocus_task();

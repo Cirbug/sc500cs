@@ -250,6 +250,11 @@ module design_top_wrapper (
     wire [11:0] S_track_display_x0,S_track_display_y0,S_track_display_x1,S_track_display_y1;
     wire [11:0] S_track_display_cx,S_track_display_cy;
     wire [15:0] S_track_x_bcd,S_track_y_bcd;
+    // 三色各自的确认框（红/绿/蓝）。bit0/1/2 = 该色已确认，OSD 画三个框。
+    wire [2:0]  S_color3_valid;
+    wire [11:0] S_c3r_x0, S_c3r_y0, S_c3r_x1, S_c3r_y1;
+    wire [11:0] S_c3g_x0, S_c3g_y0, S_c3g_x1, S_c3g_y1;
+    wire [11:0] S_c3b_x0, S_c3b_y0, S_c3b_x1, S_c3b_y1;
     wire [23:0] S_hdmi_base_data;
     wire        S_hdmi_overlay_valid;
     wire        S_effect_vsync, S_effect_hsync, S_effect_de;
@@ -326,6 +331,9 @@ module design_top_wrapper (
         else begin S_wifi_pad_meta<={IO_wifi_gpio0,IO_wifi_reset_n}; S_wifi_pad_sync<=S_wifi_pad_meta; end
     end
     wire [31:0] S_focus_roi_apb;
+    // 自动对焦 ROI 的尺寸（APB 0xfc）。慢变控制量，而且 focus_metric 只在帧首
+    // 重新取一次，所以直接跨域即可 —— 万一取到中间态也只影响一帧。
+    wire [10:0] S_focus_roi_w_apb, S_focus_roi_h_apb;
     (* async_reg="true" *) reg [31:0] S_focus_roi_p1, S_focus_roi_p2;
     always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
         if(!S_hdmi_rst_n) begin
@@ -445,13 +453,22 @@ module design_top_wrapper (
     // 5 位：0 = 旁路，16 = 表值原样，31 = 约 194%（半档精度）。
     wire [4:0] S_lsc_ctrl_apb;
     reg  [4:0] S_lsc_ctrl_p1, S_lsc_ctrl_p2;
+    /* --- 已停用（2026-10-26）：APB 0xf4 跟踪目标颜色链路 ----
+     * 固件侧无任何菜单入口赋值，FPGA 也只按 image_step 5/6/7 选色，
+     * 0xf4 仅在非追踪档当调试回退，影响不到可见行为。
+     * 恢复时见 anlu_app/main.c 的 UiPersist 说明。
+    wire [1:0] S_track_color_apb;
+    reg  [1:0] S_track_color_p1, S_track_color_p2;
+    --------------------------------------------------------- */
     always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
         if(!S_hdmi_rst_n) begin
-            S_lsc_ctrl_p1 <= 5'd16;
-            S_lsc_ctrl_p2 <= 5'd16;
+            S_lsc_ctrl_p1 <= 5'd14;
+            S_lsc_ctrl_p2 <= 5'd14;
+            /* 已停用：S_track_color_p1 <= 2'd0; S_track_color_p2 <= 2'd0; */
         end else begin
             S_lsc_ctrl_p1 <= S_lsc_ctrl_apb;
             S_lsc_ctrl_p2 <= S_lsc_ctrl_p1;
+            /* 已停用：S_track_color_p1 <= S_track_color_apb; S_track_color_p2 <= S_track_color_p1; */
         end
     end
     wire [15:0] S_ui_vts_apb,S_cam_vts;
@@ -497,6 +514,16 @@ module design_top_wrapper (
     assign S_dbg_disp_mode  = (S_image_step_p2 >= 3'd3) ? 3'd0 : 3'd5;
     assign S_dbg_recog_mode = (S_image_step_p2 >= 3'd3);
     assign S_dbg_effect_sel = (S_image_step_p2 >= 3'd3) ? 3'd0 : S_image_effect_p2;
+    // 颜色识别（主色框 + R/G/B 字母 + 样点计数）从"运动检测"里摘出来：
+    // 运动检测那一档只画运动框，不要再混进颜色框。颜色识别需要单独一档，
+    // 档位分配待定，先置 0 停用 —— 一旦这里给出来，色框、字母、以及
+    // ui_osd 的"红色/绿色/蓝色"文字会一起生效（三处都只看 I_color_valid）。
+    wire S_color_recog_mode = 1'b0;
+    // 目标跟踪档：5=追踪红色 6=追踪蓝色 7=追踪绿色（按现场给的顺序）。
+    // 选中颜色就由档位决定，不在跟踪档时退回 APB 0xf4 的值（给调试器留的入口）。
+    wire [1:0] S_track_color_sel = (S_image_step_p2 == 3'd5) ? 2'd0 :
+                                   (S_image_step_p2 == 3'd6) ? 2'd2 :
+                                   (S_image_step_p2 == 3'd7) ? 2'd1 : 2'd0;   // 非追踪档固定红（0xf4 已停用）
     assign S_dbg_awb_bypass = 1'b0;
     assign S_motion_target  = S_image_target_p2;
     assign S_logo_enable    = S_image_logo_p2;
@@ -1201,6 +1228,7 @@ module design_top_wrapper (
         .O_picture_ctrl( S_picture_ctrl_apb ),
         .O_gamma_level ( S_gamma_level_apb ),
         .O_lsc_ctrl    ( S_lsc_ctrl_apb ),
+        /* 已停用：.O_track_color ( S_track_color_apb ), */
         .O_exposure    ( S_ui_ae_apb ),
         .O_vts(S_ui_vts_apb), .O_camera_display(S_camera_display_apb),
         .O_gain        ( S_ui_ag_apb ),
@@ -1219,6 +1247,8 @@ module design_top_wrapper (
         .I_lens_bus_state( S_lens_bus_state ),
         .I_focus_metric( S_focus_metric_apb ),
         .O_focus_roi   ( S_focus_roi_apb ),
+        .O_focus_roi_w ( S_focus_roi_w_apb ),
+        .O_focus_roi_h ( S_focus_roi_h_apb ),
         .I_rtc_time0   ( S_rtc_time0 ),
         .I_rtc_time1   ( S_rtc_time1 ),
         .I_rtc_status  ( S_rtc_status ),
@@ -1768,7 +1798,7 @@ isp_top u_isp_top (
         .I_user     ( S_hdmi_user ),
         .I_de       ( S_video_dn_de ),
         .I_data     ( S_video_dn_data ),
-        .I_enable   ( S_dbg_recog_mode && (S_dbg_step == 3'd4) ),
+        .I_enable   ( S_color_recog_mode ),
         .O_valid    ( S_color_valid ), .O_color ( S_color_code ),
         .O_count    ( S_color_count ),
         .O_x0       ( S_color_x0 ), .O_y0 (S_color_y0),
@@ -1783,7 +1813,7 @@ isp_top u_isp_top (
     ) u_red_target_tracker_99 (
         .I_clk       ( S_hdmi_pixel_clk ),
         .I_rst_n     ( S_hdmi_rst_n ),
-        .I_enable    ( S_dbg_recog_mode && ((S_dbg_step == 3'd5) || S_shape_mode) ),
+        .I_enable    ( S_dbg_recog_mode && ((S_dbg_step >= 3'd5) || S_shape_mode) ),
         .I_shape_mode(S_shape_mode), .O_shape_type(S_component_shape),
         .I_reacquire ( S_track_reacquire ),
         .I_user      ( S_hdmi_user ),
@@ -1797,12 +1827,22 @@ isp_top u_isp_top (
         .O_error_x (S_track_ex), .O_error_y (S_track_ey),
         .O_dir_x (S_track_dx), .O_dir_y (S_track_dy),
         .O_level_x (S_track_lx), .O_level_y (S_track_ly),
-        .O_area_percent (S_track_area)
+        .O_area_percent (S_track_area),
+        // 三色改造：选中颜色由档位决定（5/6/7 = 追踪红/蓝/绿）；
+        // 三个颜色的连通域一直在跑，各自的确认框单独输出给 OSD。
+        .I_target_color (S_track_color_sel),
+        .O_color_valid  (S_color3_valid),
+        .O_red_x0   (S_c3r_x0), .O_red_y0   (S_c3r_y0),
+        .O_red_x1   (S_c3r_x1), .O_red_y1   (S_c3r_y1),
+        .O_green_x0 (S_c3g_x0), .O_green_y0 (S_c3g_y0),
+        .O_green_x1 (S_c3g_x1), .O_green_y1 (S_c3g_y1),
+        .O_blue_x0  (S_c3b_x0), .O_blue_y0  (S_c3b_y0),
+        .O_blue_x1  (S_c3b_x1), .O_blue_y1  (S_c3b_y1)
     );
 
     red_track_display #(.IMG_WIDTH(`HDMI_H_ACTIVE),.IMG_HEIGHT(`HDMI_V_ACTIVE)) u_red_track_display(
         .clk(S_hdmi_pixel_clk),.rst_n(S_hdmi_rst_n),
-        .enable(S_dbg_recog_mode && S_dbg_step==3'd5),.reacquire(S_track_reacquire),
+        .enable(S_dbg_recog_mode && S_dbg_step>=3'd5),.reacquire(S_track_reacquire),
         .frame_start(S_hdmi_user),.new_result(S_track_new),.valid(S_track_valid),
         .x0(S_track_x0),.y0(S_track_y0),.x1(S_track_x1),.y1(S_track_y1),
         .cx(S_track_cx),.cy(S_track_cy),
@@ -1816,7 +1856,7 @@ isp_top u_isp_top (
     red_track_mailbox u_red_track_mailbox (
         .pixel_clk(S_hdmi_pixel_clk), .apb_clk(S_mcu_apb_clk),
         .rst_n(S_hdmi_rst_n && S_rst_n),
-        .enable(S_dbg_step == 3'd5), .reacquire(S_track_reacquire),
+        .enable(S_dbg_step >= 3'd5), .reacquire(S_track_reacquire),
         .new_result(S_track_new), .valid(S_track_valid), .state(S_track_state),
         .dir_x(S_track_dx), .dir_y(S_track_dy),
         .level_x(S_track_lx), .level_y(S_track_ly),
@@ -1897,6 +1937,11 @@ isp_top u_isp_top (
         .I_track_cx (S_track_display_cx), .I_track_cy (S_track_display_cy),
         .I_track_ex (S_track_ex), .I_track_ey (S_track_ey),
         .I_track_area (S_track_area),
+        .I_color3_valid (S_color3_valid),
+        .I_c3r_x0 (S_c3r_x0), .I_c3r_y0 (S_c3r_y0), .I_c3r_x1 (S_c3r_x1), .I_c3r_y1 (S_c3r_y1),
+        .I_c3g_x0 (S_c3g_x0), .I_c3g_y0 (S_c3g_y0), .I_c3g_x1 (S_c3g_x1), .I_c3g_y1 (S_c3g_y1),
+        .I_c3b_x0 (S_c3b_x0), .I_c3b_y0 (S_c3b_y0), .I_c3b_x1 (S_c3b_x1), .I_c3b_y1 (S_c3b_y1),
+        .I_target_color (S_track_color_sel),
         .O_video_rd_en   ( S_hdmi_window_rd_en),
         .I_video_rd_data ( S_lsc_video_data    ),
         .O_hdmi_vsync    ( S_hdmi_out_vsync   ),
@@ -1980,6 +2025,8 @@ isp_top u_isp_top (
         .I_de           ( S_hdmi_out_de ),
         .I_data         ( S_hdmi_base_data ),
         .I_roi          ( S_focus_roi_p2 ),
+        .I_roi_w        ( S_focus_roi_w_apb ),
+        .I_roi_h        ( S_focus_roi_h_apb ),
         .O_metric       ( S_focus_metric_pix ),
         .O_frame_toggle ( S_focus_frame_toggle )
     );
@@ -2043,6 +2090,8 @@ isp_top u_isp_top (
         .I_picture_page ( S_picture_page_p2 ),
         .I_mode_page    ( S_mode_page_p2 ),
         .I_focus_roi    ( S_focus_roi_p2 ),
+        .I_focus_roi_w  ( S_focus_roi_w_apb ),
+        .I_focus_roi_h  ( S_focus_roi_h_apb ),
         .I_image_step   ( S_image_step_p2 ),
         .I_image_effect ( S_dbg_effect_sel ),
         .I_shape_valid  ( S_shape_valid ),
@@ -2050,12 +2099,20 @@ isp_top u_isp_top (
         .I_shape_x0     ( S_shape_x0 ),
         .I_shape_y0     ( S_shape_y0 ),
         .I_shape_y1     ( S_shape_y1 ),
+        // 用帧同步快照（red_track_display）而不是跟踪器原始输出：坐标读数与
+        // gege 的颜色标签都读它，避免标签在帧中间跳变。
         .I_track_valid  ( S_track_display_valid ),
         .I_track_x0     ( S_track_display_x0 ),
         .I_track_y0     ( S_track_display_y0 ),
         .I_track_y1     ( S_track_display_y1 ),
         .I_track_x_negative(S_track_x_negative),.I_track_y_negative(S_track_y_negative),
         .I_track_x_bcd(S_track_x_bcd),.I_track_y_bcd(S_track_y_bcd),
+        // 三色识别结果文字（"红色/绿色/蓝色"）由结果文字层画，复用菜单字库
+        .I_color_valid  ( S_color_valid ),
+        .I_color_code   ( S_color_code ),
+        .I_color_x0     ( S_color_x0 ),
+        .I_color_y0     ( S_color_y0 ),
+        .I_color_y1     ( S_color_y1 ),
         .I_picture_ctrl ( S_picture_pixel[15:0] ),
         .I_exposure     ( S_ui_ae_p2 ),
         .I_gain         ( S_ui_ag_p2 ),

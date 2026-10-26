@@ -691,39 +691,24 @@ module color_detect #(
     reg [10:0] px, py;
     reg        de_d;
 
-    // ---- color classification (combinational) ----
+    // ---- 三色分类（组合逻辑）----
+    // 判据统一到 color_predicate.vh：比值型 + 亮度下限，只认红/绿/蓝；
+    // 灰、白、黄、品红、青一律算"无颜色"——本设计只识别三种颜色。
+    // 编码 0 = 无, 1 = 红, 2 = 绿, 3 = 蓝（= 色标编号 - 1，方便做字母/框索引）
+    `include "color_predicate.vh"
     wire [7:0] c_r = I_data[23:16];
     wire [7:0] c_g = I_data[15:8];
     wire [7:0] c_b = I_data[7:0];
-    wire [7:0] c_max = (c_g < c_r) ? ((c_b < c_r) ? c_r : c_b) : ((c_b < c_g) ? c_g : c_b);
-    wire [7:0] c_min = (c_r < c_g) ? ((c_r < c_b) ? c_r : c_b) : ((c_g < c_b) ? c_g : c_b);
-    wire [7:0] c_chroma = c_max - c_min;
-    wire [8:0] r9 = {1'b0, c_r};
-    wire [8:0] g9 = {1'b0, c_g};
-    wire [8:0] b9 = {1'b0, c_b};
+    wire [2:0] c_code = color_code3(c_r, c_g, c_b);   // 0 / 2 / 3 / 4
 
-    reg [2:0] cls;
+    reg [1:0] cls;
     always @(*) begin
-        if (8'd200 <= c_min)
-            cls = 3'd7;
-        else if (c_max < 8'd50)
-            cls = 3'd0;
-        else if (c_chroma < 8'd30)
-            cls = 3'd0;
-        else if ((g9 + 9'd24 <= r9) && (b9 + 9'd24 <= r9))
-            cls = 3'd1;
-        else if ((r9 + 9'd24 <= g9) && (b9 + 9'd16 <= g9))
-            cls = 3'd2;
-        else if ((r9 + 9'd24 <= b9) && (g9 <= b9 + 9'd16))
-            cls = 3'd3;
-        else if ((r9 <= g9 + 9'd16) && (g9 <= r9 + 9'd16) && (b9 + 9'd32 <= r9))
-            cls = 3'd4;
-        else if ((g9 + 9'd24 <= r9) && (g9 + 9'd16 <= b9) && (r9 <= b9 + 9'd16) && (b9 <= r9 + 9'd16))
-            cls = 3'd5;
-        else if ((r9 + 9'd16 <= g9) && (r9 + 9'd16 <= b9) && (g9 <= b9 + 9'd16) && (b9 <= g9 + 9'd16))
-            cls = 3'd6;
-        else
-            cls = 3'd0;
+        case (c_code)
+            3'd2:    cls = 2'd1;   // 红
+            3'd3:    cls = 2'd2;   // 绿
+            3'd4:    cls = 2'd3;   // 蓝
+            default: cls = 2'd0;   // 无颜色
+        endcase
     end
 
     wire [6:0] sx = px[10:SAMPLE_SHIFT];
@@ -731,11 +716,11 @@ module color_detect #(
     wire       sample = I_enable && I_de && ((px & SAMPLE_MASK) == 0) && ((py & SAMPLE_MASK) == 0);
 
     // ---- per-class count + bounding box ----
-    reg [15:0] cnt [0:7];
-    reg [6:0]  minx [0:7];
-    reg [6:0]  maxx [0:7];
-    reg [6:0]  miny [0:7];
-    reg [6:0]  maxy [0:7];
+    reg [15:0] cnt [0:3];
+    reg [6:0]  minx [0:3];
+    reg [6:0]  maxx [0:3];
+    reg [6:0]  miny [0:3];
+    reg [6:0]  maxy [0:3];
     integer i;
 
     // ---- dominant color search (combinational) ----
@@ -746,7 +731,7 @@ module color_detect #(
     always @(posedge I_clk or negedge I_rst_n) begin
         if (!I_rst_n) begin
             px <= 11'd0; py <= 11'd0; de_d <= 1'b0;
-            for (i = 0; i < 8; i = i + 1) begin
+            for (i = 0; i < 4; i = i + 1) begin
                 cnt[i]  <= 16'd0;
                 minx[i] <= 7'h7f; maxx[i] <= 7'd0;
                 miny[i] <= 7'h7f; maxy[i] <= 7'd0;
@@ -755,7 +740,7 @@ module color_detect #(
             O_x0 <= 12'd0; O_y0 <= 12'd0; O_x1 <= 12'd0; O_y1 <= 12'd0;
         end else if (!I_enable) begin
             px <= 11'd0; py <= 11'd0; de_d <= 1'b0;
-            for (i = 0; i < 8; i = i + 1) begin
+            for (i = 0; i < 4; i = i + 1) begin
                 cnt[i]  <= 16'd0;
                 minx[i] <= 7'h7f; maxx[i] <= 7'd0;
                 miny[i] <= 7'h7f; maxy[i] <= 7'd0;
@@ -773,7 +758,7 @@ module color_detect #(
                 O_x1 <= (({5'd0, maxx[dom_color]} << SAMPLE_SHIFT) + SAMPLE_MASK);
                 O_y1 <= (({5'd0, maxy[dom_color]} << SAMPLE_SHIFT) + SAMPLE_MASK);
                 px <= 11'd0; py <= 11'd0;
-                for (i = 0; i < 8; i = i + 1) begin
+                for (i = 0; i < 4; i = i + 1) begin
                     cnt[i]  <= 16'd0;
                     minx[i] <= 7'h7f; maxx[i] <= 7'd0;
                     miny[i] <= 7'h7f; maxy[i] <= 7'd0;
@@ -794,24 +779,17 @@ module color_detect #(
         end
     end
 
-    // dominant color = class with the largest count (tree compare, log depth)
-    wire [15:0] m01 = (cnt[0] < cnt[1]) ? cnt[1] : cnt[0];
-    wire [2:0]  c01 = (cnt[0] < cnt[1]) ? 3'd1  : 3'd0;
-    wire [15:0] m23 = (cnt[2] < cnt[3]) ? cnt[3] : cnt[2];
-    wire [2:0]  c23 = (cnt[2] < cnt[3]) ? 3'd3  : 3'd2;
-    wire [15:0] m45 = (cnt[4] < cnt[5]) ? cnt[5] : cnt[4];
-    wire [2:0]  c45 = (cnt[4] < cnt[5]) ? 3'd5  : 3'd4;
-    wire [15:0] m67 = (cnt[6] < cnt[7]) ? cnt[7] : cnt[6];
-    wire [2:0]  c67 = (cnt[6] < cnt[7]) ? 3'd7  : 3'd6;
-
-    wire [15:0] m0123 = (m01 < m23) ? m23 : m01;
-    wire [2:0]  c0123 = (m01 < m23) ? c23 : c01;
-    wire [15:0] m4567 = (m45 < m67) ? m67 : m45;
-    wire [2:0]  c4567 = (m45 < m67) ? c67 : c45;
+    // dominant color = class with the largest count, SNAPSHOT 只在红/绿/蓝之间比。
+    // 中性类 cnt[0] 刻意不参加：以前它参加，于是"灰墙 + 一个红盒子"永远由中性
+    // 胜出、O_valid=0，识别等于失效；而小目标又永远赢不了大片背景。
+    wire [15:0] m12 = (cnt[1] < cnt[2]) ? cnt[2] : cnt[1];
+    wire [1:0]  c12 = (cnt[1] < cnt[2]) ? 2'd2  : 2'd1;
+    wire [15:0] m012 = (m12 < cnt[3]) ? cnt[3] : m12;
+    wire [1:0]  c012 = (m12 < cnt[3]) ? 2'd3  : c12;
 
     always @(*) begin
-        dom_cnt   = (m0123 < m4567) ? m4567 : m0123;
-        dom_color = (m0123 < m4567) ? c4567 : c0123;
+        dom_cnt   = m012;
+        dom_color = {1'b0, c012};   // O_color 仍为 3 位，值域 1..3
     end
 endmodule
 

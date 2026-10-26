@@ -8,7 +8,12 @@ module tb_red_tracker_1080p;
     wire result,valid;wire [1:0] state,dx,dy,lx,ly;
     wire [11:0] x0,y0,x1,y1,cx,cy;wire signed [12:0] ex,ey;wire [6:0] area;
     red_target_tracker #(.CONFIRM_FRAMES(1)) dut
-        (clk,rst,enable,reacquire,user,de,data,result,valid,state,x0,y0,x1,y1,cx,cy,ex,ey,dx,dy,lx,ly,area);
+          (.I_clk(clk),.I_rst_n(rst),.I_enable(enable),.I_reacquire(reacquire),
+           .I_user(user),.I_de(de),.I_data(data),
+           .O_new_result(result),.O_valid(valid),.O_state(state),
+           .O_x0(x0),.O_y0(y0),.O_x1(x1),.O_y1(y1),.O_cx(cx),.O_cy(cy),
+           .O_error_x(ex),.O_error_y(ey),.O_dir_x(dx),.O_dir_y(dy),
+           .O_level_x(lx),.O_level_y(ly),.O_area_percent(area));
     integer result_count=0;
     always @(posedge clk) if(result) result_count=result_count+1;
     task frame(input integer kind);

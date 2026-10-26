@@ -4,6 +4,10 @@
 #include <string.h>
 #include "../FDwork/shared/menu_input.h"
 #include "../FDwork/shared/red_track_control.h"
+/* gege 8f21399：tracking_service.h 新增调用 touch_focus.h 的 touch_distance()，
+ * 而 tracking_service.h 自身没有任何 include（靠调用方保证顺序）。固件那边顺序正确，
+ * 主机测试需要显式补上。 */
+#include "../FDwork/shared/touch_focus.h"
 #define UI_LENS_POS 0x28u
 #define UI_LENS_CMD 0x2cu
 #define UI_LENS_STAT 0x30u
@@ -40,6 +44,8 @@ static uint32_t ui_read(uint32_t off)
 static void ui_write(uint32_t off,uint32_t value);
 static void lens_diag_report(void){}
 static void focus_plot(uint32_t p,uint32_t m,uint32_t s){(void)p;(void)m;(void)s;}
+/* gege 8f21399 在 autofocus_control.h 里新增 al_printf 诊断，补最小桩。 */
+static void al_printf(const char *fmt,...) {(void)fmt;}
 #include "../FDwork/shared/autofocus_control.h"
 #include "../FDwork/shared/tracking_service.h"
 static void ui_write(uint32_t off,uint32_t value)
@@ -107,7 +113,10 @@ int main(void)
     reset();request();
     service(199,1);assert(lens_moves==0 && g_af_debug.reason==AF_REASON_WAIT_GIMBAL);
     service(1,1);assert(lens_moves==1);
-    finish(AF_REASON_DONE);assert(regs[UI_LENS_POS/4]==6976);
+      /* 细扫步长 gege 由 64 改为 256，真峰 7000 落到最近的 256 网格点 6912；
+       * 用"距真峰不超过一个细扫步长"断言，以后再调步长也不会误报。 */
+      finish(AF_REASON_DONE);
+      assert(regs[UI_LENS_POS/4]<=7000u+AF_FINE_STEP && 7000u<=regs[UI_LENS_POS/4]+AF_FINE_STEP);
     resume();
     puts("PASS AF owns both axes from accepted request through settle/coarse/fine/final return; fresh-frame resume");
 

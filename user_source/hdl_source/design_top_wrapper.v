@@ -422,11 +422,11 @@ module design_top_wrapper (
     wire [3:0]  S_gamma_level_apb;
     wire [19:0] S_picture_apb, S_picture_isp, S_picture_pixel;
     assign S_picture_apb = {S_gamma_level_apb, S_picture_ctrl_apb};
-    picture_control_cdc #(.WIDTH(20), .INIT(20'h41050)) u_picture_isp (
+    picture_control_cdc #(.WIDTH(20), .INIT(20'h4108C)) u_picture_isp (
         .src_clk(S_mcu_apb_clk), .dst_clk(S_csi_rx_clk), .rst_n(S_rst_n),
         .requested(S_picture_apb), .frame_start(S_raw_tuser), .active(S_picture_isp)
     );
-    picture_control_cdc #(.WIDTH(20), .INIT(20'h41050)) u_picture_pixel (
+    picture_control_cdc #(.WIDTH(20), .INIT(20'h4108C)) u_picture_pixel (
         .src_clk(S_mcu_apb_clk), .dst_clk(S_hdmi_pixel_clk), .rst_n(S_rst_n),
         .requested(S_picture_apb), .frame_start(S_hdmi_vsync), .active(S_picture_pixel)
     );

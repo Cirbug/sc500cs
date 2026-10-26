@@ -5,6 +5,13 @@ slider (0=OFF, 1..8 = 0.30..0.65; Sobel keeps 0.45).  The XIP firmware carries
 the slider; the TCM image keeps the old OFF/ON switch because it has no room.
 See tests/GAMMA_SLIDER.txt.
 
+2026-10-26: adds lens-shading correction (LSC) and cross-reconfiguration state
+retention from the "picture repair" branch, merged with the GAM1 slider above.
+LSC strength is menu item SYSTEM -> 色度 (APB 0xec/0xf0, 5-bit, 0..31) and runs
+in the display domain after video_out, where gamma is off.  FPGA reset, the
+picture mailbox INIT and firmware PICTURE_DEFAULT are now all 0x108c; keep them
+in step or the picture jumps on every bit load.  See lens_shading_correction.v.
+
 Deploy BOTH the picture FPGA bitstream and one matching MCU firmware:
   FPGA: build/picture_control_20261013/camera_to_dsi_display_picture.bit
   RAM debug: FDwork/anlu_app/build/anlu_app.elf
@@ -38,18 +45,24 @@ Register map, base 0x70000000:
   0x08 bit3: picture page (bits0..2 remain menu/edit/info)
   0x70 bits5:0 black, bit6 gamma, bits8:7 brightness 0..3,
        bits11:9 saturation 0..4, bits13:12 AWB 0..3,
-       bits15:14 denoise 0..3. Existing FPGA reset 0x1050; MCU startup and
-       DEFAULT explicitly write 0x108c (BLACK=12, gamma OFF, brightness 1.125x).
+       bits15:14 denoise 0..3. FPGA reset and firmware DEFAULT are both 0x108c;
+       MCU startup writes it explicitly (BLACK=12, gamma OFF, brightness 1.125x).
        Requires both low byte strobes; invalid saturation clamps to 4.
   0x6c GAM1: write low 4 bits = gamma level (0=OFF, 1..8=0.30..0.65);
        read 0x47414D30 | level.  GAM1 and PIC1 share the 20-bit frame-boundary
        mailbox.  XIP only; TCM keeps the old OFF/ON PIC1 bit.
   0x74 read-only 0x50494331 (PIC1).
+  0xec LSC: write low 5 bits = lens-shading strength (0 = bypass, 16 = table
+       as-is, 31 = about 194%).  Read back as {27 zero bits, value}.
+  0xf0 read-only 0x4c534331 (LSC1 capability).
 MCU checks PIC1 before exposing the submenu or writing the new register.
 The requested word crosses each clock domain through an acknowledged mailbox;
 the ISP applies it only on frame start. OSD values may lag the edit briefly.
-Settings are volatile: boot/default restores the profile above. No Flash
-settings persistence or RTC calibration is added by this change.
+Settings are volatile across power cycles: boot/default restores the profile.
+The TCM firmware additionally survives an FPGA reconfiguration (TD bit load)
+via the .wifi_noinit block in main.c, so re-loading a bit no longer changes the
+picture; that spans MCU reset only, not power loss. No Flash settings
+persistence or RTC calibration is added by this change.
 The BLACK=12/gamma-OFF/Sobel-override update requires only new MCU firmware
 when the PIC1 FPGA bitstream is already installed. No new FPGA build needed.
 

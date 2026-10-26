@@ -626,8 +626,11 @@ module hdmi_mixer_image9 #(
     reg [23:0] S_track_color_1d;
     red_tracking_osd #(.IMG_WIDTH(IMG_WIDTH),.IMG_HEIGHT(IMG_HEIGHT)) u_red_tracking_osd (
         .I_clk(I_clk),.I_rst_n(I_rst_n),
-        .I_enable(I_recog_mode && (I_dbg_step>=3'd5 || I_dbg_step==3'd1)),.I_de(S_video_de_2d),
-        .I_x(S_x),.I_y(S_y_pix),.I_new_result(I_track_new),.I_valid(I_track_valid),
+        .I_enable(I_recog_mode && (I_dbg_step>=3'd5 || I_dbg_step==3'd1 || I_dbg_step==3'd0)),.I_de(S_video_de_2d),
+        // 颜色识别档（0）：画三个颜色框，且不画追踪档那套十字/死区/目标框。
+        .I_color_show(I_recog_mode && I_dbg_step==3'd0),
+        .I_x(S_x),.I_y(S_y_pix),.I_new_result(I_track_new),
+        .I_valid(I_track_valid && I_dbg_step!=3'd0),
         .I_state(I_track_state),.I_x0(I_track_x0),.I_y0(I_track_y0),
         .I_x1(I_track_x1),.I_y1(I_track_y1),.I_cx(I_track_cx),.I_cy(I_track_cy),
         .I_error_x(I_track_ex),.I_error_y(I_track_ey),

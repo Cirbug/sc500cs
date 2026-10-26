@@ -517,12 +517,11 @@ module design_top_wrapper (
     assign S_motion_target  = S_image_target_p2;
     assign S_logo_enable    = S_image_logo_p2;
 
-    /* ---- 颜色识别档（0）：把 color_detect 打开 ----
-     * 它就是原来"从运动检测里摘出来"的那个主色框 + R/G/B 字母 + 样点计数，
-     * 之前因为没有档位而写死 0 停用。现在有档位了，直接接上：
-     * 色框/字母/计数在 hdmi_mixer_image9 里已经全接好，ui_osd 的
-     * "红色/绿色/蓝色"文字、底部位置行也都只看 I_color_valid。 */
-    wire S_color_recog_mode = S_color_only_mode;
+    /* ---- 三色连通域核心：颜色识别档和追踪档都要跑 ----
+     * 2026-10-26：颜色识别档（0）也从这里取结果，不再用 color_detect。
+     * 原因见下面 S_color_* 那一段：color_detect 没有任何时间滤波，框会乱跳。
+     * 运动检测档（4）不需要它，所以只排除那一档。 */
+    wire S_track_core_en = S_any_track_mode || S_shape_mode || S_color_only_mode;
 
     /* ---- 自动追踪档（1）：自动挑颜色 ----
      * 三个颜色的连通域在 red_shape_tracker 里每帧都在跑（S_color3_valid + 三个框），
@@ -537,6 +536,13 @@ module design_top_wrapper (
     wire [11:0] S_c3_dy_g = (S_c3g_y1 > S_c3g_y0) ? (S_c3g_y1 - S_c3g_y0) : 12'd0;
     wire [11:0] S_c3_dx_b = (S_c3b_x1 > S_c3b_x0) ? (S_c3b_x1 - S_c3b_x0) : 12'd0;
     wire [11:0] S_c3_dy_b = (S_c3b_y1 > S_c3b_y0) ? (S_c3b_y1 - S_c3b_y0) : 12'd0;
+    /* 三色框的中心（颜色识别档底部位置行要三个都列出来） */
+    wire [11:0] S_c3r_cx = S_c3r_x0 + (S_c3_dx_r >> 1);
+    wire [11:0] S_c3r_cy = S_c3r_y0 + (S_c3_dy_r >> 1);
+    wire [11:0] S_c3g_cx = S_c3g_x0 + (S_c3_dx_g >> 1);
+    wire [11:0] S_c3g_cy = S_c3g_y0 + (S_c3_dy_g >> 1);
+    wire [11:0] S_c3b_cx = S_c3b_x0 + (S_c3_dx_b >> 1);
+    wire [11:0] S_c3b_cy = S_c3b_y0 + (S_c3_dy_b >> 1);
     reg  [23:0] S_c3_area_r, S_c3_area_g, S_c3_area_b;
     reg  [2:0]  S_c3_valid_f;
     reg  [1:0]  S_auto_color_lock;
@@ -551,7 +557,7 @@ module design_top_wrapper (
             S_c3_area_g  <= S_c3_dx_g * S_c3_dy_g;
             S_c3_area_b  <= S_c3_dx_b * S_c3_dy_b;
             S_c3_valid_f <= S_color3_valid;
-            if(!S_auto_track_mode) S_auto_color_have <= 1'b0;      /* 出档就放松 */
+            if(!S_track_core_en) S_auto_color_have <= 1'b0;      /* 出档就放松 */
             else if(!S_auto_color_have) begin
                 /* 没锁定：挑确认了的里面最大的（并列时红优先） */
                 if(S_c3_valid_f[0] && S_c3_area_r>=S_c3_area_g && S_c3_area_r>=S_c3_area_b) begin
@@ -1830,23 +1836,29 @@ isp_top u_isp_top (
         .O_x1_2 (S_motion_x1_2), .O_y1_2 (S_motion_y1_2)
     );
 
-    color_detect #(
-        .IMG_WIDTH    (`DISPLAY_WIDTH),
-        .IMG_HEIGHT   (`DISPLAY_HEIGHT),
-        .SAMPLE_SHIFT (4),
-        .MIN_SAMPLES  (16'd16)
-    ) u_color_detect_99 (
-        .I_clk      ( S_hdmi_pixel_clk ),
-        .I_rst_n    ( S_hdmi_rst_n ),
-        .I_user     ( S_hdmi_user ),
-        .I_de       ( S_video_dn_de ),
-        .I_data     ( S_video_dn_data ),
-        .I_enable   ( S_color_recog_mode ),
-        .O_valid    ( S_color_valid ), .O_color ( S_color_code ),
-        .O_count    ( S_color_count ),
-        .O_x0       ( S_color_x0 ), .O_y0 (S_color_y0),
-        .O_x1       ( S_color_x1 ), .O_y1 (S_color_y1)
-    );
+    /* ---- 颜色识别档的结果：**复用三色跟踪那套已经时间滤波过的结果** ----
+     * 原来这档接的是 color_detect：它每帧独立统计"主色"再取包围盒，**没有任何
+     * 时间滤波** —— 一帧噪声就能让它换颜色、包围盒跟着乱跳（现场"颜色识别的框
+     * 在乱跳"就是这个原因）。
+     * 而 red_shape_tracker 里的三色连通域本来就带 CONFIRM_FRAMES=3 确认 +
+     * LOST_FRAMES=5 保持，还顺手算了包围盒面积。所以这里直接用它挑出来的那个
+     * 最大颜色：稳、颜色和框天然一致、还少一个模块。
+     * 采样计数用包围盒面积>>8 —— 一个 16x16 采样格正好 256 像素，就是格数。 */
+    wire [1:0]  S_color_view  = S_auto_color;
+    wire        S_color_valid = S_c3_valid_f[S_color_view];
+    wire [2:0]  S_color_code  = (S_color_view==2'd0) ? 3'd1 :
+                                (S_color_view==2'd1) ? 3'd2 : 3'd3;   // 1/2/3 = 红/绿/蓝
+    wire [11:0] S_color_x0 = (S_color_view==2'd0) ? S_c3r_x0 :
+                             (S_color_view==2'd1) ? S_c3g_x0 : S_c3b_x0;
+    wire [11:0] S_color_y0 = (S_color_view==2'd0) ? S_c3r_y0 :
+                             (S_color_view==2'd1) ? S_c3g_y0 : S_c3b_y0;
+    wire [11:0] S_color_x1 = (S_color_view==2'd0) ? S_c3r_x1 :
+                             (S_color_view==2'd1) ? S_c3g_x1 : S_c3b_x1;
+    wire [11:0] S_color_y1 = (S_color_view==2'd0) ? S_c3r_y1 :
+                             (S_color_view==2'd1) ? S_c3g_y1 : S_c3b_y1;
+    wire [15:0] S_color_count = (S_color_view==2'd0) ? S_c3_area_r[23:8] :
+                                (S_color_view==2'd1) ? S_c3_area_g[23:8] :
+                                                       S_c3_area_b[23:8];
 
     red_shape_tracker #(
         .IMG_WIDTH    (`DISPLAY_WIDTH),
@@ -1856,7 +1868,7 @@ isp_top u_isp_top (
     ) u_red_target_tracker_99 (
         .I_clk       ( S_hdmi_pixel_clk ),
         .I_rst_n     ( S_hdmi_rst_n ),
-        .I_enable    ( S_recog_any_mode && (S_any_track_mode || S_shape_mode) ),
+        .I_enable    ( S_track_core_en ),
         .I_shape_mode(S_shape_mode), .O_shape_type(S_component_shape),
         .I_reacquire ( S_track_reacquire ),
         .I_user      ( S_hdmi_user ),
@@ -1954,7 +1966,9 @@ isp_top u_isp_top (
         .I_motion_x1_1 (S_motion_x1_1), .I_motion_y1_1 (S_motion_y1_1),
         .I_motion_x0_2 (S_motion_x0_2), .I_motion_y0_2 (S_motion_y0_2),
         .I_motion_x1_2 (S_motion_x1_2), .I_motion_y1_2 (S_motion_y1_2),
-        .I_color_valid  ( S_color_valid ), .I_color_code (S_color_code),
+        // 颜色识别的框改由 red_tracking_osd 画**三个**颜色框（连通域、稳定），
+// 这里那个"单框 + R/G/B 字母 + 采样计数"的老叠加层就关掉，免得两个框叠在一起。
+        .I_color_valid  ( 1'b0 ), .I_color_code (S_color_code),
         .I_color_count  ( S_color_count ),
         .I_color_x0 (S_color_x0), .I_color_y0 (S_color_y0),
         .I_color_x1 (S_color_x1), .I_color_y1 (S_color_y1),
@@ -2145,6 +2159,14 @@ isp_top u_isp_top (
         .I_track_cx     ( S_track_cx ),
         .I_track_cy     ( S_track_cy ),
         .I_track_color  ( S_track_color_sel ),
+        // 三色框中心（颜色识别档底部一次列出三个颜色）
+        .I_r_cx ( S_c3r_cx ), .I_r_cy ( S_c3r_cy ),
+        .I_g_cx ( S_c3g_cx ), .I_g_cy ( S_c3g_cy ),
+        .I_b_cx ( S_c3b_cx ), .I_b_cy ( S_c3b_cy ),
+        .I_r_x0 ( S_c3r_x0 ), .I_r_y0 ( S_c3r_y0 ), .I_r_x1 ( S_c3r_x1 ), .I_r_y1 ( S_c3r_y1 ),
+        .I_g_x0 ( S_c3g_x0 ), .I_g_y0 ( S_c3g_y0 ), .I_g_x1 ( S_c3g_x1 ), .I_g_y1 ( S_c3g_y1 ),
+        .I_b_x0 ( S_c3b_x0 ), .I_b_y0 ( S_c3b_y0 ), .I_b_x1 ( S_c3b_x1 ), .I_b_y1 ( S_c3b_y1 ),
+        .I_c3_valid ( S_color3_valid ),
         .I_shape_x1     ( S_shape_x1 ),
         .I_color_x1     ( S_color_x1 ),
         .I_picture_ctrl ( S_picture_pixel ),

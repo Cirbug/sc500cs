@@ -63,6 +63,14 @@ module ui_osd #(
     input  wire [11:0] I_track_cx, I_track_cy,
     // 实际在跟的颜色（0红/1绿/2蓝）：自动追踪档没有固定颜色，标签/色标要用它。
     input  wire [1:0]  I_track_color,
+    // 三色连通域框的中心（颜色识别档要三个一起列出来）。
+    input  wire [11:0] I_r_cx, I_r_cy, I_g_cx, I_g_cy, I_b_cx, I_b_cy,
+    // 三色连通域框本身：颜色识别档要在框里写颜色名、在框旁边写坐标。
+    input  wire [11:0] I_r_x0, I_r_y0, I_r_x1, I_r_y1,
+    input  wire [11:0] I_g_x0, I_g_y0, I_g_x1, I_g_y1,
+    input  wire [11:0] I_b_x0, I_b_y0, I_b_x1, I_b_y1,
+    // 三个颜色各自的确认标志：没确认的颜色那一组不显示（现场要求）
+    input  wire [2:0]  I_c3_valid,
     input  wire [11:0] I_shape_x1,
     input  wire [11:0] I_color_x1,
     input  wire [15:0] I_picture_ctrl,
@@ -104,10 +112,60 @@ module ui_osd #(
      *   颜色识别      -> 主色框中心（该档在 RTL 里目前 S_color_recog_mode=0 停用）
      * 数字在 vsync 时算好 BCD 存起来，一帧内不变 —— 常量除法不进像素路径
      * （和黑电平 /10 一个套路）。 */
-    reg  [15:0] pos_x_bcd, pos_y_bcd;
+    /* 颜色识别档要同时列三个颜色的中心，所以一共 8 个坐标（3 色 x/y + 单目标 x/y）。
+     * 除法器只有**一套**，靠 bcd_sel 轮流算：8 个值 × 8 拍 = 64 拍 ≈ 1.3us 就转一圈，
+     * 屏上看起来是连续的。要是给 8 个值各配一套 12 位常量除法，那是 ~1600 个 LUT。 */
+    reg  [15:0] bcd_rx,bcd_ry,bcd_gx,bcd_gy,bcd_bx,bcd_by,bcd_sx,bcd_sy;
+    reg  [2:0]  bcd_sel, bcd_div;
+    reg  [11:0] bcd_v;
+    wire [3:0]  bcd_th=(bcd_v/12'd1000)%10, bcd_hu=(bcd_v/12'd100)%10;
+    wire [3:0]  bcd_te=(bcd_v/12'd10)%10,   bcd_on=bcd_v%10;
+    wire [15:0] bcd_new={bcd_th,bcd_hu,bcd_te,bcd_on};
+    always @(posedge I_clk or negedge I_rst_n) begin
+        if(!I_rst_n) begin
+            bcd_sel<=3'd0; bcd_div<=3'd0; bcd_v<=12'd0;
+            bcd_rx<=0;bcd_ry<=0;bcd_gx<=0;bcd_gy<=0;bcd_bx<=0;bcd_by<=0;bcd_sx<=0;bcd_sy<=0;
+        end else begin
+            /* 轮转：每个值停 8 拍，够组合除法稳定 */
+            bcd_div<=bcd_div+1'b1;
+            if(bcd_div==3'd7) begin
+                bcd_sel<=(bcd_sel==3'd7)?3'd0:bcd_sel+1'b1;
+                case(bcd_sel)
+                    3'd0: bcd_rx<=bcd_new;
+                    3'd1: bcd_ry<=bcd_new;
+                    3'd2: bcd_gx<=bcd_new;
+                    3'd3: bcd_gy<=bcd_new;
+                    3'd4: bcd_bx<=bcd_new;
+                    3'd5: bcd_by<=bcd_new;
+                    3'd6: bcd_sx<=bcd_new;
+                    default: bcd_sy<=bcd_new;
+                endcase
+            end
+            /* 下一个要算的值：三个颜色用连通域框的中心，单目标用 pos_cx/pos_cy */
+            case(bcd_sel)
+                3'd0: bcd_v<=I_r_cx; 3'd1: bcd_v<=I_r_cy;
+                3'd2: bcd_v<=I_g_cx; 3'd3: bcd_v<=I_g_cy;
+                3'd4: bcd_v<=I_b_cx; 3'd5: bcd_v<=I_b_cy;
+                3'd6: bcd_v<=pos_cx; default: bcd_v<=pos_cy;
+            endcase
+        end
+    end
+    wire pos_three = (I_image_step == 3'd0);        // 颜色识别档：列三个颜色
+    /* 颜色识别档的坐标不再挤在底部那一行，改成写在**各自框的旁边**：
+     * 框下方 4 像素起，每个标签 11 格 = 352 x 28 像素（X#### Y####）。
+     * 下面放不下就翻到框上方；太靠右就往左挪，保证整条留在画面里。 */
+    wire [11:0] clx_r = (I_r_x0 > 12'd1560) ? 12'd1560 : I_r_x0;
+    wire [11:0] cly_r = (I_r_y1 <= 12'd1044) ? (I_r_y1 + 12'd4) :
+                        (I_r_y0 >= 12'd36)   ? (I_r_y0 - 12'd32) : 12'd0;
+    wire [11:0] clx_g = (I_g_x0 > 12'd1560) ? 12'd1560 : I_g_x0;
+    wire [11:0] cly_g = (I_g_y1 <= 12'd1044) ? (I_g_y1 + 12'd4) :
+                        (I_g_y0 >= 12'd36)   ? (I_g_y0 - 12'd32) : 12'd0;
+    wire [11:0] clx_b = (I_b_x0 > 12'd1560) ? 12'd1560 : I_b_x0;
+    wire [11:0] cly_b = (I_b_y1 <= 12'd1044) ? (I_b_y1 + 12'd4) :
+                        (I_b_y0 >= 12'd36)   ? (I_b_y0 - 12'd32) : 12'd0;
     reg         pos_valid_frame;
     reg  [1:0]  pos_src_frame;              // 0=追踪 1=形状 2=颜色
-    wire        pos_mode = (I_image_step == 3'd0) || (I_image_step == 3'd1) ||
+    wire        pos_mode = (I_image_step == 3'd1) ||
                            (I_image_step == 3'd3) || (I_image_step >= 3'd5);
     wire [1:0]  pos_src  = (I_image_step == 3'd0) ? 2'd2 :
                            (I_image_step == 3'd3) ? 2'd1 : 2'd0;
@@ -120,14 +178,6 @@ module ui_osd #(
     wire        pos_valid = (pos_src == 2'd0) ? I_track_valid :
                             (pos_src == 2'd1) ? I_shape_valid : I_color_valid;
     /* 先落到 4 位线上再拼，别直接索引表达式（Verilog-2001 不允许） */
-    wire [3:0] pos_x_th = (pos_cx / 12'd1000) % 10;
-    wire [3:0] pos_x_hu = (pos_cx / 12'd100) % 10;
-    wire [3:0] pos_x_te = (pos_cx / 12'd10) % 10;
-    wire [3:0] pos_x_on = pos_cx % 10;
-    wire [3:0] pos_y_th = (pos_cy / 12'd1000) % 10;
-    wire [3:0] pos_y_hu = (pos_cy / 12'd100) % 10;
-    wire [3:0] pos_y_te = (pos_cy / 12'd10) % 10;
-    wire [3:0] pos_y_on = pos_cy % 10;
     reg [11:0] x;
     reg [11:0] y;
     reg de_d;
@@ -138,7 +188,7 @@ module ui_osd #(
     reg [2:0] row;
     reg [2:0] col;
     reg [3:0] line_no;
-    reg [3:0] char_no;
+    reg [5:0] char_no;
     reg [11:0] text_x;
     reg [11:0] text_y;
     reg text_active;
@@ -399,6 +449,33 @@ module ui_osd #(
             cn_id=cn_label_id(1'b0,3'd0,cn_dx[7:5]);
             cn_active=1; cn_color=24'hffffff;
         end
+        /* ---- 颜色识别档：三个框里各写各的颜色名（红色/绿色/蓝色）----
+         * 复用中文字库：cn_color_id(kind,cell)，kind 0/1/2 = 红/绿/蓝，两格一个字。
+         * 位置贴框的左上角内侧（+4,+4），所以要框本身够大（≥68x36）才放得下。
+         * 放在菜单行绘制**之前**，这样菜单打开时菜单优先、不会被盖住。 */
+        if(I_image_step==3'd0) begin
+            if(I_c3_valid[0] && x>=I_r_x0+12'd4 && x<I_r_x0+12'd68 &&
+               y>=I_r_y0+12'd4 && y<I_r_y0+12'd36) begin
+                cn_dx=x-(I_r_x0+12'd4); cn_dy=y-(I_r_y0+12'd4);
+                cn_col=cn_dx[4:0]; cn_row=cn_dy[4:0];
+                cn_id=cn_color_id(3'd0,cn_dx[6:5]);
+                cn_active=1; cn_color=24'hff6060;
+            end
+            if(I_c3_valid[1] && x>=I_g_x0+12'd4 && x<I_g_x0+12'd68 &&
+               y>=I_g_y0+12'd4 && y<I_g_y0+12'd36) begin
+                cn_dx=x-(I_g_x0+12'd4); cn_dy=y-(I_g_y0+12'd4);
+                cn_col=cn_dx[4:0]; cn_row=cn_dy[4:0];
+                cn_id=cn_color_id(3'd1,cn_dx[6:5]);
+                cn_active=1; cn_color=24'h60ff60;
+            end
+            if(I_c3_valid[2] && x>=I_b_x0+12'd4 && x<I_b_x0+12'd68 &&
+               y>=I_b_y0+12'd4 && y<I_b_y0+12'd36) begin
+                cn_dx=x-(I_b_x0+12'd4); cn_dy=y-(I_b_y0+12'd4);
+                cn_col=cn_dx[4:0]; cn_row=cn_dy[4:0];
+                cn_id=cn_color_id(3'd2,cn_dx[6:5]);
+                cn_active=1; cn_color=24'h8080ff;
+            end
+        end
     end
 
     // Normalize the DS3231 12/24-hour encoding to 24-hour BCD. FF marks an
@@ -481,34 +558,129 @@ module ui_osd #(
         end
         // ---- 底部位置行：贴底偏右（左下角 90..154 x 1030..1062 是"菜单"按钮
         // 的触摸区，避开它）。有目标=绿字，没有=红字，一眼能看出锁没锁上。 ----
-        if(pos_mode && x>=12'd632 && x<12'd1144 && y>=12'd1020 && y<12'd1068) begin
+        /* ---- 颜色识别档：每个框旁边写它自己的坐标（11 格：X#### Y####）----
+         * 字色跟着颜色走，和框里那个颜色名配套。 */
+        if(I_image_step==3'd0) begin
+            if(x>=clx_r && x<clx_r+12'd352 && y>=cly_r && y<cly_r+12'd28) begin
+                text_x=x-clx_r; char_no={2'b0,text_x[8:5]}; col=text_x[4:2]; row=(y-cly_r)>>2;
+                ch=" ";
+                case(char_no)
+                    6'd0: ch="X";
+                    6'd1: ch="0"+bcd_rx[15:12]; 6'd2: ch="0"+bcd_rx[11:8];
+                    6'd3: ch="0"+bcd_rx[7:4];   6'd4: ch="0"+bcd_rx[3:0];
+                    6'd5: ch=" ";
+                    6'd6: ch="Y";
+                    6'd7: ch="0"+bcd_ry[15:12]; 6'd8: ch="0"+bcd_ry[11:8];
+                    6'd9: ch="0"+bcd_ry[7:4];   6'd10:ch="0"+bcd_ry[3:0];
+                    default: ch=" ";
+                endcase
+                glyph=glyph_bits(ch,row);
+                if(col<5 && ((glyph & (5'b10000 >> col))!=0)) pixel=24'hff7070;
+            end
+            if(x>=clx_g && x<clx_g+12'd352 && y>=cly_g && y<cly_g+12'd28) begin
+                text_x=x-clx_g; char_no={2'b0,text_x[8:5]}; col=text_x[4:2]; row=(y-cly_g)>>2;
+                ch=" ";
+                case(char_no)
+                    6'd0: ch="X";
+                    6'd1: ch="0"+bcd_gx[15:12]; 6'd2: ch="0"+bcd_gx[11:8];
+                    6'd3: ch="0"+bcd_gx[7:4];   6'd4: ch="0"+bcd_gx[3:0];
+                    6'd5: ch=" ";
+                    6'd6: ch="Y";
+                    6'd7: ch="0"+bcd_gy[15:12]; 6'd8: ch="0"+bcd_gy[11:8];
+                    6'd9: ch="0"+bcd_gy[7:4];   6'd10:ch="0"+bcd_gy[3:0];
+                    default: ch=" ";
+                endcase
+                glyph=glyph_bits(ch,row);
+                if(col<5 && ((glyph & (5'b10000 >> col))!=0)) pixel=24'h70ff70;
+            end
+            if(x>=clx_b && x<clx_b+12'd352 && y>=cly_b && y<cly_b+12'd28) begin
+                text_x=x-clx_b; char_no={2'b0,text_x[8:5]}; col=text_x[4:2]; row=(y-cly_b)>>2;
+                ch=" ";
+                case(char_no)
+                    6'd0: ch="X";
+                    6'd1: ch="0"+bcd_bx[15:12]; 6'd2: ch="0"+bcd_bx[11:8];
+                    6'd3: ch="0"+bcd_bx[7:4];   6'd4: ch="0"+bcd_bx[3:0];
+                    6'd5: ch=" ";
+                    6'd6: ch="Y";
+                    6'd7: ch="0"+bcd_by[15:12]; 6'd8: ch="0"+bcd_by[11:8];
+                    6'd9: ch="0"+bcd_by[7:4];   6'd10:ch="0"+bcd_by[3:0];
+                    default: ch=" ";
+                endcase
+                glyph=glyph_bits(ch,row);
+                if(col<5 && ((glyph & (5'b10000 >> col))!=0)) pixel=24'h8090ff;
+            end
+        end
+        if(pos_mode && x>=12'd632 && x<(pos_three ? 12'd1832 : 12'd1144) &&
+           y>=12'd1020 && y<12'd1068) begin
             overlay=1;
             pixel=24'h101820;
-            if(x<12'd634 || x>=12'd1142 || y<12'd1022 || y>=12'd1066)
+            if(x<12'd634 || x>=(pos_three ? 12'd1830 : 12'd1142) ||
+               y<12'd1022 || y>=12'd1066)
                 pixel=24'h304652;
-            else if(x>=12'd640 && x<12'd1120 && y>=12'd1028 && y<12'd1056) begin
-                text_x=x-12'd640; char_no=text_x[8:5]; col=text_x[4:2];
+            else if(x>=12'd640 && x<(pos_three ? 12'd1824 : 12'd1120) &&
+                    y>=12'd1028 && y<12'd1056) begin
+                text_x=x-12'd640;
+                char_no=pos_three ? text_x[10:5] : {2'b0,text_x[8:5]};
+                col=text_x[4:2];
                 row=(y-12'd1028)>>2;
                 ch=" ";
+                if(pos_three) begin
+                    /* 颜色识别档：三组 "X#### Y####"（11 格），组间空 2 格 = 37 格。
+                     * **不写 R/G/B 字母** —— 那三个字母容易被当成 RGB 分量；哪个颜色
+                     * 由字色本身表达（红字/绿字/蓝字），数字就是 X,Y 坐标。 */
+                    case(char_no)
+                        6'd0:  ch="X";
+                        6'd1:  ch="0"+bcd_rx[15:12]; 6'd2: ch="0"+bcd_rx[11:8];
+                        6'd3:  ch="0"+bcd_rx[7:4];   6'd4: ch="0"+bcd_rx[3:0];
+                        6'd5:  ch=" ";
+                        6'd6:  ch="Y";
+                        6'd7:  ch="0"+bcd_ry[15:12]; 6'd8: ch="0"+bcd_ry[11:8];
+                        6'd9:  ch="0"+bcd_ry[7:4];   6'd10:ch="0"+bcd_ry[3:0];
+                        6'd13: ch="X";
+                        6'd14: ch="0"+bcd_gx[15:12]; 6'd15:ch="0"+bcd_gx[11:8];
+                        6'd16: ch="0"+bcd_gx[7:4];   6'd17:ch="0"+bcd_gx[3:0];
+                        6'd18: ch=" ";
+                        6'd19: ch="Y";
+                        6'd20: ch="0"+bcd_gy[15:12]; 6'd21:ch="0"+bcd_gy[11:8];
+                        6'd22: ch="0"+bcd_gy[7:4];   6'd23:ch="0"+bcd_gy[3:0];
+                        6'd26: ch="X";
+                        6'd27: ch="0"+bcd_bx[15:12]; 6'd28:ch="0"+bcd_bx[11:8];
+                        6'd29: ch="0"+bcd_bx[7:4];   6'd30:ch="0"+bcd_bx[3:0];
+                        6'd31: ch=" ";
+                        6'd32: ch="Y";
+                        6'd33: ch="0"+bcd_by[15:12]; 6'd34:ch="0"+bcd_by[11:8];
+                        6'd35: ch="0"+bcd_by[7:4];   6'd36:ch="0"+bcd_by[3:0];
+                        default: ch=" ";
+                    endcase
+                    /* 没确认的颜色：那一组整段留空，不显示陈旧坐标 */
+                    if(!I_c3_valid[0] && char_no<=6'd10) ch=" ";
+                    if(!I_c3_valid[1] && char_no>=6'd13 && char_no<=6'd23) ch=" ";
+                    if(!I_c3_valid[2] && char_no>=6'd26) ch=" ";
+                    glyph=glyph_bits(ch,row);
+                    if(col<5 && ((glyph & (5'b10000 >> col))!=0))
+                        pixel = (char_no<=6'd10) ? 24'hff7070 :
+                                (char_no<=6'd23) ? 24'h70ff70 : 24'h8090ff;
+                end else begin
                 case(char_no)
                     4'd0: ch=(pos_src_frame==2'd0) ? "T" : (pos_src_frame==2'd1) ? "S" : "C";
                     4'd1: ch=(pos_src_frame==2'd0) ? "R" : (pos_src_frame==2'd1) ? "H" : "O";
                     4'd2: ch=(pos_src_frame==2'd0) ? "K" : (pos_src_frame==2'd1) ? "P" : "L";
                     4'd4:  ch="X";
-                    4'd5:  ch="0"+pos_x_bcd[15:12];
-                    4'd6:  ch="0"+pos_x_bcd[11:8];
-                    4'd7:  ch="0"+pos_x_bcd[7:4];
-                    4'd8:  ch="0"+pos_x_bcd[3:0];
+                    4'd5:  ch="0"+bcd_sx[15:12];
+                    4'd6:  ch="0"+bcd_sx[11:8];
+                    4'd7:  ch="0"+bcd_sx[7:4];
+                    4'd8:  ch="0"+bcd_sx[3:0];
                     4'd10: ch="Y";
-                    4'd11: ch="0"+pos_y_bcd[15:12];
-                    4'd12: ch="0"+pos_y_bcd[11:8];
-                    4'd13: ch="0"+pos_y_bcd[7:4];
-                    4'd14: ch="0"+pos_y_bcd[3:0];
+                    4'd11: ch="0"+bcd_sy[15:12];
+                    4'd12: ch="0"+bcd_sy[11:8];
+                    4'd13: ch="0"+bcd_sy[7:4];
+                    4'd14: ch="0"+bcd_sy[3:0];
                     default: ch=" ";
                 endcase
                 glyph=glyph_bits(ch,row);
                 if(col<5 && ((glyph & (5'b10000 >> col))!=0))
                     pixel = pos_valid_frame ? 24'h80ffb0 : 24'hff9080;
+                end
             end
         end
         // Panel: lower-left, x=24..492, y=644..1004. The lower-left MENU
@@ -822,7 +994,6 @@ module ui_osd #(
             x <= 0; y <= 0; de_d <= 0; vs_d <= 0;
             rec1<=0;rec2<=0;rec_frame<=0;focus_roi_frame<=0;
             focus_rw_frame<=11'd0; focus_rh_frame<=11'd0;
-            pos_x_bcd<=16'd0; pos_y_bcd<=16'd0;
             pos_valid_frame<=1'b0; pos_src_frame<=2'd0;
             rtc_hours_frame <= 0; rtc_minutes_frame <= 0; rtc_seconds_frame <= 0;
             rtc_year_frame<=0;rtc_month_frame<=0;rtc_date_frame<=0;rtc_date_valid_frame<=0;
@@ -862,8 +1033,6 @@ module ui_osd #(
                 focus_roi_frame<=I_focus_roi;
                 focus_rw_frame<=I_focus_roi_w;
                 focus_rh_frame<=I_focus_roi_h;
-                pos_x_bcd<={pos_x_th,pos_x_hu,pos_x_te,pos_x_on};
-                pos_y_bcd<={pos_y_th,pos_y_hu,pos_y_te,pos_y_on};
                 pos_valid_frame<=pos_valid;
                 pos_src_frame<=pos_src;
                 stats_detail_frame<=!MCU_MENU || !PANEL_STYLE || I_info_enable;

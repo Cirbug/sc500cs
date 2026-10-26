@@ -78,8 +78,20 @@ module red_shape_tracker #(
     localparam integer AB = XB+YB;
     localparam integer CELLS = GW*GH;
     localparam integer SB = (CELLS>1) ? $clog2(CELLS) : 1;
-    localparam integer ACQUIRE_MIN = (CELLS*ACQUIRE_PERCENT+99)/100;
-    localparam integer RETAIN_MIN = (CELLS*RETAIN_PERCENT+99)/100;
+    /* 伺服捕获/保持门限：**和显示门限对齐**（2026-10-26 现场）
+     *
+     * 现场现象："蓝色追踪追不到，颜色识别却能识别到"。两个门限差 17 倍：
+     *   显示/三色确认：COLOR_MIN_CELLS = 24 格（0.29% ≈ 78x78 px）
+     *   伺服捕获：     ACQUIRE_PERCENT 5% = 408 格（≈323x323 px）
+     * 现场那个蓝色目标约 310 格（3.8%）：够显示、永远进不了伺服的候选集，
+     * 所以"看得见、跟不上"。门限一降下来（2% = 163 格）立刻就够。
+     *
+     * 现在直接取显示门限：**能识别到就一定能跟**，两边不会再出现"看得见跟不上"
+     * 的缝。滤噪靠原有的 CONFIRM_FRAMES=3 + 比值判据(LEVEL_MIN)，不是靠面积门槛。
+     * ACQUIRE_PERCENT/RETAIN_PERCENT 两个参数保留（外层 red_target_tracker
+     * 还在传），但不再参与计算。 */
+    localparam integer ACQUIRE_MIN = COLOR_MIN_CELLS;        /* 24 格 = 0.29% */
+    localparam integer RETAIN_MIN  = (COLOR_MIN_CELLS>>1);   /* 12 格 = 0.15%，和显示保持一致 */
     localparam integer CENTRE_X = IMG_WIDTH/2;
     localparam integer CENTRE_Y = IMG_HEIGHT/2;
     localparam [4:0] IDLE=0, SCAN_ADDR=1, SCAN_WAIT=2, SCAN_TEST=3,

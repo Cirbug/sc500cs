@@ -52,6 +52,16 @@ static void af_roi_box_show(unsigned hold_ms)
     af_roi_write_word(g_roi_word);
 }
 
+/* 立刻把框藏掉：出追踪档时用，别等那 3 秒计时。
+ * 现场："为啥会突然冒出来一个大绿框" —— 960x720 的对焦窗口只在追踪档/触摸对焦
+ * 时才会亮，但以前切档后它还要挂 3 秒，看起来就像凭空冒出来。 */
+static void af_roi_box_hide(void)
+{
+    if(!g_af_box_on) return;
+    g_af_box_on=0;
+    af_roi_write_word(g_roi_word);
+}
+
 /* 到点就藏。扫描期间一直续期，所以整个对焦过程框都在。 */
 static void af_roi_box_tick(void)
 {
@@ -136,6 +146,7 @@ static void tracking_autofocus(const MenuState *s,uint32_t word,uint32_t errors,
         g_af_ever_focused=0;
         g_roi_x=g_roi_y=-1;
         af_roi_size(0,0);                               /* 还原成默认 160x120 */
+        af_roi_box_hide();                              /* 大绿框立刻消失，不留 3 秒尾巴 */
         return;
     }
     /* word[15]=enable word[14]=valid：只要这一帧报出有效目标就用它的位置，

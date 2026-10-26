@@ -32,11 +32,21 @@
  */
 #define AF_POS_MAX           16383u
 #define AF_COARSE_STEP        2048u   /* 粗扫步长（全程 9 个点） */
-#define AF_FINE_STEP           256u   /* 细扫步长 */
+#define AF_FINE_STEP           384u   /* 细扫步长（原 256，改 384 把下面的时间省回来） */
 #define AF_FINE_RADIUS        2048u   /* 细扫范围 = 粗扫步长（覆盖粗扫的不确定度） */
-#define AF_SETTLE_MS            80u   /* 移动后等机械稳定 */
+/* 稳定时间 80ms -> 160ms。**这是"有时候找不到对焦点"的主要结构性原因**：
+ * 视频链路（相机曝光 + MIPI/DDR + 显示）本身有 100~150ms 延迟，所以写完位置
+ * 过 80ms 时，画面里还是**上一个位置**的图像 —— 采样采到的是别人家的清晰度，
+ * 整条曲线的点都串位、峰被抹掉，最后只能挑到噪声。
+ * 160ms 稳稳盖住这段延迟，采到的才是"这个位置"的画面。 */
+#define AF_SETTLE_MS           160u
 #define AF_SAMPLE_GAP_MS        40u   /* 同一位置两次采样的间隔 */
-#define AF_SAMPLES               3u   /* 每个点采样次数 */
+/* 3 -> 2：稳定时间加长以后，不需要靠多采样硬扛抖动；
+ * 每个扫描点用时 160+40 = 200ms，点数 9+11 = 20 -> 合计约 4.0 秒（和原来一样快）。 */
+#define AF_SAMPLES               2u
+/* 手动对焦每按一下走的步数（原来借用 AF_FINE_STEP=384，按满全程要 43 下，
+ * 现场做"手动扫一遍看看到底有没有清楚的位置"这个判定太累）。1024 -> 16 下。 */
+#define AF_MANUAL_STEP         1024u
 #define AF_FLAT_DIV              8u    /* 峰谷差 < 峰值/8 就算"曲线太平" */
 /* 停在峰值之后的重对阈值（现场要求："简单弄个阈值，超过就重新对焦"）。
  * 掉到峰值的 60% 以下才算真失焦；单次采样本来就有抖动，阈值太松会一直重对。
@@ -45,6 +55,10 @@
 #define AF_REFOCUS_MIN_MS    15000u
 #define AF_RECHECK_MS         2000u   /* 停在峰值上时每隔这么久看一眼 */
 #define AF_LENS_TIMEOUT_MS    1000u
+/* 镜头报错（时好时坏）时的等待上限：等后台 lens_recover_poll 每 2 秒补发的
+ * 初始化把错误清掉，再接着扫。以前这里直接放弃 —— 镜头一抖这次对焦就作废，
+ * 现场表现就是"有时候行、有时候不行"。 */
+#define AF_LENS_ERROR_WAIT_MS 5000u
 #define AF_GIMBAL_SETTLE_MS    200u
 
 /* AF_HOLD 追加在最后：af_state 只在固件内部用，不对外暴露，
@@ -57,7 +71,8 @@ enum { AF_REASON_IDLE, AF_REASON_QUEUED, AF_REASON_WAIT_LENS,
        AF_REASON_RETURN, AF_REASON_DONE, AF_REASON_I2C_ERROR,
        AF_REASON_TIMEOUT, AF_REASON_MANUAL, AF_REASON_ROI_UNSUPPORTED,
        AF_REASON_MANUAL_REJECTED, AF_REASON_WAIT_GIMBAL,
-       AF_REASON_HOLD, AF_REASON_SEEK, AF_REASON_FLAT, AF_REASON_REFOCUS };
+       AF_REASON_HOLD, AF_REASON_SEEK, AF_REASON_FLAT, AF_REASON_REFOCUS,
+       AF_REASON_PEAK_END };
 
 /* FD Expressions: requests counts recognized AF actions (not raw taps).
  * diag retains the I2C failure even if the one bounded retry succeeds. */
@@ -81,6 +96,10 @@ static void autofocus_stop(uint32_t reason)
 {
     af_state=AF_IDLE;
     g_af_debug.reason=reason;
+    /* 2026-10-27：放弃也要打一行。以前因 I2C 错误放弃时一行都不打，
+     * 现场看串口会以为"对焦请求根本没生效"，其实是镜头没应答。
+     * 8=I2C_ERROR 9=TIMEOUT 10=MANUAL 11=ROI_UNSUPPORTED 12=MANUAL_REJECTED */
+    al_printf("AFSTOP:%u\r\n",reason);
 }
 
 static void autofocus_command(uint32_t position)
@@ -98,6 +117,15 @@ static void autofocus_command(uint32_t position)
  * 太平、镜头来回跑"的循环。想再对焦只能手动触发。 */
 static void autofocus_park(uint32_t ms, uint32_t reason)
 {
+    /* 最高点落在行程两端 -> 峰在行程**外面**（镜头/机芯够不到这个距离），
+     * 再怎么搜也没用。单独报出来，串口 AFDONE 最后那个数会是 18。 */
+    if(af_best_position==0u || af_best_position>=AF_POS_MAX) {
+        g_af_debug.reason=AF_REASON_PEAK_END;
+        af_last_focus_ms=ms; af_hold_ms=ms; af_state=AF_HOLD;
+        autofocus_command(af_best_position);
+        al_printf("AFDONE:%u,%u,%u\r\n",af_best_position,af_best_metric,g_af_debug.reason);
+        return;
+    }
     if(af_best_metric <= af_min_metric + (af_min_metric>>AF_FLAT_DIV)) {
         af_best_position=af_start_position;
         af_no_refocus=1;
@@ -137,8 +165,8 @@ static void manual_focus_step(int32_t delta)
         lens_diag_report();
         return;
     }
-    position=delta>0 ? (position>=AF_POS_MAX-AF_FINE_STEP ? AF_POS_MAX : position+AF_FINE_STEP)
-                     : (position<=AF_FINE_STEP ? 0u : position-AF_FINE_STEP);
+    position=delta>0 ? (position>=AF_POS_MAX-AF_MANUAL_STEP ? AF_POS_MAX : position+AF_MANUAL_STEP)
+                     : (position<=AF_MANUAL_STEP ? 0u : position-AF_MANUAL_STEP);
     ui_write(UI_LENS_POS,position);
     ui_write(UI_LENS_CMD,1u);
     focus_plot(position,ui_read(UI_FOCUS_METRIC),status);
@@ -166,16 +194,26 @@ static void autofocus_task(void)
             if(elapsed>=AF_LENS_TIMEOUT_MS) autofocus_stop(AF_REASON_TIMEOUT);
             return;
         }
-        if(lens_diag_available!=3u || af_retried) {
+        if(lens_diag_available!=3u) {
             autofocus_stop(AF_REASON_I2C_ERROR);
             return;
         }
-        af_retried=1;
-        af_state=AF_RECOVER;
-        af_wait_ms=ms;
-        g_af_debug.reason=AF_REASON_RECOVER;
-        ui_write(UI_LENS_POS,8192u);
-        ui_write(UI_LENS_CMD,2u);
+        if(!af_retried) {
+            af_retried=1;
+            af_state=AF_RECOVER;
+            af_wait_ms=ms;
+            g_af_debug.reason=AF_REASON_RECOVER;
+            ui_write(UI_LENS_POS,8192u);
+            ui_write(UI_LENS_CMD,2u);
+            return;
+        }
+        /* 自己重试过一次还在报错：**等着**，别放弃。后台 lens_recover_poll
+         * 每 2 秒会再发一次初始化；镜头是时好时坏的话，等回ready 就能接着扫。 */
+        if(elapsed>=AF_LENS_ERROR_WAIT_MS) {
+            autofocus_stop(AF_REASON_I2C_ERROR);
+            return;
+        }
+        g_af_debug.reason=AF_REASON_WAIT_LENS;
         return;
     }
     if(af_state==AF_START || af_state==AF_RECOVER) {

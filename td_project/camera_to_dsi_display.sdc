@@ -88,3 +88,17 @@ set_max_delay -datapath_only 8.000 -through [get_nets {u_histogram_equalizer/cap
 set_false_path -hold -through [get_nets {u_histogram_equalizer/capture_req u_histogram_equalizer/map_req u_histogram_equalizer/enable_req}] -to [get_clocks {HDMI_PIXEL_CLK}]
 set_max_delay -datapath_only 8.000 -through [get_nets {u_histogram_equalizer/capture_ack u_histogram_equalizer/map_ack u_histogram_equalizer/capture_valid u_histogram_equalizer/map_valid u_histogram_equalizer/active_enable u_histogram_equalizer/captured_total*}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
 set_false_path -hold -through [get_nets {u_histogram_equalizer/capture_ack u_histogram_equalizer/map_ack u_histogram_equalizer/capture_valid u_histogram_equalizer/map_valid u_histogram_equalizer/active_enable u_histogram_equalizer/captured_total*}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]
+
+# u_recorder: the MCU read-index bundle crosses from the APB clock into the DDR
+# user clock through the same bundled-data handshake as u_camera_settings - the
+# source keeps read_index fixed until read_ack returns, so the bundle only needs
+# to be skew-bounded and the same-edge hold check between these two unrelated
+# clocks is meaningless.  This crossing was the only pair of negative hold
+# endpoints left after the lens-shading / persistence merge.
+set_max_delay -datapath_only 8.000 -through [get_nets {u_recorder/read_index* u_recorder/read_request}] -to [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
+set_false_path -hold -through [get_nets {u_recorder/read_index* u_recorder/read_request}] -to [get_clocks {u_ph1p35_324_ddr_wrapper/u_ddr2/usr_clk}]
+
+# Read acknowledgement returns to the APB clock.  Only the asynchronous input
+# net is excepted, matching the u_picture_isp/ack treatment above, so the
+# ra1 -> ra2 -> ra3 synchronizer chain stays timed.
+set_false_path -through [get_nets {u_recorder/read_ack}] -to [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[2]}]

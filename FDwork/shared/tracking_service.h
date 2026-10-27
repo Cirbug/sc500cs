@@ -24,6 +24,57 @@ static uint8_t  g_af_lock_done;    /* 本次进档已经扫过了 */
 static uint8_t  g_af_ever_focused; /* 本次进档是否已经对过焦 */
 static int32_t  g_roi_x=-1, g_roi_y=-1;   /* 上次写进 0x94 的区域中心 */
 
+/* ---- 对焦框自动隐藏（2026-10-27 采纳 gege 的 e1f6944 + 1b2b81b）--------------
+ * ui_osd 靠 0x94 的 bit31 决定画不画那个绿框；而 focus_metric **根本不看这一位**
+ * —— 它只用框的位置和 0xfc 的尺寸。所以"把框藏起来"只要把 bit31 清掉：
+ * 清晰度统计的窗口一点没变，阈值重对焦照常工作，只是屏幕上干净了。
+ * 规则：正在扫描时一直亮，扫完/触摸后 AF_BOX_SHOW_MS 之内还亮，之后自动藏。
+ * （我们原来的写入恒带 bit31，所以框一旦画出来就永远挂着不消失。）
+ * 出追踪档时立刻藏（见 tracking_autofocus 的退出分支）。 */
+#define AF_BOX_SHOW_MS 3000u
+/* 最近一次写进 0x94 的整字 —— 藏框时要原样写回（只清 bit31），
+ * 所以必须记住它，不能在隐藏时自己重新算位置。初值 = APB 复位值。 */
+static uint32_t g_roi_word = 0x01e00370u;
+static uint32_t g_af_box_until;     /* 绿框显示到这个时刻 */
+static uint8_t  g_af_box_on;
+
+/* 所有对 0x94 的写入都走这里，顺便记住位置 */
+static void af_roi_write_word(uint32_t w)
+{
+    g_roi_word=w;
+    ui_write(0x94, g_af_box_on ? (w|0x80000000u) : (w&0x7fffffffu));
+}
+
+/* 点亮（并延长显示时间）。写位置之前先调它，这一次写入才会带 bit31。 */
+static void af_roi_box_show(unsigned hold_ms)
+{
+    g_af_box_on=1;
+    g_af_box_until=ui_now_ms()+hold_ms;
+    af_roi_write_word(g_roi_word);
+}
+
+/* 立刻藏（出追踪档时用）。 */
+static void af_roi_box_hide(void)
+{
+    if(!g_af_box_on) return;
+    g_af_box_on=0;
+    af_roi_write_word(g_roi_word);
+}
+
+/* 到点就藏。扫描期间一直续期，所以整个对焦过程框都在。 */
+static void af_roi_box_tick(void)
+{
+    if(autofocus_active()) {
+        g_af_box_on=1;
+        g_af_box_until=ui_now_ms()+AF_BOX_SHOW_MS;
+        return;
+    }
+    if(g_af_box_on && (int32_t)(ui_now_ms()-g_af_box_until)>=0) {
+        g_af_box_on=0;
+        af_roi_write_word(g_roi_word);      /* 只清 bit31，窗口原地不动 */
+    }
+}
+
 /* 追踪时用的对焦窗口尺寸（APB 0xfc）。
  * 160x120 是 focus_metric 的默认值，遇到"比窗口大的目标"时**整个窗口落在目标
  * 内部**——现场那块红晕约 430x467，窗口里全是平的红，测不到任何边缘，清晰度
@@ -48,7 +99,7 @@ static void af_roi_write(int cx,int cy)
     if(ox<0)ox=0; if(oy<0)oy=0;
     if(ox>(int)(1920u-TRACK_AF_W))ox=(int)(1920u-TRACK_AF_W);
     if(oy>(int)(1080u-TRACK_AF_H))oy=(int)(1080u-TRACK_AF_H);
-    ui_write(0x94,0x80000000u|((unsigned)oy<<16)|(unsigned)ox);
+    af_roi_write_word(((unsigned)oy<<16)|(unsigned)ox);   /* bit31 由收口按显示状态决定 */
 }
 
 /* 目标移动时让对焦区域跟着走。
@@ -78,6 +129,7 @@ static void af_focus_at(int cx, int cy)
     if(ui_read(0x98)!=0x41465231u) return;              /* AFR1：没有 ROI 支持就别动 */
     if(cx<0) cx=0; else if(cx>1919) cx=1919;
     if(cy<0) cy=0; else if(cy>1079) cy=1079;
+    af_roi_box_show(AF_BOX_SHOW_MS);                 /* 先点亮：下面这次写入才会带 bit31 */
     af_roi_write(cx,cy);
     autofocus_restart();
     g_af_lock_done=1;
@@ -93,6 +145,7 @@ static void tracking_autofocus(const MenuState *s,uint32_t word,uint32_t errors,
         g_af_ever_focused=0;
         g_roi_x=g_roi_y=-1;
         af_roi_size(0,0);                               /* 还原成默认 160x120 */
+        af_roi_box_hide();                              /* 出追踪档：绿框立刻消失 */
         return;
     }
     /* word[15]=enable word[14]=valid：只要这一帧报出有效目标就用它的位置，
@@ -132,6 +185,7 @@ static void tracking_autofocus(const MenuState *s,uint32_t word,uint32_t errors,
  * Both the main loop and cooperative SD service use this same arbitration. */
 static void tracking_service(MenuState *s)
 {
+    af_roi_box_tick();      /* 扫描期间续期，扫完 3 秒自动隐藏 */
     if(autofocus_active()) {
         /* Leave PWM targets untouched. Forget queued camera feedback so that
          * resume requires a fresh result and the normal 200 ms acquisition. */

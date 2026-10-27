@@ -305,7 +305,10 @@ static void touchscreen_handle(MenuState *s)
                  * 所以先把窗口尺寸复位，否则在追踪档里（窗口是 960x720）
                  * 位置会偏到左上。下一次 tracking_roi_follow 会再把它设回去。 */
                 ui_write(0xfc,0);
-                ui_write(0x94,touch_focus_roi(focus_gesture.x,focus_gesture.y));
+                /* 先点亮（写位置之前调，这次写入才会带 bit31），
+                 * 触摸对焦后绿框亮 AF_BOX_SHOW_MS 再自动隐藏。 */
+                af_roi_box_show(AF_BOX_SHOW_MS);
+                af_roi_write_word(touch_focus_roi(focus_gesture.x,focus_gesture.y));
             }
             else {
                 actions &= ~MENU_AF;

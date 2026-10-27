@@ -35,7 +35,10 @@ static void scene(int fast,int fps,int delay,int gain,int sx,int sy,int moving,i
         else legacy_red_track_update(&old,word,ms,1,0,&oc,&pan,&tilt);
         assert(pan>=500 && pan<=2500 && tilt>=500 && tilt<=2500);
         int step=(int)pan-(int)before,step_t=(int)tilt-(int)before_t;
-        if(fast)assert(step>=-16 && step<=16 && step_t>=-16 && step_t<=16);
+        /* 单次脉冲最大变化的上限：2026-10-27 由写死的 16 提到 RED_TRACK_STEP_LIMIT_US(32)。
+         * 这里用宏断言，以后调上限不会再让本用例误报。 */
+        if(fast)assert(step>=-(int)RED_TRACK_STEP_LIMIT_US && step<=(int)RED_TRACK_STEP_LIMIT_US &&
+                       step_t>=-(int)RED_TRACK_STEP_LIMIT_US && step_t<=(int)RED_TRACK_STEP_LIMIT_US);
         if(step || step_t){if(moves)assert(ms-last_move>=(fast?30u:80u));last_move=ms;moves++;}
         if(step){int dir=step>0?1:-1;if(last_dir && dir!=last_dir)reversals++;last_dir=dir;}
         ph[slot]=pan;th[slot]=tilt;slot=(slot+1)%n;

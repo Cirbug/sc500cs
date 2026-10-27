@@ -82,8 +82,26 @@ parameter integer SCAN_BUDGET = 150000,
     localparam integer AB = XB+YB;
     localparam integer CELLS = GW*GH;
     localparam integer SB = (CELLS>1) ? $clog2(CELLS) : 1;
-    localparam integer ACQUIRE_MIN = (CELLS*ACQUIRE_PERCENT+99)/100;
-    localparam integer RETAIN_MIN = (CELLS*RETAIN_PERCENT+99)/100;
+    /* 伺服捕获/保持门限：**和显示门限对齐**（2026-10-27 采纳 gege 的现场复盘）
+     *
+     * 现场现象："蓝色追踪追不到，颜色识别却能识别到"。两个门限差 17 倍：
+     *   显示/三色确认：COLOR_MIN_CELLS = 24 格（0.29% ≈ 78x78 px）
+     *   伺服捕获：     ACQUIRE_PERCENT 5% = 408 格（≈323x323 px）
+     * 现场那个蓝色目标约 310 格（3.8%）：够显示、永远进不了伺服的候选集，
+     * 所以"看得见、跟不上"。门限一降下来立刻就够。
+     *
+     * 现在直接取显示门限：**能识别到就一定能跟**，两边不会再出现"看得见跟不上"
+     * 的缝。滤噪靠原有的 CONFIRM_FRAMES=3 + 比值判据(LEVEL_MIN)，不是靠面积门槛。
+     * ACQUIRE_PERCENT/RETAIN_PERCENT 两个参数保留（外层 red_target_tracker
+     * 还在传），但不再参与计算。 */
+    /* 伺服门限 = 显示门限（COLOR_MIN_CELLS）在**同等画面占比**下折算到本网格的格数。
+     * 为什么不能直接写 COLOR_MIN_CELLS：它是绝对格数，只有在生产网格下才等于 0.29%。
+     * 生产网格 = 1920>>4 x 1080>>4 = 120x68 = 8160 格，此时本式恒等于 COLOR_MIN_CELLS
+     * （24 格 / 12 格），与 gege 的取值一字不差；而测试平台用 160x96 的小图时网格只有
+     * 10x6 = 60 格，写死 24 会比旧门限（5% = 3 格）还高 8 倍，直接锁不上。 */
+    localparam integer CELLS_PROD = 8160;                    /* 1920x1080 @ 16px 网格 */
+    localparam integer ACQUIRE_MIN = (COLOR_MIN_CELLS*CELLS + CELLS_PROD-1)/CELLS_PROD;
+    localparam integer RETAIN_MIN  = (ACQUIRE_MIN>1) ? (ACQUIRE_MIN>>1) : 1;
     localparam integer CENTRE_X = IMG_WIDTH/2;
     localparam integer CENTRE_Y = IMG_HEIGHT/2;
     localparam [4:0] IDLE=0, SCAN_ADDR=1, SCAN_WAIT=2, SCAN_TEST=3,

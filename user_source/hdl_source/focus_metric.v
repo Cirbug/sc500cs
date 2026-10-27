@@ -31,7 +31,7 @@ module focus_metric (
     /* 乘法打一拍：9x9 乘法 + 32 位加法串在一个周期里，148.5MHz(6.73ns) 下太紧。
      * 只把乘积累加这一条路延迟一级，同时把"这个像素算不算"的标志也延迟一级，
      * 配对关系不变（都是同一个像素），accumulator 的语义完全一样。 */
-    reg [11:0] luma_sq_pipe;
+    reg [9:0]  luma_sq_pipe;
     reg        acc_ok_pipe;
     wire [8:0] luma_sum = {1'b0, I_data[23:18]} +
                           {1'b0, I_data[15:9]} +
@@ -55,12 +55,19 @@ module focus_metric (
      *   现场表现也对得上：大而平的红块（窗口里几乎全是平的）对不上焦，
      *   而双击点彩色方块卡（细节多、小窗口）能对上。
      *
-     * >>6 的作用：|diff|<8 的噪声平方后 <64，移位后直接归零，相当于自带 8 级死区
-     * （原来那个 edge_ok = diff>6 的硬阈值就不需要了）。
-     * 溢出核算：单点最大 (255^2)>>6 = 1016，ROI 满量程 691200 点 -> 7.0e8 < 2^32 ✓
+     * >>8（2026-10-27 由 >>6 改，采纳 gege 的现场复盘）—— 这一条是现场试出来的：
+     *   >>6 只把 |diff|<8 归零。而现场曝光顶格、增益 1.09、降噪关掉，亮度噪声
+     *   sigma 大概 3~5，噪声的 |diff| 有相当一部分落在 8~16 之间 —— 每个贡献 1~3，
+     *   乘上 96 万个像素就是一个**几十万的“噪声底座”**，而且它和清晰度无关。
+     *   底座一大，曲线峰谷比就被压扁，“曲线太平”的判定就会触发 -> 镜头退回原位
+     *   -> 画面整体是糊的（现场 2026-10-26 23:42 “对焦效果没之前好”）。
+     *   >>8 把 |diff|<16 全部归零：噪声 sigma 5 时它的 |diff| 也就在 10 上下，
+     *   基本被切干净；而真实边缘（对焦时 30~150）照样全数计入。
+     *   于是离焦时接近 0、对焦时很大 —— 相对反差反而比 >>6 大得多。
+     * 溢出核算：单点最大 (255^2)>>8 = 254，ROI 满量程 691200 点 -> 1.76e8 < 2^32 ✓
      */
     wire [17:0] luma_sq     = luma_diff * luma_diff;   // 9x9 -> 18 位，最大 65025
-    wire [11:0] luma_sq_shr = luma_sq[17:6];           // >>6，最大 1016
+    wire [9:0]  luma_sq_shr = luma_sq[17:8];           // >>8，最大 254
     wire frame_start = I_vsync && !vsync_d;
 
     always @(posedge I_clk or negedge I_rst_n) begin
@@ -70,7 +77,7 @@ module focus_metric (
             have_prev     <= 1'b0;
             previous_luma <= 8'd0;
             accumulator   <= 32'd0;
-            luma_sq_pipe  <= 12'd0;
+            luma_sq_pipe  <= 10'd0;
             acc_ok_pipe   <= 1'b0;
             O_metric      <= 32'd0;
             O_frame_toggle<= 1'b0;
@@ -93,7 +100,7 @@ module focus_metric (
                 luma_sq_pipe <= luma_sq_shr;
                 acc_ok_pipe  <= in_roi && have_prev;
                 if(acc_ok_pipe)
-                    accumulator <= accumulator + {20'd0, luma_sq_pipe};
+                    accumulator <= accumulator + {22'd0, luma_sq_pipe};
             end else begin
                 have_prev<=0;
                 /* 消隐期把标志清掉，不让它跨行残留（累加本身只在 I_de 期间做） */

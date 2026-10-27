@@ -116,6 +116,7 @@ int main(void)
       /* 细扫步长 gege 由 64 改为 256，真峰 7000 落到最近的 256 网格点 6912；
        * 用"距真峰不超过一个细扫步长"断言，以后再调步长也不会误报。 */
       finish(AF_REASON_DONE);
+      /* 手动对焦走 AF_MANUAL_STEP（独立宏），自动细扫走 AF_FINE_STEP。 */
       assert(regs[UI_LENS_POS/4]<=7000u+AF_FINE_STEP && 7000u<=regs[UI_LENS_POS/4]+AF_FINE_STEP);
     resume();
     puts("PASS AF owns both axes from accepted request through settle/coarse/fine/final return; fresh-frame resume");

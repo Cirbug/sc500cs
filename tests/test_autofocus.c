@@ -132,15 +132,20 @@ int main(void)
     reset();start_scan();poll_at(203);
     for(unsigned i=0;i<10000;i++) autofocus_task();
     assert(reads==0);
-    poll_at(282);assert(reads==0);
-    poll_at(283);assert(reads==1 && last_read_ms==283);
-    poll_at(322);assert(reads==1);
-    poll_at(323);assert(reads==2);
-    poll_at(363);assert(reads==3 && moves==2);
-    puts("PASS 80 ms after bus idle then 40 ms spacing; rapid SD callbacks cannot accelerate AF");
+    /* 2026-10-27 对焦参数改动（采纳 gege）：稳定时间 80->160ms、每点采样 3->2。
+     * 移动发生在 200ms，所以第一次采样从 283 挪到 363（+160 与 +3 的读回延迟）；
+     * 采样 2 次（363 / 403，间隔 40ms）之后立刻移动到下一点。 */
+    poll_at(362);assert(reads==0);
+    poll_at(363);assert(reads==1 && last_read_ms==363);
+    poll_at(402);assert(reads==1);
+    poll_at(403);assert(reads==2 && moves==2);
+    puts("PASS 160 ms after bus idle then 40 ms spacing; rapid SD callbacks cannot accelerate AF");
 
     reset();ms=0xfffffff0u;start_scan();
-    poll_at(ms+3);poll_at(ms+79);assert(reads==0);
+    /* 稳定计时从“观察到总线空闲”那刻起算（autofocus_control.h 的 af_move_pending
+     * 分支），所以这里等的是 AF_SETTLE_MS=160：ms+3 观察空闲 -> ms+159 仍为 0 ->
+     * ms+1 触发第一次采样。 */
+    poll_at(ms+3);poll_at(ms+159);assert(reads==0);
     poll_at(ms+1);assert(reads==1);
     finish(5);
     puts("PASS unsigned hardware-timer wrap and cooperative 5 ms service");
@@ -156,8 +161,9 @@ int main(void)
 
     reset();start_scan();poll_at(ms+3);
     manual_focus_step(1);assert(af_state==AF_IDLE && g_af_debug.reason==AF_REASON_MANUAL);
-    /* manual_focus_step() 走 AF_FINE_STEP（gege 由 64 改为 256），按宏断言。 */
-    assert(regs[UI_LENS_POS/4]==AF_FINE_STEP);
+    /* manual_focus_step() 现在走独立的 AF_MANUAL_STEP（gege 2026-10-27 从
+     * 借用 AF_FINE_STEP 改成独立宏：满程 64 下 -> 16 下），按宏断言。 */
+    assert(regs[UI_LENS_POS/4]==AF_MANUAL_STEP);
     poll_at(ms+3);assert(moves==2);
     puts("PASS manual focus cancels queued/active AF");
 

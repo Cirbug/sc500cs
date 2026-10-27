@@ -10,7 +10,7 @@ reg vs=0,de=0;wire blockv,we,re,video_valid;wire [24:0] ma;wire [127:0] md;
 wire app_en;wire [2:0] app_cmd;wire [24:0] app_addr;wire [127:0] app_data;
 reg [63:0] replies=0;reg [127:0] reply_data[0:63],memory[0:1];
 wire rv=replies[63];integer k,trial,x,y,i,tries;
-sd_recorder #(.WIDTH(12),.HEIGHT(6),.BASE(8000000)) rec(
+sd_recorder #(.WIDTH(24),.HEIGHT(12),.BASE(8000000)) rec(
  .rst_n(rst),.apb_clk(a),.pixel_clk(p),.ddr_clk(clk),
  .addr(addr),.sel(sel),.enable(en),.write(write),.wdata(wd),.rdata(q),
  .vs(vs),.de(de),.rgb(24'h123456),.sd_clk(),.sd_mosi(),.sd_cs(),.sd_miso(1'b1),
@@ -49,8 +49,8 @@ initial begin
   repeat(600) @(negedge clk);
   put(4,1);repeat(30) @(negedge a);
   @(negedge p);vs=1;repeat(5) @(negedge p);vs=0;
-  for(y=0;y<6;y=y+1) begin
-   for(x=0;x<12;x=x+1) begin de=1;@(negedge p);end
+  for(y=0;y<12;y=y+1) begin
+   for(x=0;x<24;x=x+1) begin de=1;@(negedge p);end
    de=0;repeat(4) @(negedge p);
   end
   repeat(100) @(negedge a);addr=4;#1;

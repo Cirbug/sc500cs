@@ -314,15 +314,16 @@ void recorder_poll(void) {
             al_printf("SD: CAPTURE_READY words=%u state=%u video_pending=%u ms=%u\r\n",
                 (unsigned)(d&65535),(unsigned)((d>>16)&7),(unsigned)(d>>19),
                 (unsigned)(now_ms()-deadline));
-            memset(buffer,0,54);buffer[0]='B';buffer[1]='M';u32(2,691254);u32(10,54);
-            u32(14,40);u32(18,640);u32(22,(uint32_t)-360);buffer[26]=1;buffer[28]=24;
-            u32(34,691200);
+            /* 2026-10-27：320x180 BMP = 54 + 320*180*3 = 172854 字节。 */
+            memset(buffer,0,54);buffer[0]='B';buffer[1]='M';u32(2,172854);u32(10,54);
+            u32(14,40);u32(18,320);u32(22,(uint32_t)-180);buffer[26]=1;buffer[28]=24;
+            u32(34,172800);
             if(!put(buffer,54)) goto end;
             g_rec_state=3;last_capture=now_ms();
         }
     } else if(g_rec_state==3) {
         unsigned n=0,k,j;
-        for(k=0;k<64 && word_index<57600;k++,word_index++) {
+        for(k=0;k<64 && word_index<14400;k++,word_index++) {   /* 320x180：14400 个字 */
             if(!snapshot_read(word_index)) {fail(0x23);goto end;}
             for(j=0;j<4;j++) {
                 uint32_t p=rr(0x30+j*4);
@@ -330,12 +331,12 @@ void recorder_poll(void) {
             }
         }
         if(n && !put(buffer,n)) goto end;
-        if(word_index==57600) {
+        if(word_index==14400) {
             FRESULT r=f_close(&file);opened=0;
             if(r!=FR_OK) {fail(0x40+r);goto end;}
             if(!photo_publish()) {fail(0x36);goto end;}
             g_rec_saved++;g_rec_state=0;
-            al_printf("SD: SAVED %s 640x360 count=%u\r\n",filename,g_rec_saved);
+            al_printf("SD: SAVED %s 320x180 count=%u\r\n",filename,g_rec_saved);
         }
     }
 end: status_update();

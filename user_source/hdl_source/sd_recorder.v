@@ -25,7 +25,10 @@ module sd_recorder #(
     output wire video_rd_valid,
     output reg [31:0] ui_status
 );
-    localparam PIXELS=(WIDTH/3)*(HEIGHT/3), WORDS=PIXELS/4;
+    /* 2026-10-27：照片分辨率 640x360 -> 320x180（降采样从每 3 像素/行 改为每 6）。
+     * 快照读是"每次一个 128bit DDR 读"且必须等显示让路，实测 243us/次，
+     * 57600 次 = 13 秒；减到 14400 次后约 3.5 秒。 */
+    localparam PIXELS=(WIDTH/6)*(HEIGHT/6), WORDS=PIXELS/4;
     wire aw=sel && enable && write;
     reg request, read_request, abort_request;
     reg [15:0] read_index;
@@ -118,7 +121,8 @@ module sd_recorder #(
     reg p1,p2,p3,epoch_p,armed,active,vs_d,de_d;
     reg pa1,pa2,pa3,abort_p;
     reg [11:0] x,y;
-    reg [1:0] xm,ym,pack_n;
+    reg [2:0] xm,ym;      /* 0..5：每 6 个像素/行取 1 */
+    reg [1:0] pack_n;     /* 0..3：4 个像素打包成 128bit */
     reg [127:0] pack;
     reg fifo_push;
     reg [127:0] fifo_in;
@@ -142,9 +146,9 @@ module sd_recorder #(
                 if(active) begin pixel_error<=1;pixel_error_code<=2;end // short frame
                 active<=armed;armed<=0;
             end else begin
-                if(!de && de_d) begin x<=0;xm<=0;y<=y+1'b1;ym<=ym==2?0:ym+1'b1;end
+                if(!de && de_d) begin x<=0;xm<=0;y<=y+1'b1;ym<=ym==5?0:ym+1'b1;end
                 if(de) begin
-                    x<=x+1'b1;xm<=xm==2?0:xm+1'b1;
+                    x<=x+1'b1;xm<=xm==5?0:xm+1'b1;
                     if(active && x<WIDTH && y<HEIGHT && xm==0 && ym==0) begin
                         pack<={8'd0,rgb,pack[127:32]};pack_n<=pack_n+1'b1;
                         pixel_count<=pixel_count+1'b1;

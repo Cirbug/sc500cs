@@ -6,7 +6,7 @@ reg [7:0] addr=0;reg sel=0,en=0,write=0;reg [31:0] wd=0;wire [31:0] q;
 reg vs=0,de=0;wire blockv,we,re,vvalid;wire [24:0] ma;wire [127:0] md;
 integer phase=0,cycle=0,vleft=0,wleft=0,produced=0,consumed=0,writes=0;
 integer x,y,i,tries;reg [31:0] due[0:1023];
-reg owner[0:1023];reg [127:0] replies[0:1023];reg [127:0] snapshot[0:57599];
+reg owner[0:1023];reg [127:0] replies[0:1023];reg [127:0] snapshot[0:14399];
 integer mailbox_issued=0,mailbox_returned=0;
 wire vi=wleft!=0,vo=vleft!=0,ready=(cycle%13)!=0;
 wire vr=vo && ready;
@@ -59,10 +59,10 @@ initial begin
   de=0;repeat(280) @(negedge p);
  end
  repeat(2000) @(negedge a);addr=4;#1;
- if(q[2:0]!==2 || writes!=57600) $fatal(1,"full frame failed status=%h writes=%d",q,writes);
+ if(q[2:0]!==2 || writes!=14400) $fatal(1,"full frame failed status=%h writes=%d",q,writes);
  if(produced<1000 || consumed<1000 || blockv) $fatal(1,"video did not make progress");
  // Read every captured word through APB while video bursts continue.
- for(i=0;i<57600;i=i+1) begin
+ for(i=0;i<14400;i=i+1) begin
    put('h20,i);addr='h24;tries=0;#1;
    while(q[0] && tries<1000) begin @(negedge a);#1;tries=tries+1;end
    if(q[0]) $fatal(1,"mailbox timeout word=%d state=%d pending=%d",i,dut.state,dut.video_pending);
@@ -71,8 +71,8 @@ initial begin
    addr='h38;#1;if(q!==32'h0012ab56) $fatal(1,"read pixel2 corrupt");
    addr='h3c;#1;if(q!==32'h0012ab56) $fatal(1,"read pixel3 corrupt");
  end
- if(mailbox_issued!=57600 || mailbox_returned!=57600) $fatal(1,"mailbox request/reply count mismatch");
- $display("PASS full-frame capture + 57600 APB snapshot reads during video bursts; correct reply ownership/data/backpressure");$finish;
+ if(mailbox_issued!=14400 || mailbox_returned!=14400) $fatal(1,"mailbox request/reply count mismatch");
+ $display("PASS full-frame capture + 14400 APB snapshot reads during video bursts; correct reply ownership/data/backpressure");$finish;
 end
 initial begin #200000000;$fatal(1,"timeout");end
 endmodule

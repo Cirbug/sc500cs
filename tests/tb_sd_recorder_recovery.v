@@ -4,7 +4,8 @@ reg a=0,p=0,d=0,rst=0;always #10 a=~a;always #7 p=~p;always #4 d=~d;
 reg [7:0] addr=0;reg sel=0,en=0,write=0;reg [31:0] wd=0;wire [31:0] q;
 reg vs=0,de=0;reg vi=0,vo=0,vr=0,ready=1,rv=0;
 wire blockv,we,re,vvalid;wire [24:0] ma;wire [127:0] md;wire [31:0] ui;
-sd_recorder #(.WIDTH(192),.HEIGHT(108),.BASE(128)) dut(
+// 2026-10-27: 192x108 -> 384x216；6x 采样下 576 个字，仍能撑爆 512 深的 FIFO
+sd_recorder #(.WIDTH(384),.HEIGHT(216),.BASE(128)) dut(
  .rst_n(rst),.apb_clk(a),.pixel_clk(p),.ddr_clk(d),.addr(addr),.sel(sel),.enable(en),
  .write(write),.wdata(wd),.rdata(q),.vs(vs),.de(de),.rgb(24'h123456),
  .sd_clk(),.sd_mosi(),.sd_cs(),.sd_miso(1'b1),.vi_busy(vi),.vo_busy(vo),
@@ -22,8 +23,8 @@ begin @(negedge a);addr=ra;wd=data;sel=1;en=0;write=1;
 task frame;
 begin
  @(negedge p);vs=1;repeat(5) @(negedge p);vs=0;repeat(5) @(negedge p);
- for(yy=0;yy<108;yy=yy+1) begin
-  for(xx=0;xx<192;xx=xx+1) begin de=1;@(negedge p);end
+ for(yy=0;yy<216;yy=yy+1) begin
+  for(xx=0;xx<384;xx=xx+1) begin de=1;@(negedge p);end
   de=0;repeat(4) @(negedge p);
  end
 end endtask
@@ -65,5 +66,5 @@ initial begin
  if(dut.video_pending!=0) $fatal(1,"video outstanding counter underflow");
  $display("PASS capture writes alongside video reads, overflow release, repeated retry, cancellation and late DDR response");$finish;
 end
-initial begin #3000000;$fatal(1,"timeout");end
+initial begin #20000000;$fatal(1,"timeout");end   /* 帧变大了，超时放宽到 20ms */
 endmodule

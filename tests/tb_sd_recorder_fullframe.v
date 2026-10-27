@@ -49,9 +49,9 @@ initial begin
   de=0;repeat(280) @(negedge p);
  end
  repeat(2000) @(negedge a);addr=4;#1;
- if(q[2:0]!==2 || writes!=57600) $fatal(1,"full frame failed status=%h writes=%d",q,writes);
+ if(q[2:0]!==2 || writes!=14400) $fatal(1,"full frame failed status=%h writes=%d",q,writes);
  if(produced<1000 || consumed<1000 || blockv) $fatal(1,"video did not make progress");
- $display("PASS 1920x1080 capture, 57600 DDR words, video bursts=%d, response latency/backpressure",produced/240);$finish;
+ $display("PASS 1920x1080 capture, 14400 DDR words, video bursts=%d, response latency/backpressure",produced/240);$finish;
 end
 initial begin #40000000;$fatal(1,"timeout");end
 endmodule

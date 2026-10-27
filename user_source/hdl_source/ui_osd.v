@@ -57,6 +57,13 @@ module ui_osd #(
     input  wire        I_color_valid,
     input  wire [2:0]  I_color_code,
     input  wire [11:0] I_color_x0, I_color_y0, I_color_y1,
+    /* 2026-10-27 第四期：颜色识别档（image_step==0）三色同显。
+     * 三组包围盒来自 red_shape_tracker 的三色连通域；bit k = 第 k 色已确认
+     * （0=红 1=绿 2=蓝）。框内写各自的颜色名，走 cn_* 层（result_* 一次只能一个）。 */
+    input  wire [2:0]  I_c3_valid,
+    input  wire [11:0] I_r_x0, I_r_y0, I_r_x1, I_r_y1,
+    input  wire [11:0] I_g_x0, I_g_y0, I_g_x1, I_g_y1,
+    input  wire [11:0] I_b_x0, I_b_y0, I_b_x1, I_b_y1,
     input  wire [15:0] I_picture_ctrl,
     input  wire [15:0] I_exposure,
     input  wire [15:0] I_gain,
@@ -216,6 +223,8 @@ module ui_osd #(
                     (I_color_y0 >= 12'd44)          ? I_color_y0 - 12'd44 : 12'd0;
     end
     wire [2:0] color_kind = I_color_code - 3'd1;   // 1/2/3 -> 0/1/2 = 红/绿/蓝
+    /* 颜色识别档：三色同显。这一档不画追踪框/十字，只有三个颜色的框和框内名字。 */
+    wire       color_mode = (I_image_step == 3'd0);
 
     // 追踪档标签的位置与色标：5/6/7 -> 0/1/2 = 追踪红/追踪蓝/追踪绿。
     // 紧贴框的下边缘（2 像素），下面放不下就放上边缘上方。
@@ -327,6 +336,31 @@ module ui_osd #(
             cn_active=1;cn_col=cn_dx[4:0];cn_row=cn_dy[4:0];cn_color=24'hff4040;
             // Existing "red target tracking" menu text supplies both glyph IDs.
             cn_id=cn_label_id(2'd3,4'd4,{2'b0,cn_dx[5]});
+        end
+        /* ---- 颜色识别档：在三个颜色框里各写自己的颜色名 ----------------------
+         * 走 cn_* 层而不是 result_* 层：result_* 一次只能放一个标签，而这一档要同时
+         * 显示三个名字。每个像素最多落在一个框内，组合逻辑直接判即可。
+         * 字数不够的框（宽 < 68 或高 < 36）不写字，避免溢出到框外。
+         * 框色与框线/名字颜色一致：红 ff5050、绿 50ff50、蓝 7070ff。 */
+        if(color_mode) begin
+            if(I_c3_valid[0] && x>=I_r_x0+12'd4 && x<I_r_x0+12'd68 &&
+               y>=I_r_y0+12'd4 && y<I_r_y0+12'd36) begin
+                cn_dx=x-I_r_x0-12'd4;cn_dy=y-I_r_y0-12'd4;
+                cn_active=1;cn_col=cn_dx[4:0];cn_row=cn_dy[4:0];cn_color=24'hff5050;
+                cn_id=cn_color_id(3'd0,cn_dx[6:5]);
+            end
+            if(I_c3_valid[1] && x>=I_g_x0+12'd4 && x<I_g_x0+12'd68 &&
+               y>=I_g_y0+12'd4 && y<I_g_y0+12'd36) begin
+                cn_dx=x-I_g_x0-12'd4;cn_dy=y-I_g_y0-12'd4;
+                cn_active=1;cn_col=cn_dx[4:0];cn_row=cn_dy[4:0];cn_color=24'h50ff50;
+                cn_id=cn_color_id(3'd1,cn_dx[6:5]);
+            end
+            if(I_c3_valid[2] && x>=I_b_x0+12'd4 && x<I_b_x0+12'd68 &&
+               y>=I_b_y0+12'd4 && y<I_b_y0+12'd36) begin
+                cn_dx=x-I_b_x0-12'd4;cn_dy=y-I_b_y0-12'd4;
+                cn_active=1;cn_col=cn_dx[4:0];cn_row=cn_dy[4:0];cn_color=24'h7070ff;
+                cn_id=cn_color_id(3'd2,cn_dx[6:5]);
+            end
         end
         if(y>=658 && y<690) begin cn_line_active=1; cn_line=0; cn_dy=y-658; end
         else if(y>=694 && y<726) begin cn_line_active=1; cn_line=1; cn_dy=y-694; end

@@ -24,12 +24,15 @@ module red_tracking_osd #(
     input wire [11:0] I_g_x0,I_g_y0,I_g_x1,I_g_y1,
     input wire [11:0] I_b_x0,I_b_y0,I_b_x1,I_b_y1,
     input wire [1:0]  I_target_color,   // 0=红 1=绿 2=蓝：选中目标的框用这个颜色
+    /* 1 = 颜色识别档（image_step==0）：只画红/绿/蓝三个连通域框，框色 = 颜色本身，
+     * 且不画追踪档那套中心十字/死区/目标框。0 = 追踪档（原来的行为）。 */
+    input wire        I_color_show,
     output reg O_hit,
     output reg [23:0] O_color
 );
     localparam integer CX=IMG_WIDTH/2,CY=IMG_HEIGHT/2;
 
-    /* 供恢复多色显示时使用，现在没有调用者会报 unused，所以保留注释形式。
+    /* 2026-10-27 第四期：颜色识别档要同时画三个颜色的框，边框判据提成函数复用。 */
     function box_edge;
         input [11:0] x,y,x0,y0,x1,y1;
         begin
@@ -37,11 +40,17 @@ module red_tracking_osd #(
                        ((x-x0<12'd2) || (x1-x<12'd2) || (y-y0<12'd2) || (y1-y<12'd2));
         end
     endfunction
-    */
 
     always @(*) begin
         O_hit=0;O_color=0;
-        if(I_enable && I_de) begin
+        if(I_enable && I_de && I_color_show) begin
+            /* ---- 颜色识别档：三个颜色同时显示 ----
+             * 红/绿/蓝各画自己连通域的框，框色就是颜色本身；已确认(valid)的才画。
+             * 现场要求这三个框只在"颜色识别"档出现，追踪档仍然只画选中目标一个框。 */
+            if(I_color3_valid[0] && box_edge(I_x,I_y,I_r_x0,I_r_y0,I_r_x1,I_r_y1)) begin O_hit=1;O_color=24'hff3030;end
+            if(I_color3_valid[1] && box_edge(I_x,I_y,I_g_x0,I_g_y0,I_g_x1,I_g_y1)) begin O_hit=1;O_color=24'h30ff30;end
+            if(I_color3_valid[2] && box_edge(I_x,I_y,I_b_x0,I_b_y0,I_b_x1,I_b_y1)) begin O_hit=1;O_color=24'h4040ff;end
+        end else if(I_enable && I_de) begin
             // Fixed reference cross and outer (start-moving) dead zone.
             if((I_x>=CX-12 && I_x<=CX+12 && I_y>=CY-1 && I_y<=CY+1) ||
                (I_y>=CY-12 && I_y<=CY+12 && I_x>=CX-1 && I_x<=CX+1)) begin O_hit=1;O_color=24'hffffff;end

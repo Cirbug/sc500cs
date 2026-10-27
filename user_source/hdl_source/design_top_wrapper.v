@@ -512,13 +512,15 @@ module design_top_wrapper (
     // Original ID 1 is removed; the OSD numbers the remaining modes 1..4.
     assign S_dbg_step       = S_image_step_p2;
     assign S_dbg_disp_mode  = (S_image_step_p2 >= 3'd3) ? 3'd0 : 3'd5;
-    assign S_dbg_recog_mode = (S_image_step_p2 >= 3'd3);
+    /* 颜色识别档（2026-10-27 第四期）：image_step == 0，三色同时显示。
+     * 它复用 red_shape_tracker 的三色连通域输出（O_color_valid + 红/绿/蓝三组包围盒），
+     * **不是**老的 color_detect —— 那条链没有时间滤波、框会乱跳，gege 已整条删掉，
+     * 这里跟着删。伺服在这一档不动作（mailbox 只认 5/6/7）。 */
+    wire S_color_only_mode = (S_image_step_p2 == 3'd0);
+    /* 识别类档位：3=图形识别 4=运动检测 5/6/7=追踪，外加 0=颜色识别。
+     * 颜色识别也要跑跟踪核心（三色连通域就来自它），所以并进这个总使能。 */
+    assign S_dbg_recog_mode = (S_image_step_p2 >= 3'd3) || S_color_only_mode;
     assign S_dbg_effect_sel = (S_image_step_p2 >= 3'd3) ? 3'd0 : S_image_effect_p2;
-    // 颜色识别（主色框 + R/G/B 字母 + 样点计数）从"运动检测"里摘出来：
-    // 运动检测那一档只画运动框，不要再混进颜色框。颜色识别需要单独一档，
-    // 档位分配待定，先置 0 停用 —— 一旦这里给出来，色框、字母、以及
-    // ui_osd 的"红色/绿色/蓝色"文字会一起生效（三处都只看 I_color_valid）。
-    wire S_color_recog_mode = 1'b0;
     // 目标跟踪档：5=追踪红色 6=追踪蓝色 7=追踪绿色（按现场给的顺序）。
     // 选中颜色就由档位决定，不在跟踪档时退回 APB 0xf4 的值（给调试器留的入口）。
     wire [1:0] S_track_color_sel = (S_image_step_p2 == 3'd5) ? 2'd0 :
@@ -1787,23 +1789,15 @@ isp_top u_isp_top (
         .O_x1_2 (S_motion_x1_2), .O_y1_2 (S_motion_y1_2)
     );
 
-    color_detect #(
-        .IMG_WIDTH    (`DISPLAY_WIDTH),
-        .IMG_HEIGHT   (`DISPLAY_HEIGHT),
-        .SAMPLE_SHIFT (4),
-        .MIN_SAMPLES  (16'd16)
-    ) u_color_detect_99 (
-        .I_clk      ( S_hdmi_pixel_clk ),
-        .I_rst_n    ( S_hdmi_rst_n ),
-        .I_user     ( S_hdmi_user ),
-        .I_de       ( S_video_dn_de ),
-        .I_data     ( S_video_dn_data ),
-        .I_enable   ( S_color_recog_mode ),
-        .O_valid    ( S_color_valid ), .O_color ( S_color_code ),
-        .O_count    ( S_color_count ),
-        .O_x0       ( S_color_x0 ), .O_y0 (S_color_y0),
-        .O_x1       ( S_color_x1 ), .O_y1 (S_color_y1)
-    );
+    /* 2026-10-27 第四期：原来的 color_detect 链路整条删除（gege 也删了）。
+     * 它没有时间滤波、框会乱跳；"颜色识别"档改用 red_shape_tracker 的三色连通域。
+     * 它的输出仍被 mixer 的旧叠加层和 ui_osd 的旧结果文字层引用，所以这里统一置 0
+     * 把两处旧显示关掉（新档位走下面的三色端口）。 */
+    assign S_color_valid = 1'b0;
+    assign S_color_code  = 3'd0;
+    assign S_color_count = 16'd0;
+    assign S_color_x0 = 12'd0; assign S_color_y0 = 12'd0;
+    assign S_color_x1 = 12'd0; assign S_color_y1 = 12'd0;
 
     red_shape_tracker #(
         .IMG_WIDTH    (`DISPLAY_WIDTH),
@@ -1813,7 +1807,9 @@ isp_top u_isp_top (
     ) u_red_target_tracker_99 (
         .I_clk       ( S_hdmi_pixel_clk ),
         .I_rst_n     ( S_hdmi_rst_n ),
-        .I_enable    ( S_dbg_recog_mode && ((S_dbg_step >= 3'd5) || S_shape_mode) ),
+        /* 颜色识别档也要跑：三色连通域就是这个跟踪器算出来的。
+         * 但伺服不动（mailbox/red_track_display 仍只认 5/6/7）。 */
+        .I_enable    ( S_dbg_recog_mode && ((S_dbg_step >= 3'd5) || S_shape_mode || S_color_only_mode) ),
         .I_shape_mode(S_shape_mode), .O_shape_type(S_component_shape),
         .I_reacquire ( S_track_reacquire ),
         .I_user      ( S_hdmi_user ),
@@ -1942,6 +1938,7 @@ isp_top u_isp_top (
         .I_c3g_x0 (S_c3g_x0), .I_c3g_y0 (S_c3g_y0), .I_c3g_x1 (S_c3g_x1), .I_c3g_y1 (S_c3g_y1),
         .I_c3b_x0 (S_c3b_x0), .I_c3b_y0 (S_c3b_y0), .I_c3b_x1 (S_c3b_x1), .I_c3b_y1 (S_c3b_y1),
         .I_target_color (S_track_color_sel),
+        .I_color_show   (S_color_only_mode),   /* 颜色识别档：画三个颜色框（不画十字/死区）*/
         .O_video_rd_en   ( S_hdmi_window_rd_en),
         .I_video_rd_data ( S_lsc_video_data    ),
         .O_hdmi_vsync    ( S_hdmi_out_vsync   ),
@@ -2113,6 +2110,10 @@ isp_top u_isp_top (
         .I_color_x0     ( S_color_x0 ),
         .I_color_y0     ( S_color_y0 ),
         .I_color_y1     ( S_color_y1 ),
+        .I_c3_valid ( S_color3_valid ),
+        .I_r_x0 (S_c3r_x0), .I_r_y0 (S_c3r_y0), .I_r_x1 (S_c3r_x1), .I_r_y1 (S_c3r_y1),
+        .I_g_x0 (S_c3g_x0), .I_g_y0 (S_c3g_y0), .I_g_x1 (S_c3g_x1), .I_g_y1 (S_c3g_y1),
+        .I_b_x0 (S_c3b_x0), .I_b_y0 (S_c3b_y0), .I_b_x1 (S_c3b_x1), .I_b_y1 (S_c3b_y1),
         .I_picture_ctrl ( S_picture_pixel[15:0] ),
         .I_exposure     ( S_ui_ae_p2 ),
         .I_gain         ( S_ui_ag_p2 ),

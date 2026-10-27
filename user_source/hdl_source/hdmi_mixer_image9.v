@@ -87,6 +87,8 @@ module hdmi_mixer_image9 #(
     input wire [11:0] I_c3g_x0,I_c3g_y0,I_c3g_x1,I_c3g_y1,
     input wire [11:0] I_c3b_x0,I_c3b_y0,I_c3b_x1,I_c3b_y1,
     input wire [1:0]  I_target_color,   // 0=红 1=绿 2=蓝（选中目标的框颜色）
+    /* 1 = 颜色识别档（image_step==0）：只画红/绿/蓝三个连通域框，不画十字/死区/目标框。 */
+    input wire        I_color_show,
 
     output wire       O_video_rd_en,
     input wire[23:0]  I_video_rd_data,
@@ -626,8 +628,11 @@ module hdmi_mixer_image9 #(
     reg [23:0] S_track_color_1d;
     red_tracking_osd #(.IMG_WIDTH(IMG_WIDTH),.IMG_HEIGHT(IMG_HEIGHT)) u_red_tracking_osd (
         .I_clk(I_clk),.I_rst_n(I_rst_n),
-        .I_enable(I_recog_mode && I_dbg_step>=3'd5),.I_de(S_video_de_2d),
-        .I_x(S_x),.I_y(S_y_pix),.I_new_result(I_track_new),.I_valid(I_track_valid),
+        /* 2026-10-27 第四期：档位 0 = 颜色识别，也要画框（三个颜色框）。 */
+        .I_enable(I_recog_mode && (I_dbg_step>=3'd5 || I_dbg_step==3'd0)),.I_de(S_video_de_2d),
+        .I_color_show(I_recog_mode && I_dbg_step==3'd0),
+        .I_x(S_x),.I_y(S_y_pix),.I_new_result(I_track_new),
+        .I_valid(I_track_valid && I_dbg_step!=3'd0),
         .I_state(I_track_state),.I_x0(I_track_x0),.I_y0(I_track_y0),
         .I_x1(I_track_x1),.I_y1(I_track_y1),.I_cx(I_track_cx),.I_cy(I_track_cy),
         .I_error_x(I_track_ex),.I_error_y(I_track_ey),

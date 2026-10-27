@@ -56,8 +56,9 @@ int main(int argc,char **argv) {
     panel_open(&s,PANEL_MODE);tap(&s,400,700);assert(s.image_step==2);  /* 普通画面 */
     tap(&s,400,736);assert(s.image_step==3);                            /* 图形识别 */
     tap(&s,400,772);assert(s.image_step==4);                            /* 运动检测 */
+    tap(&s,400,808);assert(s.image_step==0);                            /* 颜色识别（第四期新增档位 0）*/
     tap(&s,400,700);assert(s.image_step==2);
-    tap(&s,400,808);assert(s.image_effect==1 && s.image_step==2);       /* 图像特效：第 4 行 */
+    tap(&s,400,844);assert(s.image_effect==1 && s.image_step==2);       /* 图像特效：挪到第 5 行 */
     /* 目标追踪页（重排后 4 行）：目标跟踪(开/关) / 目标色(红·蓝·绿) / 重新识别 / 自动对焦。
      * 方案甲内部仍写 image_step 5/6/7（5=红 6=蓝 7=绿），所以 OSD 的追踪标签不受影响。 */
     panel_open(&s,PANEL_TRACK);tap(&s,400,700);

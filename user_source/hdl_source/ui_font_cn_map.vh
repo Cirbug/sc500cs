@@ -99,10 +99,14 @@ function [6:0] cn_label_id;
             9'd409: cn_label_id=7'd64;
             9'd410: cn_label_id=7'd65;
             9'd411: cn_label_id=7'd66;
-            9'd416: cn_label_id=7'd7;
-            9'd417: cn_label_id=7'd8;
-            9'd418: cn_label_id=7'd17;
-            9'd419: cn_label_id=7'd18;
+            9'd416: cn_label_id=7'd124;
+            9'd417: cn_label_id=7'd68;
+            9'd418: cn_label_id=7'd61;
+            9'd419: cn_label_id=7'd62;
+            9'd424: cn_label_id=7'd7;
+            9'd425: cn_label_id=7'd8;
+            9'd426: cn_label_id=7'd17;
+            9'd427: cn_label_id=7'd18;
         endcase
     end
 endfunction

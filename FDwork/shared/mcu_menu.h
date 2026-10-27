@@ -163,10 +163,11 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
         mcu_panel_number(cells,v);
         if(row==3 && !s->vts_available)mcu_menu_text(cells,"----");
     } else if(page==PANEL_MODE) {
-        /* 2026-10-26：显示模式只剩 2/3/4（普通/识别/运动），跟踪已移出本页；
-         * 跟踪态(5/6/7)时本页没有行高亮，跟踪状态在"目标追踪"页看。 */
-        if(row<=3 && s->image_step==row+1)mcu_panel_value(cells,7);
-        else if(row==4) {
+        /* 2026-10-27 第四期：本页 5 行 = 普通(2)/识别(3)/运动(4)/颜色识别(0)/图像特效。
+         * 前 4 行的档位查 mode_row_step[]（档位不再连续，不能用 row+1 的算术）；
+         * 第 5 行是图像特效。跟踪态(5/6/7)时本页无行高亮，状态在"目标追踪"页看。 */
+        if(row>=1 && row<=4 && s->image_step==mode_row_step[row-1])mcu_panel_value(cells,7);
+        else if(row==5) {
             if(s->image_step==2 && s->image_effect<=5) {
                 if(!s->image_effect)mcu_panel_value(cells,6);
                 else for(i=0;i<4;i++)cells[8+i]=mcu_effects[0][s->image_effect][i];

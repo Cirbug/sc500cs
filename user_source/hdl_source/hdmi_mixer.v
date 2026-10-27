@@ -55,6 +55,9 @@ module hdmi_mixer #(
     input wire [11:0] I_c3g_x0, I_c3g_y0, I_c3g_x1, I_c3g_y1,
     input wire [11:0] I_c3b_x0, I_c3b_y0, I_c3b_x1, I_c3b_y1,
     input wire [1:0]  I_target_color,   // 0=红 1=绿 2=蓝（选中目标的框颜色）
+    /* 2026-10-27 第四期：1 = 颜色识别档（image_step==0），透传给 image9 的追踪 OSD，
+     * 让它只画红/绿/蓝三个连通域框。 */
+    input wire        I_color_show,
 
     output wire       O_video_rd_en,
     input wire [23:0] I_video_rd_data,
@@ -135,6 +138,7 @@ module hdmi_mixer #(
         .I_c3g_x0 (I_c3g_x0), .I_c3g_y0 (I_c3g_y0), .I_c3g_x1 (I_c3g_x1), .I_c3g_y1 (I_c3g_y1),
         .I_c3b_x0 (I_c3b_x0), .I_c3b_y0 (I_c3b_y0), .I_c3b_x1 (I_c3b_x1), .I_c3b_y1 (I_c3b_y1),
         .I_target_color  (I_target_color),
+        .I_color_show    (I_color_show),
         .O_video_rd_en   (O_video_rd_en),
         .I_video_rd_data (I_video_rd_data),
         .O_hdmi_vsync    (O_hdmi_vsync),

@@ -425,15 +425,23 @@ enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
        PANEL_TRACK, PANEL_RECORD, PANEL_SYSTEM };
 static inline unsigned panel_rows(const MenuState *s)
 {
-    static const uint8_t rows[]={6,7,5,4,4,6,2};   /* 2026-10-26 重排后的各页行数 */
+    /* 2026-10-27 第四期：显示模式页 4 -> 5 行（新增"颜色识别"档）。 */
+    static const uint8_t rows[]={6,7,5,5,4,6,2};
     return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
 }
+/* 显示模式页的行 -> image_step 映射（2026-10-27 第四期）。
+ * 档位不再连续（新增 0=颜色识别），所以要用表而不是 row+2 的算术：
+ *   行 0 -> 2 普通画面   行 1 -> 3 图形识别   行 2 -> 4 运动检测
+ *   行 3 -> 0 颜色识别   行 4 = 图像特效（不是档位，单独处理）
+ * 跟踪态（5/6/7）不占本页行：跟踪开关与选色在"目标追踪"页。 */
+static const uint8_t mode_row_step[4]={2,3,4,0};
 /* 显示模式在首页"显示模式"那一行显示的名字 = mcu_panel_values 的下标。
- * 2026-10-26 重排后显示模式只剩 2..4（普通/识别/运动）；跟踪态（5/6/7）的
- * 画面仍然是普通画面，所以首页值显示"普通"，跟踪状态由"目标追踪"那一行表达。 */
+ * 跟踪态（5/6/7）的画面仍是普通画面，所以首页值显示"普通"，跟踪状态由
+ * "目标追踪"那一行表达。 */
 static const uint8_t mode_value_kind[3]={1,2,3};
 static inline unsigned mode_kind_of(const MenuState *s)
 {
+    if(s->image_step==0u) return 13u;                 /* 颜色识别 */
     return (s->image_step>=2u && s->image_step<=4u) ? mode_value_kind[s->image_step-2u] : 1u;
 }
 static __attribute__((noinline)) void panel_open(MenuState *s,unsigned page)
@@ -472,7 +480,7 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
         s->index=selected==2?7:selected;
         action=menu_adjust(s,direction);s->index=selected;break;
     case PANEL_MODE:
-        if(selected<3)s->image_step=selected+2;   /* 只剩 普通/识别/运动；跟踪已移出显示模式 */
+        if(selected<4)s->image_step=mode_row_step[selected];   /* 前 4 行是档位（含新增的颜色识别）*/
         else { /* Reuse effect/target adjustment without interpreting it as a mode. */
             old=s->picture_page;s->picture_page=0;s->index=5;
             action=menu_adjust(s,direction);s->index=selected;s->picture_page=old;
@@ -509,12 +517,12 @@ static inline int panel_editable(const MenuState *s)
            (s->panel_page==PANEL_PICTURE && ((s->index<6 && !(s->index==1 && gamma_locked(s))) ||
             (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
-           (s->panel_page==PANEL_MODE && s->index==3);
+           (s->panel_page==PANEL_MODE && s->index==4);   /* 图像特效挪到第 5 行 */
 #else
     return (s->panel_page==PANEL_EXPOSURE && s->index<4) ||
            (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
-           (s->panel_page==PANEL_MODE && s->index==3);
+           (s->panel_page==PANEL_MODE && s->index==4);   /* 图像特效挪到第 5 行 */
 #endif
 }
 static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned keys)

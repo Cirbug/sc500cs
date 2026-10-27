@@ -43,7 +43,7 @@ module mcu_ui_apb_regs #(
     // LSC 运行时强度（菜单"系统信息 -> 色度"）：0 = 旁路，16 = 表值原样，
     // 31 = 约 194%。5 位，每一步只有旧版的一半，便于半步微调。
     // 复位默认 16（等价于编译期表值）。MCU 开机写一次，之后由菜单维护。
-    output reg  [6:0]  O_lsc_ctrl,
+    output reg  [7:0]  O_lsc_ctrl,
     // 跟踪目标颜色（APB 0xf4）：0=红 1=绿 2=蓝。三色的连通域同时都在跑、
     // 三个框都会画出来，这一位只决定"伺服跟哪一个"。
     /* 已停用：output reg [1:0] O_track_color,  见 design_top_wrapper.v 说明 */
@@ -156,7 +156,7 @@ module mcu_ui_apb_regs #(
             // （旧值 0x1050 = 伽马开/黑电平16/亮度1.00，固件是 0x108C）。
             // 0x108C = 黑电平12, 伽马关, 亮度1.125x, 饱和度旁路, 白平衡平滑, 降噪0。
             O_picture_ctrl <= 16'h108C;
-            O_lsc_ctrl    <= 7'd56;     // 7 位；56 = 表值原样(64) 的 7/8，与固件默认一致
+            O_lsc_ctrl    <= 8'd112;    // 8 位；112 = 表值原样(128) 的 7/8 = 旧 5 位口径的 14
             /* 已停用：O_track_color <= 2'd0;  （0xf4 链路）*/
             O_focus_roi_w <= 11'd0;     // 0 = focus_metric 用默认 160x120
             O_focus_roi_h <= 11'd0;
@@ -232,7 +232,11 @@ module mcu_ui_apb_regs #(
                     // 写 6/7 会被夹回 5，导致"选追踪蓝/绿其实都在追踪红"。
                     // 3 位本身就封顶在 7，所以只需要下限钳位。
                     8'h58: if(I_pstrobe[0]) begin
-                        O_image_step <= (I_pwdata[2:0] < 3'd2) ? 3'd2 : I_pwdata[2:0];
+                        /* 档位现在有 8 个：0=颜色识别 1=（保留，自动追踪暂未实现）
+                         * 2=普通画面 3=图形识别 4=运动检测 5/6/7=追踪红/蓝/绿。
+                         * 3 位正好装得下 8 个值，**位布局不用动** —— 原来把 <2 的写入夹到 2
+                         * （那时 0/1 是非法值），现在 0 是正经档位，直接放行。 */
+                        O_image_step <= I_pwdata[2:0];
                         O_image_effect <= (I_pwdata[5:3] > 3'd5) ? 3'd5 : I_pwdata[5:3];
                         O_image_target <= (I_pwdata[7:6] > 2'd2) ? 2'd2 : I_pwdata[7:6];
                         O_image_logo_enable <= I_pwdata[8];
@@ -254,7 +258,7 @@ module mcu_ui_apb_regs #(
                     8'h80: if(&I_pstrobe && I_pwdata==32'h53455431 && !I_rtc_set_status[0]) O_rtc_set<=1;
                     8'h88: if(I_pstrobe[0]) O_wifi_ctrl<=I_pwdata[1:0];
                     // LSC 强度：5 位，超出 31 会被截断（31 已是约 194% 上限）
-                    8'hec: if(I_pstrobe[0]) O_lsc_ctrl<=I_pwdata[6:0];
+                    8'hec: if(I_pstrobe[0]) O_lsc_ctrl<=I_pwdata[7:0];
                     /* 已停用：8'hf4 跟踪目标颜色写入（0xf4 链路）*/
                     // 对焦 ROI 尺寸。宽高都要落在一个 32 位字里，所以要两条
                     // byte lane 同时有效，不能发布"半个设置"。
@@ -335,12 +339,13 @@ module mcu_ui_apb_regs #(
                 8'h94: O_prdata = O_focus_roi;
                 8'h98: O_prdata = 32'h41465231; // AFR1: touch focus ROI
                 8'h90: O_prdata = 32'h57494631; // WIF1: UART0 and boot/reset pads.
-                8'hec: O_prdata = {25'd0, O_lsc_ctrl}; // LSC 强度（读回，7 位）
-                // LSC2：本版色度是 7 位（64 = 表值原样，0..127）。老 bit 只有 0xf0「LSC1」、
-                // 5 位（16 = 表值原样，0..31），固件按能力位决定写多少、掩多少。
-                // 放在 0xf8（原 COL1 位，已随 0xf4 死链一起停用）；0xf4 留给
-                // 第二期的目标色/跟踪使能寄存器，避免与这里抢地址。
-                8'hf8: O_prdata = 32'h4c534332; // LSC2 capability: 7-bit LSC strength
+                8'hec: O_prdata = {24'd0, O_lsc_ctrl}; // LSC 强度（读回，8 位）
+                // COL1：本版色度是 8 位（128 = 表值原样、112 = 旧 14、0..255），同时表示
+                // “三色识别 + 目标跟踪”能力 —— 三者在我们这条线上总是一起出现。
+                // 采用 gege 的地址（0xf8 = COL1），保持与他固件的互操作性：他的固件探测
+                // 0xf8==COL1 判三色能力，我们的固件用它判“色度是 8 位”。
+                // 老 bit 只有 0xf0「LSC1」= 5 位（16 = 表值原样，0..31），固件按 v<<3 折算。
+                8'hf8: O_prdata = 32'h434f4c31; // COL1 capability: 8-bit LSC + 3-colour/track
                 8'hf0: O_prdata = 32'h4c534331; // LSC1 capability: runtime LSC strength
                 /* 已停用：8'hf4 跟踪目标颜色读回（0xf4 链路）*/
                 8'hfc: O_prdata = {5'd0, O_focus_roi_h, 5'd0, O_focus_roi_w}; // 对焦 ROI 尺寸

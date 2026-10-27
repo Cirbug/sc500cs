@@ -59,7 +59,7 @@ module lens_shading_correction #(
     // 缩放以"表的加权均值"为支点，不是以 1.0 为支点 —— 所以调强度只改空间
     // 形状，不会顺带把整个画面调暖或调冷（实测旧版 6->11 会暖 2.9%）。
     // 由 APB 寄存器 0xec 给出（MCU 开机写默认值，菜单"系统信息->色度"可改）。
-    input  wire [6:0]  I_strength,
+    input  wire [7:0]  I_strength,
 
     output reg         O_vs,
     output reg         O_hs,
@@ -181,33 +181,37 @@ module lens_shading_correction #(
     end
 
     // ------------------------------------------------ 强度缩放（纯无符号）
-    // gain = PIVOT + (base - PIVOT) * strength / 64
+    // gain = PIVOT + (base - PIVOT) * strength / 128
     //   strength = 0   -> 真旁路（增益 256）
-    //   strength = 64  -> 表值原样（2026-10-26 由 5 位/16 扩到 7 位/64）
-    //   strength = 127 -> 约 194%（与旧版 strength = 31 等效）
-    // 扩位原因：旧版 0..31 只有 32 档，而菜单滑条有 127 个手指位置，
-    // 等于每档要滑 4 像素，现场调色度时手感明显顿挫；曝光有近 4000 档所以顺滑。
-    // 现在 128 档 ≈ 127 个滑条位置，手感与"增益"一致，常用区间分辨率提升 4 倍。
+    //   strength = 128 -> 表值原样
+    //   strength = 112 -> 旧版 5 位的 14（现场过零点）
+    //   strength = 255 -> 约 199%
+    // 位宽沿革：5 位(0..31, /16) -> 我们 7 位(0..127, /64) -> 8 位(0..255, /128)。
+    // 2026-10-27 采纳 gege 的 8 位：他独立扩位时也选了 /128，128=表值原样、
+    // 112=旧 14，每步 0.78%，在过零点附近比 7 位再细一倍，且资源零代价
+    // （prod 仍是 13 位：20*255 = 5100 < 8192）。
+    // 注意固件要按能力字 0xf8“COL1”判断本版是 8 位；只有 0xf0“LSC1”的老 bit
+    // 是 5 位，固件按 v<<3 折算（旧 14 -> 112），同一档位观感一致。
     // 支点取"表的加权均值"而不是 1.0：这样调强度只放大/缩小空间形状，
     // 加权平均增益恒定 ≈ 264，不会顺带把整个画面调暖或调冷。
-    // 位宽：mag 最大 264-244 = 20；20*127 = 2540 仍落在 13 位内；
-    // >>6 后最大 39，所以增益范围 225..303，加上倾斜偏移后仍恒为正、不超 9 位。
+    // 位宽：mag 最大 264-244 = 20；20*255 = 5100 仍落在 13 位内；
+    // >>7 后最大 39，所以增益范围 225..303，加上倾斜偏移后仍恒为正、不超 9 位。
     // 先判符号再取绝对值，避免用到有符号运算。
     localparam [8:0] STRENGTH_PIVOT = 9'd264;
     function [8:0] scale_gain;
         input [8:0] base;
-        input [6:0] s;
+        input [7:0] s;
         reg         neg;
         reg [8:0]   mag;
         reg [12:0]  prod;
         begin
-            if(s == 7'd0) begin
+            if(s == 8'd0) begin
                 scale_gain = 9'd256;              // 0 = 完全旁路，保持原语义
             end else begin
                 neg  = (base < STRENGTH_PIVOT);
                 mag  = neg ? (STRENGTH_PIVOT - base) : (base - STRENGTH_PIVOT);
                 prod = mag * s;
-                mag  = prod[12:6];
+                mag  = prod[12:7];
                 scale_gain = neg ? (STRENGTH_PIVOT - mag) : (STRENGTH_PIVOT + mag);
             end
         end

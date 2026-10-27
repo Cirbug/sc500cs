@@ -108,22 +108,24 @@ static inline void track_sync_from_step(MenuState *s)
  * Firmware explicitly writes this even with the previous FPGA reset profile. */
 #define PICTURE_DEFAULT 0x108cu
 /* LSC（镜头阴影校正）运行时强度：APB 0xec，也就是菜单"系统信息 → 色度"那一项。
- * 0 = 完全旁路，64 = lens_shading_correction.v 编译期表值原样，127 = 约 194%。
+ * 0 = 完全旁路，128 = lens_shading_correction.v 编译期表值原样，255 = 约 199%。
  *
- * 7 位、每步 1/64（2026-10-26 由 5 位/16 扩容）。扩容原因：菜单滑条只有 127 个手指位置，
- * 5 位时 32 档等于每档要滑 4 像素、现场顿挫；7 位后 128 档 ≈ 127 个位置，手感与"增益"一致。
- * 换算：旧 5 位值 × 4 = 新值（旧 14 = 新 56，旧 16 = 新 64，旧 31 = 新 124）。
+ * 8 位、每步 1/128（2026-10-27 采纳 gege：他独立扩容时也选 8 位/128）。
+ * 扩容原因：菜单滑条只有 127 个手指位置，5 位时 32 档等于每档要滑 4 像素、现场顿挫；
+ * 8 位 256 档覆盖整个滑条行程，手感与"增益"一致，且在过零点附近比 7 位再细一倍。
+ * 换算：旧 5 位值 × 8 = 新值（旧 14 = 新 112，旧 16 = 新 128，旧 31 = 新 248）。
+ * 能力字：0xf8「COL1」= 8 位（本版）；只有 0xf0「LSC1」的老 bit 是 5 位，固件按 v<<3 折算。
  *
- * 默认 56（= 旧值的 14）：2026-10-25 用重新拟合过的 64 档表实测扫档（灰墙均匀面，菜单关），
- * 中心的 R/G 残差按半径分三段（下表按旧 5 位口径记录，新值 = ×4）：
+ * 默认 112（= 旧值的 14）：2026-10-25 用重新拟合过的 64 档表实测扫档（灰墙均匀面，菜单关），
+ * 中心的 R/G 残差按半径分三段（下表按旧 5 位口径记录，新值 = ×8）：
  *     色度 13 -> 中心 -1.41% / 中环 -0.13% / 外圈 +0.77%   跨度 2.18%（欠补）
  *     色度 14 -> 中心 -0.51% / 中环 +0.20% / 外圈 +0.00%   跨度 0.71%（过零点）
  *     色度 15 -> 中心 +0.99% / 中环 +0.88% / 外圈 -1.38%   跨度 2.37%（过补）
- * 14（新 56）是唯一的过零点，且 13/15 两边对称变差 —— 径向到此为止，不要再靠调色度补偿。
+ * 14（新 112）是唯一的过零点，且 13/15 两边对称变差 —— 径向到此为止，不要再靠调色度补偿。
  * 注意：实测残留里还有 ~1.1% 的"上红下绿"方向性偏差、~3.4% 的像素级色噪，
  * 以及 ~1.4% 的固定色斑（镜像自相关仅 0.02/0.19，不对称 -> 是墙面/模组低阶
  * 色阴影，不是径向分量），这些都不是色度旋钮能动的。 */
-#define LSC_STRENGTH_DEFAULT 56u   /* 7 位；= 旧 5 位口径的 14 */
+#define LSC_STRENGTH_DEFAULT 112u  /* 8 位；= 旧 5 位口径的 14 */
 static inline uint32_t picture_effective(const MenuState *s)
 {
     /* Hardware IDs 2..5 are displayed as modes 1..4; original ID 1 is removed.
@@ -167,7 +169,7 @@ static inline void picture_adjust(MenuState *s, int direction)
     case 3: shift=12; mask=3; high=3; break;     /* 白平衡（离散，无滑条）*/
     case 4: shift=14; mask=3; high=3; break;     /* 降噪 */
     case 5:                                      /* 色度（0..127，两端钳位、不循环）*/
-        if(direction>0) { if(s->lsc_strength<127u)++s->lsc_strength; }
+        if(direction>0) { if(s->lsc_strength<255u)++s->lsc_strength; }
         else            { if(s->lsc_strength>0u)--s->lsc_strength; }
         return;
     case 7:
@@ -559,7 +561,7 @@ static unsigned panel_range(const MenuState *s,unsigned row,unsigned *v,unsigned
         if(row==2){*v=(s->picture>>9)&7;*hi=4;return 1;}    /* 饱和度 */
         /* row3 白平衡是离散 4 档，没有滑条（沿用原设计）*/
         if(row==4){*v=(s->picture>>14)&3;*hi=3;return 1;}   /* 降噪 */
-        if(row==5){*v=s->lsc_strength;*hi=127;return 1;}    /* 色度（从系统页搬来）*/
+        if(row==5){*v=s->lsc_strength;*hi=255;return 1;}    /* 色度（从系统页搬来，8 位）*/
     }
     if(s->panel_page==PANEL_RECORD && row==3){*v=s->record_interval;*hi=4;return 1;}
     return 0;

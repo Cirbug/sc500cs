@@ -48,7 +48,9 @@ int main(int argc,char **argv) {
     tap(&s,457,808);assert(((s.picture>>7)&3)==3);  /* 数字亮度：从图像页搬来的第 4 行 */
     TouchEvent e={400,780,TOUCH_MOVE};menu_touch(&s,&e);assert(s.gain==16);
     panel_open(&s,PANEL_PICTURE);tap(&s,400,700);assert((s.picture&63)==35);
-    tap(&s,457,872);assert(s.lsc_strength==127);   /* 色度（LSC 强度）：从系统页搬到第 6 行，7 位满量程 */
+    /* 色度（LSC 强度）：从系统页搬到第 6 行；2026-10-27 由 7 位扩到 8 位（0..255），
+     * 所以滑条推到最右端应落在 255 而不是 127。 */
+    tap(&s,457,872);assert(s.lsc_strength==255);
     /* 2026-10-26 重排：显示模式只剩 4 行（普通/识别/运动/图像特效），
      * 三色跟踪移到"目标追踪"页，不再占用显示模式档位。 */
     panel_open(&s,PANEL_MODE);tap(&s,400,700);assert(s.image_step==2);  /* 普通画面 */

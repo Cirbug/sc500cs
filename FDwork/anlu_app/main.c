@@ -380,8 +380,9 @@ static void recorder_service(void) {
  *
  * 边界：只跨 MCU 复位 / FPGA 重配，跨不过断电（断电后 FD 本来也要重下固件）。
  * ===================================================================== */
-#define UI_PERSIST_MAGIC        0x55495033u  /* "UIP3": 色度(LSC 强度)改为 7 位口径 */
-#define UI_PERSIST_MAGIC_LEGACY 0x55495032u  /* "UIP2": 旧块，色度是 5 位口径 */
+#define UI_PERSIST_MAGIC        0x55495034u  /* "UIP4": 色度(LSC 强度)改为 8 位口径 */
+#define UI_PERSIST_MAGIC_LSC7   0x55495033u  /* "UIP3": 7 位口径（中间版本，未随 bit 发布）*/
+#define UI_PERSIST_MAGIC_LSC5   0x55495032u  /* "UIP2": 5 位口径 */
 typedef struct {
     uint32_t magic, sum;
     uint32_t picture, exposure, gain, vts, auto_exposure, lsc, image_ctrl, index;
@@ -425,9 +426,9 @@ static void ui_persist_save(const MenuState *s)
 /* 色度写入值/掩码：按 bit 的能力位决定 7 位还是 5 位。
  * 本版 bit 有 0xf8「LSC2」= 7 位（64 = 表值原样，0..127）；老 bit 只有 0xf0「LSC1」= 5 位。
  * 混搭时按 4:1 折算（新 56 -> 老 14），保证同一档位在新旧 bit 上观感一致。 */
-static uint32_t lsc_word(uint32_t strength, uint32_t lsc7)
-{ return lsc7 ? (strength & 127u) : ((strength >> 2) & 31u); }
-static uint32_t lsc_mask(uint32_t lsc7) { return lsc7 ? 127u : 31u; }
+static uint32_t lsc_word(uint32_t strength, uint32_t lsc8)
+{ return lsc8 ? (strength & 255u) : ((strength >> 3) & 31u); }
+static uint32_t lsc_mask(uint32_t lsc8) { return lsc8 ? 255u : 31u; }
 
 AL_S32 main(void)
 {
@@ -441,7 +442,7 @@ AL_S32 main(void)
         /* 已停用：.track_color = 0   （见 UiPersist 说明） */
     };
     uint32_t last_report = 0;
-    uint32_t restored, lsc_available, lsc7;
+    uint32_t restored, lsc_available, lsc8;
 
     g_ui_debug_stage = 1;
     al_printf("UI boot: USART1 115200; before APB read at 0x%08x\r\n",
@@ -478,10 +479,11 @@ AL_S32 main(void)
 
     /* 上一次的用户设置还在不在？TD 重配后 MCU 会复位重跑，靠这里捡回来，
      * 这样画面和灌 bit 之前完全一致（见文件上方 g_ui_persist 的说明）。 */
-    /* UIP2 旧块也接受：里面的色度值是 5 位口径，下面按 ×4 迁移，
-     * 否则用户原来的"色度 14"会被新硬件当成 14/64 = 22% 强度。 */
+    /* 三种历史口径都接受，色度值在下面按各自的比例迁移到 8 位：
+     * 否则用户原来存的"色度 14"会被新硬件当成 14/128 = 11% 强度。 */
     restored = ((g_ui_persist.magic == UI_PERSIST_MAGIC ||
-                 g_ui_persist.magic == UI_PERSIST_MAGIC_LEGACY) &&
+                 g_ui_persist.magic == UI_PERSIST_MAGIC_LSC7 ||
+                 g_ui_persist.magic == UI_PERSIST_MAGIC_LSC5) &&
                 ui_persist_sum(&g_ui_persist) == g_ui_persist.sum);
     if(restored) {
         ui.picture     = g_ui_persist.picture;
@@ -494,12 +496,17 @@ AL_S32 main(void)
         ui.image_effect = (g_ui_persist.image_ctrl >> 3) & 7u;
         ui.image_target = (g_ui_persist.image_ctrl >> 6) & 3u;
         ui.logo_enable  = (g_ui_persist.image_ctrl >> 8) & 1u;
-        /* UIP2 的 lsc 存的是 5 位口径（16 = 表值原样），UIP3 起是 7 位（64 = 表值原样）。
-         * 老块必须 ×4：不迁移的话原来的 14 会被当成 14/64 = 22% 强度，现场表现就是
+        /* 色度（LSC 强度）三个历史口径 -> 当前 8 位：
+         *   UIP2 5 位（16 = 表值原样）-> <<3，旧 14 -> 112
+         *   UIP3 7 位（64 = 表值原样）-> <<1，旧 56 -> 112
+         *   UIP4 8 位（128 = 表值原样）-> 原样
+         * 不迁移的话，老块里的 14 会被当成 14/128 = 11% 强度，现场表现就是
          * "滑条变顺了，但色度效果弱了一大截"。 */
-        ui.lsc_strength = (g_ui_persist.magic == UI_PERSIST_MAGIC_LEGACY)
-                          ? ((g_ui_persist.lsc & 31u) << 2)
-                          : (g_ui_persist.lsc & 127u);
+        ui.lsc_strength = (g_ui_persist.magic == UI_PERSIST_MAGIC_LSC5)
+                          ? ((g_ui_persist.lsc & 31u) << 3)
+                          : (g_ui_persist.magic == UI_PERSIST_MAGIC_LSC7)
+                            ? ((g_ui_persist.lsc & 127u) << 1)
+                            : (g_ui_persist.lsc & 255u);
         ui.gamma_level  = (uint8_t)(g_ui_persist.gamma_level & 15u);
         /* 已停用：ui.track_color = g_ui_persist.track & 3u;  见 UiPersist 说明 */
         al_printf("UI: restored picture state (survived the last FPGA reconfig)\r\n");
@@ -555,8 +562,8 @@ AL_S32 main(void)
      * 能力位：0xf0「LSC1」= 有 LSC；0xf8「LSC2」= 强度是 7 位（老 bit 为 5 位）。
      * 老 bit 没有 0xf0 就完全不写；只有 LSC1 时按 4:1 折算后写 5 位。 */
     lsc_available = (ui_read(0xf0)==0x4c534331u);
-    lsc7 = lsc_available && (ui_read(0xf8)==0x4c534332u);
-    if(lsc_available) ui_write(0xec, lsc_word(ui.lsc_strength, lsc7));
+    lsc8 = lsc_available && (ui_read(0xf8)==0x434f4c31u);   /* COL1 = 8 位色度 */
+    if(lsc_available) ui_write(0xec, lsc_word(ui.lsc_strength, lsc8));
 /* --- 已停用（2026-10-26）：gege 的 COL1 / 0xf4 track_color 链路，见 UiPersist 说明 --- */
 #if 0
     /* "COL1"（0xf8）：本版 bit 才有三色识别 + 目标跟踪，0xf4 = 伺服跟哪个颜色。
@@ -610,8 +617,8 @@ AL_S32 main(void)
          * 菜单里改了值也在这里生效（菜单本身不碰硬件）。
          * 读回必须掩 31 位 —— 以前这里掩的是 15，色度 >=16 时永远不相等，
          * 于是每轮循环都白写一次。 */
-        if(lsc_available && ((ui_read(0xec) & lsc_mask(lsc7)) != lsc_word(ui.lsc_strength, lsc7)))
-            ui_write(0xec, lsc_word(ui.lsc_strength, lsc7));
+        if(lsc_available && ((ui_read(0xec) & lsc_mask(lsc8)) != lsc_word(ui.lsc_strength, lsc8)))
+            ui_write(0xec, lsc_word(ui.lsc_strength, lsc8));
 /* --- 已停用（2026-10-26）：gege 的 COL1 / 0xf4 track_color 链路，见 UiPersist 说明 --- */
 #if 0
         /* 0xf4 跟随菜单"系统 → 目标跟踪"（0=红 1=绿 2=蓝）。 */
@@ -655,7 +662,7 @@ AL_S32 main(void)
                     ui.exposure = ui_read(UI_EXPOSURE);
                     ui.gain     = ui_read(UI_GAIN);
                     if(ui.histogram_available) ui_write(HE_BASE+0x1c, 0);
-                    if(lsc_available) ui_write(0xec, lsc_word(ui.lsc_strength, lsc7));
+                    if(lsc_available) ui_write(0xec, lsc_word(ui.lsc_strength, lsc8));
 #if GAMMA_SLIDER
                     /* GAM1 belongs with PIC1: restore the preset too. */
                     if(ui.gamma_slider_available) ui_write(0x6c, gamma_effective(&ui));

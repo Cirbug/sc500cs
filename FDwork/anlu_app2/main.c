@@ -345,15 +345,15 @@ static void recorder_service(void) {
 /* 色度写入值/掩码：按 bit 的能力位决定 7 位还是 5 位。
  * 本版 bit 有 0xf8「LSC2」= 7 位（64 = 表值原样，0..127）；老 bit 只有 0xf0「LSC1」= 5 位。
  * 混搭时按 4:1 折算（新 56 -> 老 14），保证同一档位在新旧 bit 上观感一致。 */
-static uint32_t lsc_word(uint32_t strength, uint32_t lsc7)
-{ return lsc7 ? (strength & 127u) : ((strength >> 2) & 31u); }
-static uint32_t lsc_mask(uint32_t lsc7) { return lsc7 ? 127u : 31u; }
+static uint32_t lsc_word(uint32_t strength, uint32_t lsc8)
+{ return lsc8 ? (strength & 255u) : ((strength >> 3) & 31u); }
+static uint32_t lsc_mask(uint32_t lsc8) { return lsc8 ? 255u : 31u; }
 
 AL_S32 main(void)
 {
     uint32_t id;
     uint32_t events;
-    uint32_t lsc7;
+    uint32_t lsc8;
     MenuState ui = {
         .menu = 0, .exposure = 3990, .gain = 80,
         .servo_pan_us = 1500, .servo_tilt_us = 1500,
@@ -440,8 +440,8 @@ AL_S32 main(void)
     /* LSC 运行时强度（APB 0xec）：0 = 完全旁路，64 = 编译期表值原样，127 = 约 194%（7 位）。
      * 现场调试可直接在 GDB 里写 0x700000ec（0..127）实时看画面。
      * 能力位：0xf0「LSC1」= 有 LSC；0xf8「LSC2」= 7 位（老 bit 为 5 位，按 4:1 折算）。 */
-    lsc7 = (ui_read(0xf0)==0x4c534331u) && (ui_read(0xf8)==0x4c534332u);
-    if(ui_read(0xf0)==0x4c534331u) ui_write(0xec, lsc_word(LSC_STRENGTH_DEFAULT, lsc7));
+    lsc8 = (ui_read(0xf0)==0x4c534331u) && (ui_read(0xf8)==0x434f4c31u);   /* COL1 = 8 位色度 */
+    if(ui_read(0xf0)==0x4c534331u) ui_write(0xec, lsc_word(LSC_STRENGTH_DEFAULT, lsc8));
     al_printf("SERVO: %s PAN/V6=%u us TILT/V4=%u us\r\n",
               ui.servo_menu_available ? "touch ready" : "new FPGA bit required",
               ui.servo_pan_us, ui.servo_tilt_us);
@@ -479,8 +479,8 @@ AL_S32 main(void)
 
         /* 0xec 跟随菜单"图像调整 → 色度"（0..127，0 = 完全旁路，64 = 表值原样）。 */
         if(ui_read(0xf0)==0x4c534331u &&
-           ((ui_read(0xec) & lsc_mask(lsc7)) != lsc_word(ui.lsc_strength, lsc7)))
-            ui_write(0xec, lsc_word(ui.lsc_strength, lsc7));
+           ((ui_read(0xec) & lsc_mask(lsc8)) != lsc_word(ui.lsc_strength, lsc8)))
+            ui_write(0xec, lsc_word(ui.lsc_strength, lsc8));
         /* --- 已停用（2026-10-26）：gege 的 COL1 / 0xf4 track_color 链路，
          * 见 anlu_app/main.c 的 UiPersist 说明 --- */
 #if 0

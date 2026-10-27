@@ -451,8 +451,8 @@ module design_top_wrapper (
     // 它是慢变控制量，逐位两级同步就够：即使切换瞬间混进一拍，
     // 也只是一个帧内强度差 1/16，肉眼不可见，不存在功能风险。
     // 5 位：0 = 旁路，16 = 表值原样，31 = 约 194%（半档精度）。
-    wire [6:0] S_lsc_ctrl_apb;
-    reg  [6:0] S_lsc_ctrl_p1, S_lsc_ctrl_p2;
+    wire [7:0] S_lsc_ctrl_apb;
+    reg  [7:0] S_lsc_ctrl_p1, S_lsc_ctrl_p2;
     /* --- 已停用（2026-10-26）：APB 0xf4 跟踪目标颜色链路 ----
      * 固件侧无任何菜单入口赋值，FPGA 也只按 image_step 5/6/7 选色，
      * 0xf4 仅在非追踪档当调试回退，影响不到可见行为。
@@ -462,8 +462,8 @@ module design_top_wrapper (
     --------------------------------------------------------- */
     always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
         if(!S_hdmi_rst_n) begin
-            S_lsc_ctrl_p1 <= 7'd56;
-            S_lsc_ctrl_p2 <= 7'd56;
+            S_lsc_ctrl_p1 <= 8'd112;   // 8 位：112 = 旧 5 位口径的 14（现场过零点）
+            S_lsc_ctrl_p2 <= 8'd112;
             /* 已停用：S_track_color_p1 <= 2'd0; S_track_color_p2 <= 2'd0; */
         end else begin
             S_lsc_ctrl_p1 <= S_lsc_ctrl_apb;

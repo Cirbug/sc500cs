@@ -107,6 +107,8 @@ function [6:0] cn_label_id;
             9'd425: cn_label_id=7'd8;
             9'd426: cn_label_id=7'd17;
             9'd427: cn_label_id=7'd18;
+            9'd432: cn_label_id=7'd125;
+            9'd433: cn_label_id=7'd19;
         endcase
     end
 endfunction

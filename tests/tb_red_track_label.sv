@@ -22,7 +22,7 @@ module tb_red_track_label;
             .I_menu_paddr(8'd0),.I_menu_pstrobe(4'd0),.I_menu_pwdata(32'd0),
             .I_mipi_clk(clk),.I_mipi_frame_start(1'b0),.I_camera_display({7'd127,16'h2000}),
             .I_mipi_frames(32'd0),.I_mipi_fps(12'd0),.I_mipi_fps_valid(1'b0),
-            .I_record_status(32'd0),.I_menu_enable(menu),.I_edit_enable(1'b0),.I_info_enable(1'b0),
+            .I_record_status(32'd0),.I_menu_enable(menu),.I_edit_enable(1'b0),.I_info_enable(1'b0),.I_show_info(1'b1),
             .I_menu_index(3'd0),.I_picture_page(1'b0),.I_mode_page(1'b0),.I_focus_roi(32'd0),
             .I_focus_roi_w(11'd0),.I_focus_roi_h(11'd0),   /* 0 = 默认 160x120 */
             .I_image_step(step),.I_image_effect(3'd0),.I_shape_valid(1'b0),.I_shape_type(3'd0),

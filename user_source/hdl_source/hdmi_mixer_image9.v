@@ -660,6 +660,8 @@ module hdmi_mixer_image9 #(
         .O_color  (S_color_color)
     );
 
+    /* 档位编号总开关：0 = 不显示（2026-10-27 现场要求去掉），1 = 恢复。 */
+    localparam NUM_SHOW = 1'b0;
     reg [11:0] S_num_lx;
     reg [11:0] S_num_ly;
     reg [2:0]  S_num_col;
@@ -689,7 +691,10 @@ module hdmi_mixer_image9 #(
         S_num_bits  = 5'd0;
         S_num_on    = 1'b0;
 
-        if(DBG_UI_EN && S_video_de_2d &&
+        /* 2026-10-27：右上角那个档位编号（1/2/3/4）关掉。
+         * 现在档位不再连续（0=颜色识别、2/3/4=普通/识别/运动、5/6/7=追踪），
+         * 这个 1..4 的编号既对不上菜单也容易误解；要看的话把 NUM_SHOW 改回 1。 */
+        if(NUM_SHOW && DBG_UI_EN && S_video_de_2d &&
            (S_x >= NUM_X) && (S_x < (NUM_X + NUM_W)) &&
            (S_y_pix >= NUM_Y) && (S_y_pix < (NUM_Y + NUM_H))) begin
             S_num_hit = 1'b1;

@@ -21,7 +21,7 @@ module tb_ui_osd;
         .I_clk(clk), .I_rst_n(rst_n), .I_vsync(vsync),
         .I_hsync(hsync), .I_de(de), .I_data(data),
         .I_menu_enable(menu_enable), .I_edit_enable(1'b0),
-        .I_info_enable(1'b1), .I_menu_index(3'd3),
+        .I_info_enable(1'b1),.I_show_info(1'b1), .I_menu_index(3'd3),
         .I_picture_page(1'b0), .I_picture_ctrl(16'h1050),
         .I_record_status(32'd0),
         .I_exposure(16'd2240), .I_gain(16'd80),

@@ -19,7 +19,7 @@ module tb_result_chinese;
         ui_osd #(.RESULT_CHINESE(n)) dut(.I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(hs),.I_de(de),.I_data(video),
             .I_mipi_clk(clk),.I_mipi_frame_start(1'b0),.I_camera_display({7'd127,16'h2000}),
             .I_mipi_frames(32'h00001234),.I_mipi_fps(12'h015),.I_mipi_fps_valid(1'b1),
-            .I_record_status(32'd0),.I_menu_enable(menu),.I_edit_enable(1'b0),.I_info_enable(1'b0),
+            .I_record_status(32'd0),.I_menu_enable(menu),.I_edit_enable(1'b0),.I_info_enable(1'b0),.I_show_info(1'b1),
             .I_menu_index(3'd0),.I_picture_page(1'b0),.I_mode_page(1'b0),.I_focus_roi(32'd0),
             .I_image_step(step),.I_image_effect(effect),.I_shape_valid(valid),.I_shape_type(kind),
             .I_shape_x0(x0),.I_shape_y0(y0),.I_shape_y1(y1),

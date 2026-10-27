@@ -2083,6 +2083,9 @@ isp_top u_isp_top (
         .I_menu_enable  ( S_ui_enable_p2 ),
         .I_edit_enable  ( S_ui_edit_p2 ),
         .I_info_enable  ( S_ui_info_p2 ),
+        /* 「显示信息」总开关 = 原「标志」那一位：一键关掉 LOGO + 日期时间 + 帧数/统计面板。
+         * LOGO 由 mixer 那一侧用同一个信号门控。 */
+        .I_show_info    ( S_logo_enable ),
         .I_menu_index   ( S_ui_index_p2 ),
         .I_picture_page ( S_picture_page_p2 ),
         .I_mode_page    ( S_mode_page_p2 ),

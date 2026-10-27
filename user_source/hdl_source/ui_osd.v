@@ -34,6 +34,12 @@ module ui_osd #(
     input  wire        I_menu_enable,
     input  wire        I_edit_enable,
     input  wire        I_info_enable,
+    /* 2026-10-27：菜单里的「显示信息」总开关（原「标志」）。
+     * 关掉它 = 一键清空画面上所有叠加信息：LOGO（由 mixer 管）、
+     * 顶部日期时间、右上角帧数/统计面板。
+     * 注意右上角那两行 HDMI/MIPI FPS 本来就是统计面板的紧凑形态，所以它一起被关掉；
+     * 「统计信息」开关只管“紧凑(只看帧数) / 详细”这一层。 */
+    input  wire        I_show_info,
     input  wire [2:0]  I_menu_index,
     input  wire [31:0] I_record_status,
     input  wire        I_picture_page,
@@ -190,8 +196,8 @@ module ui_osd #(
     wire controls_hit = (I_menu_enable && x>=24 && x<492 && y>=644 && y<1004) ||
                         (x>=24 && x<220 && y>=1016 && y<1076) ||
                         (x>=236 && x<260 && y>=1034 && y<1058) ||
-                        (x>=CLOCK_X0 && x<CLOCK_X0+284 && y>=CLOCK_Y0 && y<CLOCK_Y0+80) ||
-                        (x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<(stats_detail_frame?276:96));
+                        (I_show_info && x>=CLOCK_X0 && x<CLOCK_X0+284 && y>=CLOCK_Y0 && y<CLOCK_Y0+80) ||
+                        (I_show_info && x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<(stats_detail_frame?276:96));
     wire track_label_enable=RESULT_CHINESE && MENU_CHINESE &&
                            I_image_step>=3'd5 && I_track_valid;
     wire [11:0] track_label_x=(I_track_x0>H_ACTIVE-TRACK_LABEL_W)?
@@ -333,9 +339,17 @@ module ui_osd #(
         if(track_label_hit && x>=track_label_x+4 && x<track_label_x+68 &&
            y>=track_label_y+20 && y<track_label_y+52) begin
             cn_dx=x-track_label_x-12'd4;cn_dy=y-track_label_y-12'd20;
-            cn_active=1;cn_col=cn_dx[4:0];cn_row=cn_dy[4:0];cn_color=24'hff4040;
-            // Existing "red target tracking" menu text supplies both glyph IDs.
-            cn_id=cn_label_id(2'd3,4'd4,{2'b0,cn_dx[5]});
+            cn_active=1;cn_col=cn_dx[4:0];cn_row=cn_dy[4:0];
+            /* 2026-10-27：这两个字改成坐标读数的标题。
+             * 原来借的是菜单标签的前两个字，我重排显示模式页后错位成了“颜色”，
+             * 现在字库里有专门的“坐标”标签（LABELS[3][6]）。
+             * 文字颜色跟着追踪档位走，与框线同色。 */
+            case(track_kind)
+                3'd0: cn_color=24'hff4040;    /* 追踪红色 */
+                3'd1: cn_color=24'h4080ff;    /* 追踪蓝色 */
+                default: cn_color=24'h40ff40;  /* 追踪绿色 */
+            endcase
+            cn_id=cn_label_id(2'd3,4'd6,{2'b0,cn_dx[5]});
         end
         /* ---- 颜色识别档：在三个颜色框里各写自己的颜色名 ----------------------
          * 走 cn_* 层而不是 result_* 层：result_* 一次只能放一个标签，而这一档要同时
@@ -508,7 +522,11 @@ module ui_osd #(
                     default:ch=" ";
                 endcase
                 glyph=glyph_bits(ch,row);
-                if(row<7 && col<5 && glyph[4-col]) pixel=24'hff4040;
+                /* 2026-10-27：数字颜色也跟随识别色（原来写死红色）。
+                 * 与标题/框线同一套配色：红 ff4040、蓝 4080ff、绿 40ff40。 */
+                if(row<7 && col<5 && glyph[4-col])
+                    pixel=(track_kind==3'd0)?24'hff4040:
+                          (track_kind==3'd1)?24'h4080ff:24'h40ff40;
             end
         end
         // A thin focus frame at the real ROI size (gege). Draw before menu controls
@@ -711,7 +729,7 @@ module ui_osd #(
         // The panel is
         // deliberately independent of the menu so the time remains present
         // while the lower-left controls are hidden.
-        if((x >= CLOCK_X0) && (x < CLOCK_X0 + 284) &&
+        if(I_show_info && (x >= CLOCK_X0) && (x < CLOCK_X0 + 284) &&
            (y >= CLOCK_Y0) && (y < CLOCK_Y0 + 80)) begin
             pixel = 24'h101820;
             text_active=0;
@@ -766,7 +784,7 @@ module ui_osd #(
         end
         // Right-aligned output statistics. Values change only in vertical
         // blanking, keeping all digits of an active frame consistent.
-        if(x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<(stats_detail_frame?276:96)) begin
+        if(I_show_info && x>=STATS_X0 && x<STATS_X0+464 && y>=16 && y<(stats_detail_frame?276:96)) begin
             pixel=24'h101820;
             if(x<STATS_X0+2 || x>=STATS_X0+462 || y<18 || y>=(stats_detail_frame?274:94))
                 pixel=24'h304652;

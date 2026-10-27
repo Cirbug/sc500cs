@@ -8,7 +8,7 @@ module tb_panel_ui;
         .I_apb_clk(apb),.I_apb_rst_n(rst),.I_menu_sel(sel),.I_menu_penable(en),.I_menu_pwrite(wr),
         .I_menu_paddr(addr),.I_menu_pwdata(wd),.I_menu_pstrobe(4'hf),.O_menu_prdata(rd),
         .I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),.I_de(de),.I_data(24'h526879),
-        .I_menu_enable(1'b1),.I_edit_enable(1'b0),.I_info_enable(detail),.I_menu_index(3'd0),
+        .I_menu_enable(1'b1),.I_edit_enable(1'b0),.I_info_enable(detail),.I_show_info(1'b1),.I_menu_index(3'd0),
         .I_picture_page(1'b0),.I_mode_page(1'b0),.I_record_status(32'd0),.I_picture_ctrl(16'h108c),
         .I_camera_display({7'd127,16'h2000}),.I_gain(16'd80),.I_focus_roi(32'd0),.I_image_step(3'd2),
         .I_image_effect(3'd0),.I_shape_valid(1'b0),.I_shape_type(3'd0),

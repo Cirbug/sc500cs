@@ -15,7 +15,7 @@ module tb_mcu_menu;
         .I_apb_clk(apb),.I_apb_rst_n(rst),.I_menu_sel(sel),.I_menu_penable(en),.I_menu_pwrite(wr),
         .I_menu_paddr(addr),.I_menu_pwdata(wd),.I_menu_pstrobe(strb),.O_menu_prdata(rd),
         .I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(hs),.I_de(de),.I_data(24'h526879),
-        .I_menu_enable(menu),.I_edit_enable(edit),.I_info_enable(1'b0),.I_menu_index(selection),
+        .I_menu_enable(menu),.I_edit_enable(edit),.I_info_enable(1'b0),.I_show_info(1'b1),.I_menu_index(selection),
         .I_picture_page(page),.I_mode_page(modes),.I_record_status(rec),.I_picture_ctrl(picture),
         .I_camera_display({7'd127,16'h2000}),.I_gain(16'd80),.I_focus_roi(32'd0),.I_image_step(image_step),
         .I_image_effect(3'd4),.I_shape_valid(1'b1),.I_shape_type(3'd3),
@@ -26,7 +26,7 @@ module tb_mcu_menu;
         .O_vsync(ov),.O_hsync(oh),.O_de(od),.O_data(rgb));
     ui_osd #(.RESULT_CHINESE(1)) ref_osd(
         .I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(hs),.I_de(de),.I_data(24'h526879),
-        .I_menu_enable(menu),.I_edit_enable(edit),.I_info_enable(1'b0),.I_menu_index(selection),
+        .I_menu_enable(menu),.I_edit_enable(edit),.I_info_enable(1'b0),.I_show_info(1'b1),.I_menu_index(selection),
         .I_picture_page(page),.I_mode_page(modes),.I_record_status(rec),.I_picture_ctrl(picture),
         .I_camera_display({7'd127,16'h2000}),.I_gain(16'd80),.I_focus_roi(32'd0),.I_image_step(image_step),
         .I_image_effect(3'd4),.I_shape_valid(1'b1),.I_shape_type(3'd3),

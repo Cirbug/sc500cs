@@ -6,7 +6,7 @@ module tb_picture_osd;
     integer px,py,fd,i;
     integer values[0:6];
     ui_osd #(.MENU_CHINESE(0)) dut(.I_mipi_clk(clk),.I_mipi_frame_start(1'b0),.I_camera_display({7'd127,16'h2000}),.I_clk(clk),.I_rst_n(rst),.I_vsync(vs),.I_hsync(1'b0),.I_de(de),
-        .I_data(24'h526879),.I_menu_enable(1'b1),.I_edit_enable(1'b1),.I_info_enable(1'b0),
+        .I_data(24'h526879),.I_menu_enable(1'b1),.I_edit_enable(1'b1),.I_info_enable(1'b0),.I_show_info(1'b1),
         .I_menu_index(3'd5),.I_picture_page(1'b1),.I_picture_ctrl(16'h1050),
         .I_exposure(16'd5990),.I_gain(16'd80),.I_servo_pan_us(16'd1500),.I_servo_tilt_us(16'd1500),
         .I_rtc_hours(8'h12),.I_rtc_minutes(8'h34),.I_rtc_seconds(8'h56),

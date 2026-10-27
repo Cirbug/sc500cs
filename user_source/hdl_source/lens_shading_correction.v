@@ -196,12 +196,12 @@ module lens_shading_correction #(
     localparam [8:0] STRENGTH_PIVOT = 9'd264;
     function [8:0] scale_gain;
         input [8:0] base;
-        input [4:0] s;
+        input [6:0] s;
         reg         neg;
         reg [8:0]   mag;
         reg [12:0]  prod;
         begin
-            if(s == 5'd0) begin
+            if(s == 7'd0) begin
                 scale_gain = 9'd256;              // 0 = 完全旁路，保持原语义
             end else begin
                 neg  = (base < STRENGTH_PIVOT);

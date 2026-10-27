@@ -380,7 +380,8 @@ static void recorder_service(void) {
  *
  * 边界：只跨 MCU 复位 / FPGA 重配，跨不过断电（断电后 FD 本来也要重下固件）。
  * ===================================================================== */
-#define UI_PERSIST_MAGIC 0x55495032u          /* "UIP2": layout gained gamma_level */
+#define UI_PERSIST_MAGIC        0x55495033u  /* "UIP3": 色度(LSC 强度)改为 7 位口径 */
+#define UI_PERSIST_MAGIC_LEGACY 0x55495032u  /* "UIP2": 旧块，色度是 5 位口径 */
 typedef struct {
     uint32_t magic, sum;
     uint32_t picture, exposure, gain, vts, auto_exposure, lsc, image_ctrl, index;
@@ -477,7 +478,10 @@ AL_S32 main(void)
 
     /* 上一次的用户设置还在不在？TD 重配后 MCU 会复位重跑，靠这里捡回来，
      * 这样画面和灌 bit 之前完全一致（见文件上方 g_ui_persist 的说明）。 */
-    restored = (g_ui_persist.magic == UI_PERSIST_MAGIC &&
+    /* UIP2 旧块也接受：里面的色度值是 5 位口径，下面按 ×4 迁移，
+     * 否则用户原来的"色度 14"会被新硬件当成 14/64 = 22% 强度。 */
+    restored = ((g_ui_persist.magic == UI_PERSIST_MAGIC ||
+                 g_ui_persist.magic == UI_PERSIST_MAGIC_LEGACY) &&
                 ui_persist_sum(&g_ui_persist) == g_ui_persist.sum);
     if(restored) {
         ui.picture     = g_ui_persist.picture;
@@ -490,7 +494,12 @@ AL_S32 main(void)
         ui.image_effect = (g_ui_persist.image_ctrl >> 3) & 7u;
         ui.image_target = (g_ui_persist.image_ctrl >> 6) & 3u;
         ui.logo_enable  = (g_ui_persist.image_ctrl >> 8) & 1u;
-        ui.lsc_strength = g_ui_persist.lsc & 127u;
+        /* UIP2 的 lsc 存的是 5 位口径（16 = 表值原样），UIP3 起是 7 位（64 = 表值原样）。
+         * 老块必须 ×4：不迁移的话原来的 14 会被当成 14/64 = 22% 强度，现场表现就是
+         * "滑条变顺了，但色度效果弱了一大截"。 */
+        ui.lsc_strength = (g_ui_persist.magic == UI_PERSIST_MAGIC_LEGACY)
+                          ? ((g_ui_persist.lsc & 31u) << 2)
+                          : (g_ui_persist.lsc & 127u);
         ui.gamma_level  = (uint8_t)(g_ui_persist.gamma_level & 15u);
         /* 已停用：ui.track_color = g_ui_persist.track & 3u;  见 UiPersist 说明 */
         al_printf("UI: restored picture state (survived the last FPGA reconfig)\r\n");

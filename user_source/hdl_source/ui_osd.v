@@ -425,6 +425,10 @@ module ui_osd #(
                 endcase
                 cn_id=cn_value_id(cn_kind,cn_dx[6:5]);
             end
+            /* 2026-10-27：第一行（页面标题 + "返回"）统一改成黄色。
+             * 生产路径的同一改动在 mcu_menu_table.v；这里保持一致，
+             * 否则 mcu_menu 的"两套渲染逐像素对比"用例会对不上。 */
+            if(cn_line==0) cn_color = 24'hfff200;
         end
         // Center the two-character menu button in its existing touch target.
         if(!MCU_MENU && MENU_CHINESE && x>=90 && x<154 && y>=1030 && y<1062) begin

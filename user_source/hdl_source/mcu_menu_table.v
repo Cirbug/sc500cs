@@ -117,17 +117,22 @@ module mcu_menu_table #(parameter integer PANEL_STYLE=1)(
     reg [6:0] id_d;
     reg [4:0] row_d,cncol_d;
     reg active_d;
+    /* 2026-10-27：行号也打一拍，与 desc/dy_d 对齐（本模块流水线只有一级），
+     * 用来给第一行（标题+"返回"）单独上色。 */
+    reg [3:0] line_d;
     always @(posedge clk) desc<=cells[{active_bank,line_id,cell_id}];
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             out_vs<=0;out_hs<=0;out_de<=0;region_d<=0;border_d<=0;text_d<=0;bar_d<=0;valid_d<=0;accent_d<=0;
             dx_d<=0;col_d<=0;dy_d<=0;pixel_d<=0;color_d<=0;id_d<=0;row_d<=0;cncol_d<=0;active_d<=0;
+            line_d<=0;
         end else begin
             out_vs<=vs;out_hs<=hs;out_de<=de;
             region_d<=region;border_d<=border;text_d<=text_hit;bar_d<=bar_hit;valid_d<=valid;
             accent_d<=x>=32 && x<36;
             dx_d<=dx[6:0];col_d<=dx[4:0];dy_d<=dy[5:0];pixel_d<=pixel;
             color_d<=cn_color;id_d<=cn_id;row_d<=cn_row;cncol_d<=cn_col;active_d<=cn_active;
+            line_d<=line_id;
         end
     end
     // Horizontal exponential softening, alpha=1/4, Q8.2 history.
@@ -197,15 +202,15 @@ module mcu_menu_table #(parameter integer PANEL_STYLE=1)(
                 glyph_y=dy_d-3;
                 bits=glyph_bits(desc[7:0],glyph_y[3:1]);
                 if(dy_d>=3 && dy_d<17 && col_d>=10 && col_d<20 && bits[4-((col_d-10)>>1)])
-                    out_pixel=palette(desc[11:9]);
+                    out_pixel=(line_d==0)?24'hfff200:palette(desc[11:9]);   /* 首行黄色 */
             end
             if(text_d && !border_d && !desc[14]) begin
                 if(desc[8]) begin
                     bits=glyph_bits(desc[7:0],glyph_y[4:2]);
-                    if(dy_d>=4 && dy_d<32 && col_d<20 && bits[4-col_d[4:2]])out_pixel=palette(desc[11:9]);
+                    if(dy_d>=4 && dy_d<32 && col_d<20 && bits[4-col_d[4:2]])out_pixel=(line_d==0)?24'hfff200:palette(desc[11:9]);   /* 首行黄色 */
                 end else begin
                     out_id=desc[6:0];out_row=dy_d-2;out_col=col_d;
-                    out_active=1;out_color=palette(desc[11:9]);
+                    out_active=1;out_color=(line_d==0)?24'hfff200:palette(desc[11:9]);   /* 首行黄色 */
                 end
             end
         end

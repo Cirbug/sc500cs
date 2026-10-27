@@ -21,6 +21,10 @@
 static uint32_t g_af_entry_ms;     /* 进追踪档的时刻 */
 static uint8_t  g_af_mode_prev;    /* 上一轮是否在追踪档 */
 static uint8_t  g_af_lock_done;    /* 本次进档已经扫过了 */
+/* 上一次的追踪档位（5=红 6=蓝 7=绿）。换颜色也要重新对焦一次 ——
+ * 原来只认"进档"这一个边沿，从追踪红直接切到追踪蓝不算进档，
+ * 于是换了目标却沿用上一个目标的对焦位置，现场就是"换颜色后对焦不对"。 */
+static uint8_t  g_af_step_prev;
 static uint8_t  g_af_ever_focused; /* 本次进档是否已经对过焦 */
 static int32_t  g_roi_x=-1, g_roi_y=-1;   /* 上次写进 0x94 的区域中心 */
 
@@ -141,6 +145,7 @@ static void tracking_autofocus(const MenuState *s,uint32_t word,uint32_t errors,
     if(g_track_capability!=RED_TRACK_ID) return;
     if(!tracking_mode(s)) {                             /* 退出追踪档，清状态 */
         g_af_mode_prev=0;
+        g_af_step_prev=0;
         g_af_lock_done=0;
         g_af_ever_focused=0;
         g_roi_x=g_roi_y=-1;
@@ -153,8 +158,11 @@ static void tracking_autofocus(const MenuState *s,uint32_t word,uint32_t errors,
      * 原来那样会退化成"对画面中心"，等于对到背景上，所以现场会"有时候对不上焦"。 */
     has_target=((word & 0xc000u)==0xc000u);
 
-    if(!g_af_mode_prev) {                               /* 进档边沿：重新武装 */
+    /* 进档边沿 **或 换颜色** 都重新武装：换颜色等于换了一个目标，
+     * 之前那个目标的对焦位置不再适用（现场："换颜色后不会自己重新对焦"）。 */
+    if(!g_af_mode_prev || s->image_step!=g_af_step_prev) {
         g_af_mode_prev=1;
+        g_af_step_prev=s->image_step;
         g_af_entry_ms=ms;
         g_af_lock_done=0;
         g_af_ever_focused=0;

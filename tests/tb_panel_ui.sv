@@ -55,7 +55,7 @@ module tb_panel_ui;
                 desc=words[page*256+r*16+c];
                 if(!desc[8] && !desc[14])begin
                     background=desc[13:12]==1?24'h395264:desc[13:12]==2?24'h59544c:24'h31404c;
-                    foreground=desc[11:9]==0?24'he8edf2:24'h50d8c0;
+                    /* 2026-10-27：第一行（标题+"返回"）改成黄色，参考模型跟着改。 */         foreground=(r==0)?24'hfff200:                    desc[11:9]==0?24'he8edf2:24'h50d8c0;
                     for(gy=0;gy<32;gy++)begin
                         bits=font[desc[6:0]*32+gy];
                         for(gx=0;gx<32;gx++)begin

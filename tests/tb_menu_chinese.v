@@ -47,13 +47,16 @@ module tb_menu_chinese #(parameter START_MODE=0, END_MODE=9);
                     check_cn=1; line_id=(qy-658)/36; local_y=(qy-658)%36;
                     local_x=(qx-44)%32; cell_id=(qx-44)/32;
                     if(local_y<32) glyph_id=labels[(modes?384:rec[10]?256:page?128:0)+line_id*8+cell_id];
-                    if(modes && line_id==3) color=24'h80e0c0;
+                    /* 2026-10-27：第一行改成黄色，参考模型跟着改。 */
+                    if(line_id==0) color=24'hfff200;
+                    else if(modes && line_id==3) color=24'h80e0c0;
                 end
                 if(menu && (page || rec[10] || modes) && qx>=330 && qx<458 && qy>=658 && qy<942) begin
                     line_id=(qy-658)/36; local_y=(qy-658)%36;
                     if(modes ? line_id==0 : rec[10] ? (line_id==0 || line_id>=6) : (line_id==0 || line_id==2 || line_id>=5)) begin
                         check_cn=1; local_x=(qx-330)%32; cell_id=(qx-330)/32;
-                        color=24'h80e0c0; kind=0;
+                        color=(line_id==0) ? 24'hfff200 : 24'h80e0c0;   /* 首行黄色 */
+                        kind=0;
                         case(line_id)
                             0:kind=0;
                             2:kind=picture[6]?2:1;

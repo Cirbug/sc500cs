@@ -500,6 +500,8 @@ module design_top_wrapper (
     reg [15:0] S_rtc_count_p3, S_rtc_count_seen;
     reg [2:0]   S_image_step_p1, S_image_step_p2;
     reg [2:0]   S_image_effect_p1, S_image_effect_p2;
+    wire [7:0]  S_bin_threshold_apb;
+    reg  [7:0]  S_bin_threshold_p1, S_bin_threshold_p2;
     reg [1:0]   S_image_target_p1, S_image_target_p2;
     reg         S_image_logo_p1, S_image_logo_p2;
     reg         S_image_track_p1, S_image_track_p2, S_image_track_seen;
@@ -922,6 +924,8 @@ module design_top_wrapper (
             S_image_step_p2    <= 3'd2;
             S_image_effect_p1  <= 3'd0;
             S_image_effect_p2  <= 3'd0;
+            S_bin_threshold_p1 <= 8'd128;
+            S_bin_threshold_p2 <= 8'd128;
             S_image_target_p1  <= 2'd0;
             S_image_target_p2  <= 2'd0;
             S_image_logo_p1    <= 1'b1;
@@ -973,6 +977,8 @@ module design_top_wrapper (
             S_image_step_p1    <= S_image_step_apb;
             S_image_step_p2    <= S_image_step_p1;
             S_image_effect_p1  <= S_image_effect_apb;
+            S_bin_threshold_p1 <= S_bin_threshold_apb;
+            S_bin_threshold_p2 <= S_bin_threshold_p1;
             S_image_effect_p2  <= S_image_effect_p1;
             S_image_target_p1  <= S_image_target_apb;
             S_image_target_p2  <= S_image_target_p1;
@@ -1239,6 +1245,7 @@ module design_top_wrapper (
         .O_image_target( S_image_target_apb ),
         .O_image_logo_enable( S_image_logo_apb ),
         .O_image_track_toggle( S_image_track_toggle_apb ),
+        .O_bin_threshold(S_bin_threshold_apb),
         .I_lens_busy   ( S_lens_busy ),
         .I_lens_init_done( S_lens_init_done ),
         .I_lens_error  ( S_lens_error ),
@@ -1971,6 +1978,7 @@ isp_top u_isp_top (
         .I_de     (he_de),
         .I_data   (he_rgb),
         .I_mode   ((S_dbg_effect_sel <= 3'd4) ? S_dbg_effect_sel : 3'd0),
+        .I_bin_threshold(S_bin_threshold_p2),   /* 二值化阈值（仅 I_mode==3 生效）*/
         .O_vsync  (S_effect_vsync),
         .O_hsync  (S_effect_hsync),
         .O_de     (S_effect_de),

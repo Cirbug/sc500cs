@@ -6,6 +6,9 @@ module image_filter (
     input  wire        I_de,
     input  wire [23:0] I_data,
     input  wire [2:0]  I_mode,
+    /* 2026-10-27：二值化阈值（0..255）。原来写死 128，现场没法适配光照。
+     * 只有 I_mode==3（二值化）时被用到，其余特效忽略。 */
+    input  wire [7:0]  I_bin_threshold,
     output reg         O_vsync,
     output reg         O_hsync,
     output reg         O_de,
@@ -48,7 +51,7 @@ module image_filter (
         (I_mode == 3'd0) ? I_data :
         (I_mode == 3'd1) ? {gray, gray, gray} :
         (I_mode == 3'd2) ? ~I_data :
-        (I_mode == 3'd3) ? (gray > 8'd128 ? 24'hFFFFFF : 24'h000000) :
+        (I_mode == 3'd3) ? (gray > I_bin_threshold ? 24'hFFFFFF : 24'h000000) :
         {sep_r, sep_g, sep_b};
 
     // Register the shift/add result. This breaks the long arithmetic path

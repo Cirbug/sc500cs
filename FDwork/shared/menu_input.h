@@ -66,6 +66,9 @@ typedef struct {
     /* 图像页"色度"：镜头色晕校正（LSC）强度 0..127（7 位），直接写 APB 0xec。
      * 0 = 完全旁路，16 = 表值原样，31 = 约 194%。现场调色偏不用再重编固件。 */
     uint32_t lsc_strength;
+    /* 2026-10-27：二值化阈值 0..255（默认 128）。只在"图像特效=二值化"时起作用、
+     * 也只有在那个档位才允许调；按你的要求**不持久化**，每次上电回 128。 */
+    uint32_t bin_threshold;
     /* --- 已停用（2026-10-26）：gege 的 track_color / APB 0xf4 链路 ----------
      * 没有任何菜单代码给它赋值，FPGA 也只按 image_step 5/6/7 选色，
      * 永远影响不到可见行为，还要占 TCM。
@@ -126,6 +129,7 @@ static inline void track_sync_from_step(MenuState *s)
  * 以及 ~1.4% 的固定色斑（镜像自相关仅 0.02/0.19，不对称 -> 是墙面/模组低阶
  * 色阴影，不是径向分量），这些都不是色度旋钮能动的。 */
 #define LSC_STRENGTH_DEFAULT 112u  /* 8 位；= 旧 5 位口径的 14 */
+#define BIN_THRESHOLD_DEFAULT 128u /* 二值化阈值：与原来写死的 128 一致 */
 static inline uint32_t picture_effective(const MenuState *s)
 {
     /* Hardware IDs 2..5 are displayed as modes 1..4; original ID 1 is removed.
@@ -426,7 +430,8 @@ enum { PANEL_HOME, PANEL_PICTURE, PANEL_EXPOSURE, PANEL_MODE,
 static inline unsigned panel_rows(const MenuState *s)
 {
     /* 2026-10-27 第四期：显示模式页 4 -> 5 行（新增"颜色识别"档）。 */
-    static const uint8_t rows[]={6,7,5,5,4,6,2};
+    /* 2026-10-27：显示模式页 5 -> 6 行（"图像特效"下面加"阈值"滑条）。 */
+    static const uint8_t rows[]={6,7,5,6,4,6,2};
     return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
 }
 /* 显示模式页的行 -> image_step 映射（2026-10-27 第四期）。
@@ -481,9 +486,13 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
         action=menu_adjust(s,direction);s->index=selected;break;
     case PANEL_MODE:
         if(selected<4)s->image_step=mode_row_step[selected];   /* 前 4 行是档位（含新增的颜色识别）*/
-        else { /* Reuse effect/target adjustment without interpreting it as a mode. */
+        else if(selected==4) { /* Reuse effect/target adjustment without interpreting it as a mode. */
             old=s->picture_page;s->picture_page=0;s->index=5;
             action=menu_adjust(s,direction);s->index=selected;s->picture_page=old;
+        }
+        else if(s->image_effect==3u) {   /* 第 6 行：二值化阈值，只有二值化时才调得动 */
+            if(direction>0) { if(s->bin_threshold<255u)++s->bin_threshold; }
+            else            { if(s->bin_threshold>0u)--s->bin_threshold; }
         }
         break;
     case PANEL_TRACK:
@@ -517,12 +526,12 @@ static inline int panel_editable(const MenuState *s)
            (s->panel_page==PANEL_PICTURE && ((s->index<6 && !(s->index==1 && gamma_locked(s))) ||
             (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
-           (s->panel_page==PANEL_MODE && s->index==4);   /* 图像特效挪到第 5 行 */
+           (s->panel_page==PANEL_MODE && (s->index==4 || (s->index==5 && s->image_effect==3u)));
 #else
     return (s->panel_page==PANEL_EXPOSURE && s->index<4) ||
            (s->panel_page==PANEL_PICTURE && (s->index<6 || (s->index==7 && s->histogram_available))) ||
            (s->panel_page==PANEL_RECORD && s->index==3) ||
-           (s->panel_page==PANEL_MODE && s->index==4);   /* 图像特效挪到第 5 行 */
+           (s->panel_page==PANEL_MODE && (s->index==4 || (s->index==5 && s->image_effect==3u)));
 #endif
 }
 static __attribute__((noinline,unused)) unsigned menu_key(MenuState *s,unsigned keys)
@@ -571,6 +580,9 @@ static unsigned panel_range(const MenuState *s,unsigned row,unsigned *v,unsigned
         if(row==4){*v=(s->picture>>14)&3;*hi=3;return 1;}   /* 降噪 */
         if(row==5){*v=s->lsc_strength;*hi=255;return 1;}    /* 色度（从系统页搬来，8 位）*/
     }
+    /* 显示模式页第 6 行（index 5）：二值化阈值，只有二值化时给滑条。 */
+    if(s->panel_page==PANEL_MODE && row==5 && s->image_effect==3u)
+        {*v=s->bin_threshold;*hi=255;return 1;}
     if(s->panel_page==PANEL_RECORD && row==3){*v=s->record_interval;*hi=4;return 1;}
     return 0;
 }
@@ -585,6 +597,8 @@ static unsigned panel_slider(MenuState *s,unsigned row,unsigned x)
         else if(row==1)s->gain=v;
         else if(row==3)s->picture=(s->picture&~(3u<<7))|(v<<7);   /* 数字亮度 */
         else {s->vts=v;if(s->exposure>camera_exposure_max(s))s->exposure=camera_exposure_max(s);}
+    } else if(s->panel_page==PANEL_MODE) {
+        if(row==5 && s->image_effect==3u) s->bin_threshold=v;   /* 二值化阈值 */
     } else if(s->panel_page==PANEL_PICTURE) {
 #if GAMMA_SLIDER
         if(row==1) {

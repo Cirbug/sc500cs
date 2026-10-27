@@ -65,6 +65,7 @@ module mcu_ui_apb_regs #(
     output reg  [1:0]  O_image_target,
     output reg         O_image_logo_enable,
     output reg         O_image_track_toggle,
+    output reg  [7:0]  O_bin_threshold,      /* 二值化阈值 0..255，默认 128 */
     input  wire        I_lens_busy,
     input  wire        I_lens_init_done,
     input  wire        I_lens_error,
@@ -169,6 +170,7 @@ module mcu_ui_apb_regs #(
             O_image_target <= 2'd0;
             O_image_logo_enable <= 1'b1;
             O_image_track_toggle <= 1'b0;
+            O_bin_threshold <= 8'd128;   /* 二值化阈值默认 128（与原来写死的值一致） */
             O_lens_cmd    <= 1'b0;
             O_lens_retry <= 0; O_lens_read_adc <= 0;
             O_lens_position <= 14'd8192;
@@ -242,6 +244,9 @@ module mcu_ui_apb_regs #(
                         O_image_logo_enable <= I_pwdata[8];
                         if(I_pwdata[9])
                             O_image_track_toggle <= ~O_image_track_toggle;
+                        /* 2026-10-27：二值化阈值放在本寄存器空闲的 bit[17:10]
+                         * （0x00..0xfc 的 64 个槽位已全部分配完，没有新地址可用）。 */
+                        O_bin_threshold <= I_pwdata[17:10];
                     end
                     // Atomic picture word: BLC[5:0], gamma[6], brightness[8:7],
                     // saturation[11:9] (0..4), AWB mode[13:12], denoise[15:14].
@@ -320,7 +325,7 @@ module mcu_ui_apb_regs #(
                 8'h4c: O_prdata = I_lens_bus_state;
                 8'h50: O_prdata = {16'd0, O_servo_pan_us};
                 8'h54: O_prdata = {16'd0, O_servo_tilt_us};
-                8'h58: O_prdata = {22'd0, O_image_track_toggle,
+                8'h58: O_prdata = {14'd0, O_bin_threshold, O_image_track_toggle,
                                    O_image_logo_enable, O_image_target,
                                    O_image_effect, O_image_step};
                 8'h5c: O_prdata = 32'h20261011; // Firmware/bitstream pairing.

@@ -349,7 +349,7 @@ module ui_osd #(
                 3'd1: cn_color=24'h4080ff;    /* 追踪蓝色 */
                 default: cn_color=24'h40ff40;  /* 追踪绿色 */
             endcase
-            cn_id=cn_label_id(2'd3,4'd6,{2'b0,cn_dx[5]});
+            cn_id=cn_value_id(4'd14,{2'b0,cn_dx[5]});   /* PANEL_VALUES[14] = "坐标" */
         end
         /* ---- 颜色识别档：在三个颜色框里各写自己的颜色名 ----------------------
          * 走 cn_* 层而不是 result_* 层：result_* 一次只能放一个标签，而这一档要同时

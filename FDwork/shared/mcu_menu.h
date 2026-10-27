@@ -167,6 +167,10 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
          * 前 4 行的档位查 mode_row_step[]（档位不再连续，不能用 row+1 的算术）；
          * 第 5 行是图像特效。跟踪态(5/6/7)时本页无行高亮，状态在"目标追踪"页看。 */
         if(row>=1 && row<=4 && s->image_step==mode_row_step[row-1])mcu_panel_value(cells,7);
+        else if(row==6) {   /* 阈值（只有二值化时显示数值，其余显示 ----）*/
+            if(s->image_effect==3u) mcu_panel_number(cells,s->bin_threshold);
+            else mcu_menu_text(cells,"----");
+        }
         else if(row==5) {
             if(s->image_step==2 && s->image_effect<=5) {
                 if(!s->image_effect)mcu_panel_value(cells,6);
@@ -231,10 +235,11 @@ static void mcu_menu_publish(const MenuState *s,uint32_t rec)
     ui_write(MCU_MENU_BASE+16,1);
 }
 static unsigned mcu_menu_available;
-static uint32_t mcu_menu_previous[7];
+/* 2026-10-27：由 7 格扩到 8 格 —— 二值化阈值占满 8 位，key[6] 只剩 6 位装不下。 */
+static uint32_t mcu_menu_previous[8];
 static void mcu_menu_poll(const MenuState *s)
 {
-    uint32_t rec,status,key[7];
+    uint32_t rec,status,key[8];
     if(!mcu_menu_available)return;
     status=ui_read(MCU_MENU_BASE+4);
     if(status&1u)return; /* Never wait for VSYNC or block USB/RTC/SD. */
@@ -255,6 +260,9 @@ static void mcu_menu_poll(const MenuState *s)
 #endif
     key[4]=s->vts;key[5]=rec;key[6]=s->image_step|(s->record_interval<<8)|
         (s->image_effect<<16)|(s->image_target<<20)|(s->histogram_mode<<24);
+    /* 2026-10-27：二值化阈值必须并进脏键，否则"阈值在变、但条形图不动" ——
+     * 和当年色度滑条不顺是同一个原因（键不变 -> mcu_menu_poll 提前返回）。 */
+    key[7]=(uint32_t)s->bin_threshold;
     if((status&6u)==2u && !memcmp(key,mcu_menu_previous,sizeof key))return;
     mcu_menu_publish(s,rec);
     memcpy(mcu_menu_previous,key,sizeof key);

@@ -125,11 +125,13 @@ static void ui_ctrl(uint32_t menu, uint32_t edit, uint32_t info, uint32_t pictur
  * shape, motion, red tracking.  In motion mode target selects 3/2/1 in the
  * FPGA recognizer; in tracking mode bit 9 requests a reacquire pulse. */
 static __attribute__((noinline)) void image_ctrl_write(uint32_t step, uint32_t effect,
-                             uint32_t target, uint32_t logo, uint32_t reset)
+                             uint32_t target, uint32_t logo, uint32_t reset,
+                             uint32_t threshold)
 {
+    /* 2026-10-27：二值化阈值放在 bit[17:10]（0x00..0xfc 已无空地址可用）。 */
     uint32_t value = (step & 7u) | ((effect & 7u) << 3) |
                      ((target & 3u) << 6) | (logo ? (1u << 8) : 0u) |
-                     (reset ? (1u << 9) : 0u);
+                     (reset ? (1u << 9) : 0u) | ((threshold & 255u) << 10);
     ui_write(UI_IMAGE_CTRL, value);
 }
 
@@ -263,9 +265,11 @@ static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
     }
     if(s->image_step != old->image_step || s->image_effect != old->image_effect ||
        s->image_target != old->image_target || s->logo_enable != old->logo_enable ||
+       s->bin_threshold != old->bin_threshold ||
        (actions & MENU_REACQUIRE))
         image_ctrl_write(s->image_step, s->image_effect, s->image_target,
-                         s->logo_enable, (actions & MENU_REACQUIRE) != 0);
+                         s->logo_enable, (actions & MENU_REACQUIRE) != 0,
+                         s->bin_threshold);
     if(s->index != old->index) ui_write(UI_INDEX, s->index);
     if(s->menu != old->menu || s->edit != old->edit || s->info != old->info ||
        s->picture_page != old->picture_page)
@@ -442,6 +446,7 @@ AL_S32 main(void)
         .servo_pan_us = 1500, .servo_tilt_us = 1500,
         .image_step = 2, .logo_enable = 1, .touch_capture = -1,
         .lsc_strength = LSC_STRENGTH_DEFAULT,
+        .bin_threshold = BIN_THRESHOLD_DEFAULT,
         /* 已停用：.track_color = 0   （见 UiPersist 说明） */
     };
     uint32_t last_report = 0;
@@ -537,7 +542,8 @@ AL_S32 main(void)
     ui.servo_menu_available = (ui.servo_pan_us >= 500u && ui.servo_pan_us <= 2500u &&
                             ui.servo_tilt_us >= 500u && ui.servo_tilt_us <= 2500u);
     g_track_capability=ui_read(UI_TRACK_ID);
-    image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0);
+    image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target, ui.logo_enable, 0,
+                     ui.bin_threshold);
     /* 目标追踪页的两个状态由 image_step 反解（方案甲：内部仍用 5/6/7，
      * 所以开机/重配后不需要额外的持久化字段，只要在这里同步一次）。 */
     track_sync_from_step(&ui);
@@ -676,7 +682,7 @@ AL_S32 main(void)
                      * 否则重配后菜单会自己关掉、logo/特效档位回默认。 */
                     ui_ctrl(ui.menu, ui.edit, ui.info, ui.picture_page);
                     image_ctrl_write(ui.image_step, ui.image_effect, ui.image_target,
-                                     ui.logo_enable, 0);
+                                     ui.logo_enable, 0, ui.bin_threshold);
                 }
                 fabric_rdy_prev = 3u;
             } else {

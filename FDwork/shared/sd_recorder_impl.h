@@ -195,6 +195,8 @@ static FIL file;
 static uint8_t buffer[768]; // 256 RGB888 pixels; leaves room for the UART bridge
 static uint8_t available,mounted,opened,running,wanted,stop_requested;
 static unsigned interval=2,seq=1,word_index;
+/* 2026-10-27：固定节拍基准是否已建立（0 = 下一张要以当前时刻重新对齐）。 */
+static uint8_t rec_cadence;
 static uint32_t deadline,last_capture;
 static char filename[13];
 static uint32_t ui_flags;
@@ -236,10 +238,10 @@ int recorder_init(void (*hook)(void)) {
 void recorder_action(unsigned action,unsigned value) {
     if(!available) return;
     if(action==REC_UI) ui_flags=value;
-    else if(action==REC_STOP) { running=0;wanted=0;stop_requested=1; }
+    else if(action==REC_STOP) { running=0;wanted=0;stop_requested=1;rec_cadence=0; }
     else if(action==REC_INTERVAL) interval=value?value:2;
     else if(action==REC_PHOTO && !g_rec_state) {wanted=1;stop_requested=0;g_rec_error=0;}
-    else if(action==REC_START) {running=1;wanted=1;stop_requested=0;g_rec_error=0;}
+    else if(action==REC_START) {running=1;wanted=1;stop_requested=0;g_rec_error=0;rec_cadence=0;}
     else if(action==REC_RETRY && !g_rec_state) {mounted=0;card_ready=0;g_rec_error=0;}
 }
 static int put(const void *p,unsigned n) {
@@ -319,7 +321,21 @@ void recorder_poll(void) {
             u32(14,40);u32(18,320);u32(22,(uint32_t)-180);buffer[26]=1;buffer[28]=24;
             u32(34,172800);
             if(!put(buffer,54)) goto end;
-            g_rec_state=3;last_capture=now_ms();
+            /* 2026-10-27：固定节拍打时间戳。
+             * 原来写 last_capture=now_ms()，等于把"触发 -> 抓帧完成"的 ~0.25 秒
+             * 每次累进下一张，拍 20 张就多出 5 秒。现在按 interval 整数累加，
+             * 误差不累积，5 秒档就是严格每 5 秒一帧。
+             * 若落后超过两个周期（刚启动、中途停过、或读出比间隔还慢），
+             * 就重新以当前时刻为基准，避免"补拍爆发"。 */
+            {
+                uint32_t nowv=now_ms();
+                if(!rec_cadence || (uint32_t)(nowv-last_capture)>(uint32_t)interval*2000u)
+                    last_capture=nowv;
+                else
+                    last_capture+=(uint32_t)interval*1000u;
+                rec_cadence=1;
+            }
+            g_rec_state=3;
         }
     } else if(g_rec_state==3) {
         unsigned n=0,k,j;

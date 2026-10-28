@@ -20,7 +20,7 @@ static int photo_publish(void) {
     uint8_t m[40]={0};char name[13];UINT n;FIL f;
     wf_put32(m,0x31504657u);wf_put32(m+4,volume_id);wf_put32(m+8,seq-1);
     wf_put32(m+12,~photo_crc);wf_put32(m+16,photo_stamp);
-    wf_put32(m+20,691254);wf_put32(m+24,~photo_crc);
+    wf_put32(m+20,172854);wf_put32(m+24,~photo_crc);
     wf_put32(m+28,wf_fat_epoch(photo_stamp));wf_put32(m+36,wf_crc(m,36));
     photo_filename(name,seq-1,"WFM");
     if(f_open(&f,name,FA_WRITE|FA_CREATE_NEW)!=FR_OK) return 0;
@@ -63,7 +63,7 @@ static unsigned photo_prepare_next(void) {
             if(count<40 || wf_get32(m)!=0x31504657u || wf_get32(m+36)!=wf_crc(m,36)) continue;
             if(count==48 && photo_commit_valid(m+40,m)) continue;
             uint32_t number=wf_get32(m+8);
-            if(!number || number>9999999 || wf_get32(m+20)!=691254) continue;
+            if(!number || number>9999999 || wf_get32(m+20)!=172854) continue;
             photo_filename(photo_name,number,"WFM");
             if(strcmp(photo_name,info.fname)) continue;
             photo_filename(photo_name,number,"BMP");
@@ -109,7 +109,7 @@ unsigned recorder_photo_read(const uint8_t id[16],uint32_t offset,unsigned lengt
 }
 unsigned recorder_photo_commit(const uint8_t id[16],uint32_t size,uint32_t crc) {
     unsigned r=photo_storage();if(r) return r;
-    if(size!=691254 || wf_get32(id+8)!=crc) return WF_CONFLICT;
+    if(size!=172854 || wf_get32(id+8)!=crc) return WF_CONFLICT;
     uint32_t number=wf_get32(id+4);
     if(!number || number>9999999) return WF_BAD_ARGUMENT;
     char name[13];uint8_t m[48];FIL f;UINT n;

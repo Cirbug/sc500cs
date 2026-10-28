@@ -114,6 +114,14 @@ module hdmi_mixer_image9 #(
     localparam LOG1_DW = 12'd160;     // 屏幕上显示的宽度（= 80*2，可自由改）
     localparam LOG1_DH = 12'd160;     // 屏幕上显示的高度
 
+    // 2026-10-27：ROM 由「128x64 全画布 + 25bit 直彩」改为「74x47 裁切 + 256 色调色板」
+    //（生成脚本 tools/optimize_logo_rom.py）。屏幕位置/尺寸/放大倍数完全不变，
+    // 只是地址要减掉裁切原点并做边界判断。LOG1_W/LOG1_H 仅保留"原画布"语义。
+    localparam LOG1_CROP_X = 12'd3;
+    localparam LOG1_CROP_Y = 12'd17;
+    localparam LOG1_CROP_W = 12'd74;
+    localparam LOG1_CROP_H = 12'd47;
+
     // L2 照片图标：ROM 里只存 16x20 半分辨率（= 生成 logo2_rom 时的 -Width/-Height），
     //   显示时按 4x4 放大成 64x80（原显示尺寸的两倍），ROM 不变。
     //   为什么要半分辨率：case 查表会被综合成多级 mux/LUT 树，地址空间越大越深，
@@ -163,10 +171,14 @@ module hdmi_mixer_image9 #(
     reg        S_osd_rest_hit_1d;
     reg [23:0] S_osd_rest_color_1d;
     reg        S_l1_valid_1d;
+    /* 2026-10-28：裁切后的"是否落在 74x47 内"打一拍，和 valid_1d / 像素同拍，
+     * 在命中断言处屏蔽越界像素。这样地址通路可以保持原版的"纯移位 + 一次加法"，
+     * 不再为越界做 mux（那一级会把 75MHz 余量压成负数）。 */
+    reg        S_l1_in_q;
     wire [24:0] S_l1_pixel;
     // The synchronous logo read and the other OSD registers sample the same
     // coordinates. Resolve L1 priority here, keeping the original latency.
-    wire S_l1_hit_1d = S_l1_valid_1d && S_l1_pixel[24];
+    wire S_l1_hit_1d = S_l1_valid_1d && S_l1_pixel[24] && S_l1_in_q;
     wire S_osd_hit_1d = S_l1_hit_1d || S_osd_rest_hit_1d;
     wire [23:0] S_osd_color_1d = S_l1_hit_1d ? S_l1_pixel[23:0] : S_osd_rest_color_1d;
     reg [23:0] S_video_rd_data_1d;
@@ -214,6 +226,8 @@ module hdmi_mixer_image9 #(
     reg [11:0] S_l1_x;
     reg [11:0] S_l1_y;
     reg [13:0] S_l1_addr;
+    reg [11:0] S_l1_rx, S_l1_ry;   /* 原 128x64 画布坐标 */
+    reg        S_l1_in;            /* 落在 74x47 裁切区内 */
 
     reg [11:0] S_l2_x;
     reg [11:0] S_l2_y;
@@ -310,8 +324,17 @@ module hdmi_mixer_image9 #(
 
         // Addresses do not depend on any other layer hit. L1 has a synchronous
         // read; L2 and text are registered in parallel before L1 priority.
-        S_l1_x = (S_x - LOG1_X) >> 1;
-        S_l1_y = (S_y_pix - LOG1_Y) >> 1;
+        /* 2026-10-27：ROM 只存裁切后的 74x47，所以减掉裁切原点 (3,17) 并做边界判断；
+         * 屏幕位置与尺寸完全不变。跨距 74 = 64+8+2 → 移位加法，不出乘法器。
+         * 越界时把地址 bit13 置 1，ROM 模块据此输出"透明"，与原来画布外的行为一致。 */
+        S_l1_rx = (S_x - LOG1_X) >> 1;
+        S_l1_ry = (S_y_pix - LOG1_Y) >> 1;
+        S_l1_in = (S_l1_rx >= LOG1_CROP_X) && (S_l1_rx < LOG1_CROP_X + LOG1_CROP_W) &&
+                  (S_l1_ry >= LOG1_CROP_Y) && (S_l1_ry < LOG1_CROP_Y + LOG1_CROP_H);
+        S_l1_x  = S_l1_rx - LOG1_CROP_X;
+        S_l1_y  = S_l1_ry - LOG1_CROP_Y;
+        /* 行跨距 LOG1_W = 128 是 2 的幂 -> 纯移位 + 一次加法，与原版完全相同；
+         * 越界不再在地址上做 mux（会多一级，75MHz 压穿时序），改由 S_l1_in_q 屏蔽。 */
         S_l1_addr = S_l1_y * LOG1_W + S_l1_x;
         S_l2_x = (S_x - S_l2_pos_x) >> 2;
         S_l2_y = (S_y_pix - S_l2_pos_y) >> 2;
@@ -962,6 +985,7 @@ module hdmi_mixer_image9 #(
             S_video_de_2d    <= 1'b0;
             S_video_de_3d    <= 1'b0;
             S_l1_valid_1d <= 1'b0;
+            S_l1_in_q <= 1'b0;
             S_osd_rest_hit_1d     <= 1'b0;
             S_osd_rest_color_1d   <= 24'd0;
             S_shape_hit_1d   <= 1'b0;
@@ -989,6 +1013,7 @@ module hdmi_mixer_image9 #(
             S_l1_valid_1d <= S_video_de_2d && !I_recog_mode && I_logo_enable &&
                 (S_x >= LOG1_X) && (S_x < LOG1_X + LOG1_DW) &&
                 (S_y_pix >= LOG1_Y) && (S_y_pix < LOG1_Y + LOG1_DH);
+            S_l1_in_q <= S_l1_in;
             S_osd_rest_hit_1d       <= S_osd_hit;
             S_osd_rest_color_1d     <= S_osd_color;
             S_shape_hit_1d     <= S_shape_hit;

@@ -10,11 +10,23 @@
 // so it does not have to be registered in the TD project (.al) source list.
 `include "lens_shading_correction.v"
 
-module design_top_wrapper (
+module design_top_wrapper #(
+    // The network-focused profile trims SD recording and the full OSD.
+    parameter integer NETWORK_ONLY_BUILD = 1
+) (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
     input wire I_sd_miso,
     input wire        I_sys_clk,
-    input wire        I_rst_n,
+    // RGMII pins follow the supplied PH1P35 board map. KEY1 (I_button[0])
+    // is the active-low system reset because R10/R11 belong to the PHY.
+    input wire [3:0]  I_a_rgmii_rxd,
+    input wire        I_a_rgmii_rx_ctl,
+    input wire        I_a_rgmii_rxc,
+    output wire [3:0] O_a_rgmii_txd,
+    output wire       O_a_rgmii_tx_ctl,
+    output wire       O_a_rgmii_txc,
+    output wire       O_phy_rst,
+    output wire [3:0] O_net_led,
 
     input wire        I_mcu_uart_rx,
     output wire       O_mcu_uart_tx,
@@ -49,7 +61,6 @@ module design_top_wrapper (
 
     input wire [3:0]  I_button,
 
-    output wire       O_screen_pwm,
     output wire       O_tmds_ch0_p,
     output wire       O_tmds_ch1_p,
     output wire       O_tmds_ch2_p,
@@ -75,6 +86,9 @@ module design_top_wrapper (
     inout wire[1:0]   ddr_dqs_p,
     inout wire[1:0]   ddr_dqs_n   
 );
+
+    wire        I_rst_n;
+    assign I_rst_n = I_button[0];
 
 
     wire        	S_100m_clk;
@@ -605,7 +619,6 @@ module design_top_wrapper (
     wire        S_lane_error_any;
 
 
-    assign O_screen_pwm = 1'b1;
     assign S_video_out_vsync = ~S_hdmi_vsync;
 	
 	
@@ -1189,20 +1202,36 @@ module design_top_wrapper (
     assign S_mcu_prdata=he_select?he_rdata:menu_select?menu_rdata:rec_select?rec_rdata:legacy_rdata;
     assign S_mcu_pready=(rec_select || menu_select || he_select)?1'b1:legacy_ready;
     assign S_mcu_pslverr=(rec_select || menu_select || he_select)?1'b0:legacy_error;
-    sd_recorder u_recorder (
-        .rst_n(S_rst_n), .apb_clk(S_mcu_apb_clk),
-        .pixel_clk(S_hdmi_pixel_clk), .ddr_clk(S_ddr_clk),
-        .addr(S_mcu_paddr[7:0]), .sel(S_mcu_psel && rec_select),
-        .enable(S_mcu_penable), .write(S_mcu_pwrite), .wdata(S_mcu_pwdata),
-        .rdata(rec_rdata), .vs(S_edge_vsync), .de(S_edge_de), .rgb(S_edge_data),
-        .sd_clk(O_sd_clk), .sd_mosi(O_sd_mosi), .sd_cs(O_sd_cs), .sd_miso(I_sd_miso),
-        .vi_busy(S_video_in_wr_busy), .vo_busy(S_video_out_rd_busy),
-        .vo_read(S_vo_ddr_rd_en), .ready(S_ddr_user_ready),
-        .rd_valid(S_ddr_user_rd_valid), .rd_data(S_ddr_user_rd_data),
-        .block_video(rec_block), .wr_en(rec_wr), .rd_en(rec_rd),
-        .mem_addr(rec_addr), .mem_data(rec_data),
-        .video_rd_valid(video_read_valid), .ui_status(rec_ui_status)
-    );
+    generate
+        if (!NETWORK_ONLY_BUILD) begin : g_sd_recorder_enabled
+            sd_recorder u_recorder (
+                .rst_n(S_rst_n), .apb_clk(S_mcu_apb_clk),
+                .pixel_clk(S_hdmi_pixel_clk), .ddr_clk(S_ddr_clk),
+                .addr(S_mcu_paddr[7:0]), .sel(S_mcu_psel && rec_select),
+                .enable(S_mcu_penable), .write(S_mcu_pwrite), .wdata(S_mcu_pwdata),
+                .rdata(rec_rdata), .vs(S_edge_vsync), .de(S_edge_de), .rgb(S_edge_data),
+                .sd_clk(O_sd_clk), .sd_mosi(O_sd_mosi), .sd_cs(O_sd_cs), .sd_miso(I_sd_miso),
+                .vi_busy(S_video_in_wr_busy), .vo_busy(S_video_out_rd_busy),
+                .vo_read(S_vo_ddr_rd_en), .ready(S_ddr_user_ready),
+                .rd_valid(S_ddr_user_rd_valid), .rd_data(S_ddr_user_rd_data),
+                .block_video(rec_block), .wr_en(rec_wr), .rd_en(rec_rd),
+                .mem_addr(rec_addr), .mem_data(rec_data),
+                .video_rd_valid(video_read_valid), .ui_status(rec_ui_status)
+            );
+        end else begin : g_sd_recorder_disabled
+            assign rec_rdata = 32'd0;
+            assign rec_ui_status = 32'd0;
+            assign rec_block = 1'b0;
+            assign rec_wr = 1'b0;
+            assign rec_rd = 1'b0;
+            assign rec_addr = 25'd0;
+            assign rec_data = 128'd0;
+            assign video_read_valid = S_ddr_user_rd_valid;
+            assign O_sd_clk = 1'b0;
+            assign O_sd_mosi = 1'b0;
+            assign O_sd_cs = 1'b1;
+        end
+    endgenerate
 
     wire [63:0] S_ae_meter_apb;
     mcu_ui_apb_regs u_mcu_ui_apb_regs (
@@ -1955,65 +1984,64 @@ isp_top u_isp_top (
     // edge effect with the spatial Sobel implementation.
     wire he_vs,he_hs,he_de;
     wire [23:0] he_rgb;
-    histogram_equalizer u_histogram_equalizer (
-        .rst_n(S_rst_n && S_hdmi_rst_n),.apb_clk(S_mcu_apb_clk),
-        .sel(S_mcu_psel && he_select),.enable(S_mcu_penable),.write(S_mcu_pwrite),
-        .addr(S_mcu_paddr[11:0]),.strobe(S_mcu_pstrobe),.wdata(S_mcu_pwdata),.rdata(he_rdata),
-        .clk(S_hdmi_pixel_clk),.vs(S_hdmi_out_vsync),.hs(S_hdmi_out_hsync),
-        .de(S_hdmi_out_de),.rgb(S_hdmi_base_data),
-        .out_vs(he_vs),.out_hs(he_hs),.out_de(he_de),.out_rgb(he_rgb)
-    );
-    image_filter u_image_filter_9 (
-        .I_clk    (S_hdmi_pixel_clk),
-        .I_rst_n  (S_hdmi_rst_n),
-        .I_vsync  (he_vs),
-        .I_hsync  (he_hs),
-        .I_de     (he_de),
-        .I_data   (he_rgb),
-        .I_mode   ((S_dbg_effect_sel <= 3'd4) ? S_dbg_effect_sel : 3'd0),
-        .O_vsync  (S_effect_vsync),
-        .O_hsync  (S_effect_hsync),
-        .O_de     (S_effect_de),
-        .O_data   (S_effect_data)
-    );
+            histogram_equalizer u_histogram_equalizer (
+                .rst_n(S_rst_n && S_hdmi_rst_n),.apb_clk(S_mcu_apb_clk),
+                .sel(S_mcu_psel && he_select),.enable(S_mcu_penable),.write(S_mcu_pwrite),
+                .addr(S_mcu_paddr[11:0]),.strobe(S_mcu_pstrobe),.wdata(S_mcu_pwdata),.rdata(he_rdata),
+                .clk(S_hdmi_pixel_clk),.vs(S_hdmi_out_vsync),.hs(S_hdmi_out_hsync),
+                .de(S_hdmi_out_de),.rgb(S_hdmi_base_data),
+                .out_vs(he_vs),.out_hs(he_hs),.out_de(he_de),.out_rgb(he_rgb)
+            );
+            image_filter u_image_filter_9 (
+                .I_clk    (S_hdmi_pixel_clk),
+                .I_rst_n  (S_hdmi_rst_n),
+                .I_vsync  (he_vs),
+                .I_hsync  (he_hs),
+                .I_de     (he_de),
+                .I_data   (he_rgb),
+                .I_mode   ((S_dbg_effect_sel <= 3'd4) ? S_dbg_effect_sel : 3'd0),
+                .O_vsync  (S_effect_vsync),
+                .O_hsync  (S_effect_hsync),
+                .O_de     (S_effect_de),
+                .O_data   (S_effect_data)
+            );
 
-    sobel_edge #(
-        .IMG_WIDTH  (`DISPLAY_WIDTH),
-        .IMG_HEIGHT (`DISPLAY_HEIGHT),
-        .H_TOTAL    (`HDMI_H_TOTAL),
-        .THRESHOLD  (11'd60),
-        .EDGE_WHITE (1)
-    ) u_sobel_edge_9 (
-        .I_clk       (S_hdmi_pixel_clk),
-        .I_rst_n     (S_hdmi_rst_n),
-        .I_sobel_en  (S_dbg_effect_sel == 3'd5),
-        .I_vsync     (S_effect_vsync),
-        .I_hsync     (S_effect_hsync),
-        .I_de        (S_effect_de),
-        .I_data      (S_effect_data),
-        .O_vsync     (S_edge_vsync),
-        .O_hsync     (S_edge_hsync),
-        .O_de        (S_edge_de),
-        .O_data      (S_edge_data),
-        .O_edge      (S_edge_flag),
-        .O_gray      (S_edge_gray)
-    );
+            sobel_edge #(
+                .IMG_WIDTH  (`DISPLAY_WIDTH),
+                .IMG_HEIGHT (`DISPLAY_HEIGHT),
+                .H_TOTAL    (`HDMI_H_TOTAL),
+                .THRESHOLD  (11'd60),
+                .EDGE_WHITE (1)
+            ) u_sobel_edge_9 (
+                .I_clk       (S_hdmi_pixel_clk),
+                .I_rst_n     (S_hdmi_rst_n),
+                .I_sobel_en  (S_dbg_effect_sel == 3'd5),
+                .I_vsync     (S_effect_vsync),
+                .I_hsync     (S_effect_hsync),
+                .I_de        (S_effect_de),
+                .I_data      (S_effect_data),
+                .O_vsync     (S_edge_vsync),
+                .O_hsync     (S_edge_hsync),
+                .O_de        (S_edge_de),
+                .O_data      (S_edge_data),
+                .O_edge      (S_edge_flag),
+                .O_gray      (S_edge_gray)
+            );
 
-    video_overlay_final #(.EFFECT_LATENCY(8)) u_video_overlay_final_9 (
-        .I_clk            (S_hdmi_pixel_clk),
-        .I_rst_n          (S_hdmi_rst_n),
-        .I_overlay_valid  (S_hdmi_overlay_valid),
-        .I_overlay_color  (S_hdmi_out_data),
-        .I_vsync          (S_edge_vsync),
-        .I_hsync          (S_edge_hsync),
-        .I_de             (S_edge_de),
-        .I_data           (S_edge_data),
-        .O_vsync          (S_final_vsync),
-        .O_hsync          (S_final_hsync),
-        .O_de             (S_final_de),
-        .O_data           (S_final_data)
-    );
-
+            video_overlay_final #(.EFFECT_LATENCY(8)) u_video_overlay_final_9 (
+                .I_clk            (S_hdmi_pixel_clk),
+                .I_rst_n          (S_hdmi_rst_n),
+                .I_overlay_valid  (S_hdmi_overlay_valid),
+                .I_overlay_color  (S_hdmi_out_data),
+                .I_vsync          (S_edge_vsync),
+                .I_hsync          (S_edge_hsync),
+                .I_de             (S_edge_de),
+                .I_data           (S_edge_data),
+                .O_vsync          (S_final_vsync),
+                .O_hsync          (S_final_hsync),
+                .O_de             (S_final_de),
+                .O_data           (S_final_data)
+            );
     // Measure the selected region before effects, recognition and OSD overlays.
     focus_metric u_focus_metric (
         .I_clk          ( S_hdmi_pixel_clk ),
@@ -2057,85 +2085,92 @@ isp_top u_isp_top (
         .period_valid    ( S_cam_period_valid)
     );
 
-    ui_osd #(
-        .H_ACTIVE(`HDMI_H_ACTIVE),
-        .V_ACTIVE(`HDMI_V_ACTIVE),
-        .RESULT_CHINESE(1),
-        .MCU_MENU(1),
-        .PIXEL_CLOCK_HZ(`HDMI_PIXEL_CLOCK_HZ)
-    ) u_ui_osd (
-        .I_apb_clk(S_mcu_apb_clk),.I_apb_rst_n(S_rst_n && S_hdmi_rst_n),
-        .I_menu_sel(S_mcu_psel && menu_select),.I_menu_penable(S_mcu_penable),
-        .I_menu_pwrite(S_mcu_pwrite),.I_menu_paddr(S_mcu_paddr[7:0]),
-        .I_menu_pstrobe(S_mcu_pstrobe),.I_menu_pwdata(S_mcu_pwdata),.O_menu_prdata(menu_rdata),
-        .I_record_status (rec_ui_status),
-        .I_mipi_clk(S_csi_rx_clk), .I_mipi_frame_start(S_csi_frame_start),
-        .I_camera_display(S_camera_display_pixel),
-        .I_clk          ( S_hdmi_pixel_clk ),
-        .I_rst_n        ( S_hdmi_rst_n ),
-        .I_vsync        ( S_final_vsync ),
-        .I_mipi_frames  ( S_mipi_frames_bcd ),
-        .I_mipi_fps     ( S_mipi_fps_bcd ),
-        .I_mipi_fps_valid ( S_mipi_fps_valid ),
-        .I_hsync        ( S_final_hsync ),
-        .I_de           ( S_final_de ),
-        .I_data         ( S_final_data ),
-        .I_menu_enable  ( S_ui_enable_p2 ),
-        .I_edit_enable  ( S_ui_edit_p2 ),
-        .I_info_enable  ( S_ui_info_p2 ),
-        .I_menu_index   ( S_ui_index_p2 ),
-        .I_picture_page ( S_picture_page_p2 ),
-        .I_mode_page    ( S_mode_page_p2 ),
-        .I_focus_roi    ( S_focus_roi_p2 ),
-        .I_focus_roi_w  ( S_focus_roi_w_apb ),
-        .I_focus_roi_h  ( S_focus_roi_h_apb ),
-        .I_image_step   ( S_image_step_p2 ),
-        .I_image_effect ( S_dbg_effect_sel ),
-        .I_shape_valid  ( S_shape_valid ),
-        .I_shape_type   ( S_shape_type ),
-        .I_shape_x0     ( S_shape_x0 ),
-        .I_shape_y0     ( S_shape_y0 ),
-        .I_shape_y1     ( S_shape_y1 ),
-        // 用帧同步快照（red_track_display）而不是跟踪器原始输出：坐标读数与
-        // gege 的颜色标签都读它，避免标签在帧中间跳变。
-        .I_track_valid  ( S_track_display_valid ),
-        .I_track_x0     ( S_track_display_x0 ),
-        .I_track_y0     ( S_track_display_y0 ),
-        .I_track_y1     ( S_track_display_y1 ),
-        .I_track_x_negative(S_track_x_negative),.I_track_y_negative(S_track_y_negative),
-        .I_track_x_bcd(S_track_x_bcd),.I_track_y_bcd(S_track_y_bcd),
-        // 三色识别结果文字（"红色/绿色/蓝色"）由结果文字层画，复用菜单字库
-        .I_color_valid  ( S_color_valid ),
-        .I_color_code   ( S_color_code ),
-        .I_color_x0     ( S_color_x0 ),
-        .I_color_y0     ( S_color_y0 ),
-        .I_color_y1     ( S_color_y1 ),
-        .I_c3_valid ( S_color3_valid ),
-        .I_r_x0 (S_c3r_x0), .I_r_y0 (S_c3r_y0), .I_r_x1 (S_c3r_x1), .I_r_y1 (S_c3r_y1),
-        .I_g_x0 (S_c3g_x0), .I_g_y0 (S_c3g_y0), .I_g_x1 (S_c3g_x1), .I_g_y1 (S_c3g_y1),
-        .I_b_x0 (S_c3b_x0), .I_b_y0 (S_c3b_y0), .I_b_x1 (S_c3b_x1), .I_b_y1 (S_c3b_y1),
-        .I_picture_ctrl ( S_picture_pixel[15:0] ),
-        .I_exposure     ( S_ui_ae_p2 ),
-        .I_gain         ( S_ui_ag_p2 ),
-        .I_servo_pan_us ( S_ui_servo_pan_p2 ),
-        .I_servo_tilt_us( S_ui_servo_tilt_p2 ),
-        .I_rtc_hours    ( S_rtc_hours_p2 ),
-        .I_rtc_minutes  ( S_rtc_minutes_p2 ),
-        .I_rtc_seconds  ( S_rtc_seconds_p2 ),
-        .I_rtc_year     ( S_rtc_date_p2[23:16] ),
-        .I_rtc_month    ( S_rtc_date_p2[15:8] ),
-        .I_rtc_date     ( S_rtc_date_p2[7:0] ),
-        .I_rtc_valid    ( S_rtc_valid_p2 ),
-        .I_rtc_error    ( S_rtc_error_p2 ),
-        .I_rtc_osf      ( S_rtc_osf_p2 ),
-        .I_latency_bcd(S_latency_bcd), .I_camera_period_bcd(S_cam_period_bcd),
-        .I_repeat_bcd(S_repeat_bcd), .I_latency_valid(S_latency_valid),
-        .I_camera_period_valid(S_cam_period_valid),
-        .O_vsync        ( S_osd_vsync ),
-        .O_hsync        ( S_osd_hsync ),
-        .O_de           ( S_osd_de ),
-        .O_data         ( S_osd_data )
-    );
+    generate
+        if (!NETWORK_ONLY_BUILD) begin : g_ui_osd_enabled
+            ui_osd #(
+                .H_ACTIVE(`HDMI_H_ACTIVE),
+                .V_ACTIVE(`HDMI_V_ACTIVE),
+                .RESULT_CHINESE(1),
+                .MCU_MENU(1),
+                .PIXEL_CLOCK_HZ(`HDMI_PIXEL_CLOCK_HZ)
+            ) u_ui_osd (
+                .I_apb_clk(S_mcu_apb_clk),.I_apb_rst_n(S_rst_n && S_hdmi_rst_n),
+                .I_menu_sel(S_mcu_psel && menu_select),.I_menu_penable(S_mcu_penable),
+                .I_menu_pwrite(S_mcu_pwrite),.I_menu_paddr(S_mcu_paddr[7:0]),
+                .I_menu_pstrobe(S_mcu_pstrobe),.I_menu_pwdata(S_mcu_pwdata),.O_menu_prdata(menu_rdata),
+                .I_record_status (rec_ui_status),
+                .I_mipi_clk(S_csi_rx_clk), .I_mipi_frame_start(S_csi_frame_start),
+                .I_camera_display(S_camera_display_pixel),
+                .I_clk          ( S_hdmi_pixel_clk ),
+                .I_rst_n        ( S_hdmi_rst_n ),
+                .I_vsync        ( S_final_vsync ),
+                .I_mipi_frames  ( S_mipi_frames_bcd ),
+                .I_mipi_fps     ( S_mipi_fps_bcd ),
+                .I_mipi_fps_valid ( S_mipi_fps_valid ),
+                .I_hsync        ( S_final_hsync ),
+                .I_de           ( S_final_de ),
+                .I_data         ( S_final_data ),
+                .I_menu_enable  ( S_ui_enable_p2 ),
+                .I_edit_enable  ( S_ui_edit_p2 ),
+                .I_info_enable  ( S_ui_info_p2 ),
+                .I_menu_index   ( S_ui_index_p2 ),
+                .I_picture_page ( S_picture_page_p2 ),
+                .I_mode_page    ( S_mode_page_p2 ),
+                .I_focus_roi    ( S_focus_roi_p2 ),
+                .I_focus_roi_w  ( S_focus_roi_w_apb ),
+                .I_focus_roi_h  ( S_focus_roi_h_apb ),
+                .I_image_step   ( S_image_step_p2 ),
+                .I_image_effect ( S_dbg_effect_sel ),
+                .I_shape_valid  ( S_shape_valid ),
+                .I_shape_type   ( S_shape_type ),
+                .I_shape_x0     ( S_shape_x0 ),
+                .I_shape_y0     ( S_shape_y0 ),
+                .I_shape_y1     ( S_shape_y1 ),
+                .I_track_valid  ( S_track_display_valid ),
+                .I_track_x0     ( S_track_display_x0 ),
+                .I_track_y0     ( S_track_display_y0 ),
+                .I_track_y1     ( S_track_display_y1 ),
+                .I_track_x_negative(S_track_x_negative),.I_track_y_negative(S_track_y_negative),
+                .I_track_x_bcd(S_track_x_bcd),.I_track_y_bcd(S_track_y_bcd),
+                .I_color_valid  ( S_color_valid ),
+                .I_color_code   ( S_color_code ),
+                .I_color_x0     ( S_color_x0 ),
+                .I_color_y0     ( S_color_y0 ),
+                .I_color_y1     ( S_color_y1 ),
+                .I_c3_valid ( S_color3_valid ),
+                .I_r_x0 (S_c3r_x0), .I_r_y0 (S_c3r_y0), .I_r_x1 (S_c3r_x1), .I_r_y1 (S_c3r_y1),
+                .I_g_x0 (S_c3g_x0), .I_g_y0 (S_c3g_y0), .I_g_x1 (S_c3g_x1), .I_g_y1 (S_c3g_y1),
+                .I_b_x0 (S_c3b_x0), .I_b_y0 (S_c3b_y0), .I_b_x1 (S_c3b_x1), .I_b_y1 (S_c3b_y1),
+                .I_picture_ctrl ( S_picture_pixel[15:0] ),
+                .I_exposure     ( S_ui_ae_p2 ),
+                .I_gain         ( S_ui_ag_p2 ),
+                .I_servo_pan_us ( S_ui_servo_pan_p2 ),
+                .I_servo_tilt_us( S_ui_servo_tilt_p2 ),
+                .I_rtc_hours    ( S_rtc_hours_p2 ),
+                .I_rtc_minutes  ( S_rtc_minutes_p2 ),
+                .I_rtc_seconds  ( S_rtc_seconds_p2 ),
+                .I_rtc_year     ( S_rtc_date_p2[23:16] ),
+                .I_rtc_month    ( S_rtc_date_p2[15:8] ),
+                .I_rtc_date     ( S_rtc_date_p2[7:0] ),
+                .I_rtc_valid    ( S_rtc_valid_p2 ),
+                .I_rtc_error    ( S_rtc_error_p2 ),
+                .I_rtc_osf      ( S_rtc_osf_p2 ),
+                .I_latency_bcd(S_latency_bcd), .I_camera_period_bcd(S_cam_period_bcd),
+                .I_repeat_bcd(S_repeat_bcd), .I_latency_valid(S_latency_valid),
+                .I_camera_period_valid(S_cam_period_valid),
+                .O_vsync        ( S_osd_vsync ),
+                .O_hsync        ( S_osd_hsync ),
+                .O_de           ( S_osd_de ),
+                .O_data         ( S_osd_data )
+            );
+        end else begin : g_ui_osd_bypassed
+            assign menu_rdata = 32'd0;
+            assign S_osd_vsync = S_hdmi_out_vsync;
+            assign S_osd_hsync = S_hdmi_out_hsync;
+            assign S_osd_de = S_hdmi_out_de;
+            assign S_osd_data = S_hdmi_base_data;
+        end
+    endgenerate
 
     hdmi_tx u_hdmi_tx(
         .I_pixel_clk        ( S_hdmi_pixel_clk  ),
@@ -2146,13 +2181,13 @@ isp_top u_isp_top (
         .O_edid_read_valid  (                   ),
         .O_edid_read_data   (                   ),
         .I_video_rgb_enable ( 1'b1              ),
-        .I_video_in_vs      ( S_osd_vsync       ),
-        .I_video_in_de      ( S_osd_de          ),
+        .I_video_in_vs      ( NETWORK_ONLY_BUILD ? S_final_vsync : S_osd_vsync ),
+        .I_video_in_de      ( NETWORK_ONLY_BUILD ? S_final_de : S_osd_de ),
         .I_video_in_user    ( 1'b0              ),
         .I_video_in_valid   ( 1'b0              ),
         .I_video_in_last    ( 1'b0              ),
         .O_video_in_ready   (                   ),
-        .I_video_in_data    ( S_osd_data        ),
+        .I_video_in_data    ( NETWORK_ONLY_BUILD ? S_final_data : S_osd_data ),
         .I_audio_valid      ( 1'b0              ),
         .I_audio_left_data  ( 24'd0             ),
         .I_audio_right_data ( 24'd0             ),
@@ -2167,7 +2202,17 @@ isp_top u_isp_top (
         .O_tmds_ch2_p       ( O_tmds_ch2_p      ),
         .O_tmds_clk_p       ( O_tmds_clk_p      )
     );
+    // Capture the 1920x1080 RGB image before display effects and OSD.
+    wire net_clk;
+    wire [447:0] net_diag;
+    camera_network u_network (
+        .sys_clk(I_sys_clk), .main_rst_n(S_rst_n),
+        .pixel_clk(S_hdmi_pixel_clk), .vs(S_hdmi_out_vsync),
+        .de(S_hdmi_out_de), .rgb(S_hdmi_base_data),
+        .rxd(I_a_rgmii_rxd), .rx_ctl(I_a_rgmii_rx_ctl), .rxc(I_a_rgmii_rxc),
+        .txd(O_a_rgmii_txd), .tx_ctl(O_a_rgmii_tx_ctl), .txc(O_a_rgmii_txc),
+        .phy_rst_n(O_phy_rst), .net_clk(net_clk), .leds(O_net_led),
+        .diagnostics(net_diag)
+    );
 
-
-    
 endmodule

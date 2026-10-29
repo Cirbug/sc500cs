@@ -1,7 +1,0 @@
-{$SITE_ADDRESS} {
-    tls internal
-    request_body {
-        max_size 8KB
-    }
-    reverse_proxy api:8000
-}

@@ -1,6 +1,0 @@
-.env
-data/
-__pycache__/
-*.sqlite*
-*.pem
-*.crt

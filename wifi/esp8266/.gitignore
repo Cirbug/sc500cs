@@ -1,6 +1,0 @@
-/.tools/
-/build/
-/device/config.local.h
-/device/ca.local.h
-__pycache__/
-*.pyc

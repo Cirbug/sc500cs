@@ -1324,11 +1324,18 @@ module design_top_wrapper (
       .I_ae(S_ae),
       .I_ag(S_ag),
       .I_vts(S_cam_vts),
-      .O_cam_scl(O_cam_scl),  //I2C总线，SCL时钟
-      .IO_cam_sda(IO_cam_sda),  //I2C总线，SDA数据
+      // 摄像头 I2C 已断开：A 板与 B 板的 I2C 是连通的，两颗 FPGA 会同时配置
+      // 同一颗 SC500CS。A 的 AE 表每次都写 VTS(0x320e/0x320f=1980..2500)，
+      // 把 B 板设好的 1127 覆盖掉，实测帧率从 30 掉到 20（MIPI FPS 020）。
+      // 现在只让 B 板配置摄像头；这两个引脚释放成高阻（pin.adc 有 PULLTYPE=PULLUP）。
+      .O_cam_scl(),           // 原为 O_cam_scl
+      .IO_cam_sda(),          // 原为 IO_cam_sda
       .O_cfg_done(S_cam_cfg_done),  //摄像头寄存器初始化完成
       .O_ae_cfg_done(S_ae_cfg_done)  //AE配置完成
   );
+
+    assign O_cam_scl  = 1'bz;
+    assign IO_cam_sda = 1'bz;
 	
     mipi_dphy_rx_ph1p_mipiio_wrapper#(
         .DPHY_RX_LOCATION      ( "DPHY0" ),

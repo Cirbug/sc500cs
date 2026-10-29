@@ -5,15 +5,15 @@
 `define VIDEO_PARAMS_VH
 
 // 摄像头实际输出图像宽度和高度，必须与 uics500reg.v 一致。
-`define SENSOR_WIDTH       2592
-`define SENSOR_HEIGHT      1944
+`define SENSOR_WIDTH       1920
+`define SENSOR_HEIGHT      1080
 
 // 去掉去马赛克算法左右边界各 8 个不完整邻域像素，消除画面边缘彩色竖线。
-`define SENSOR_EDGE_CROP_X 8
+`define SENSOR_EDGE_CROP_X 0
 
 // RGB 缩放中间尺寸：Full 图像等比例缩小为 1920x1440。
 `define SCALE_WIDTH        1920
-`define SCALE_HEIGHT       1440
+`define SCALE_HEIGHT       1080
 
 // 缩放并完成上下裁剪后，写入 DDR 的图像尺寸。
 `define PIPE_WIDTH         1920

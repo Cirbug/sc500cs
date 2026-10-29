@@ -55,3 +55,9 @@ set_pin_assignment { O_sd_clk }  { LOCATION = A7; IOSTANDARD = LVCMOS33; DRIVEST
 set_pin_assignment { O_sd_mosi } { LOCATION = A8; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
 set_pin_assignment { I_sd_miso } { LOCATION = E8; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
 set_pin_assignment { O_sd_cs }   { LOCATION = B12; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+
+# Debug LEDs (temporary): driven by existing S_dbg_* flags
+set_pin_assignment { O_dbg_led[0] } { LOCATION = D10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment { O_dbg_led[1] } { LOCATION = E10; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment { O_dbg_led[2] } { LOCATION = C6;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment { O_dbg_led[3] } { LOCATION = D6;  IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }

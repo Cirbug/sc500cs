@@ -878,83 +878,20 @@ module design_top_wrapper (
         S_dbg_frame_repeat_sync[1],
         S_dbg_cam_cfg_seen_sync[1]
     };
-	
-    // 临时调试：观测 raw10 流的帧/行边界结构
-    reg dbg_fs_seen, dbg_tuser_seen, dbg_tlast_seen;
-    always @(posedge S_csi_rx_clk or negedge S_rst_n) begin
-        if(!S_rst_n) begin
-            dbg_fs_seen     <= 1'b0;
-            dbg_tuser_seen  <= 1'b0;
-            dbg_tlast_seen  <= 1'b0;
-        end else begin
-            if (S_raw10_frame_start) dbg_fs_seen    <= 1'b1;
-            if (S_raw_tuser)         dbg_tuser_seen <= 1'b1;
-            if (S_raw_tlast)         dbg_tlast_seen <= 1'b1;
-        end
-    end
 
-    // 临时调试：帧边界与"一帧完成"链路
-    reg d2_fs, d2_fe, d2_done, d2_cmp;
-    always @(posedge S_csi_rx_clk or negedge S_rst_n) begin
-        if(!S_rst_n) begin
-            d2_fs <= 1'b0; d2_fe <= 1'b0;
-        end else begin
-            if (S_csi_frame_start) d2_fs <= 1'b1;
-            if (S_csi_frame_end)   d2_fe <= 1'b1;
-        end
-    end
-    always @(posedge S_100m_clk or negedge S_rst_n) begin
-        if(!S_rst_n) begin
-            d2_done <= 1'b0; d2_cmp <= 1'b0;
-        end else begin
-            if (S_rx_frame_done)   d2_done <= 1'b1;
-            if (S_completed_valid) d2_cmp  <= 1'b1;
-        end
-    end
+    //==================================================================
+    // 状态指示（4 颗 LED，D10/E10/C6/D6）
+    //   LED1 亮  = 有可显示的有效帧（video_out_valid）
+    //   LED2 亮  = FIFO 溢出（cam_flags[0]，粘滞，复位后清零）
+    //   LED3 亮  = 该帧被判坏（final_bad）
+    //   LED4 亮  = 字数与 FRAME_WORDS 不匹配（cam_flags[6]，粘滞）
+    // 正常图案：LED1 亮，LED2/3/4 灭
+    //==================================================================
+    assign O_dbg_led = { S_capture_diag[14],  // LED4: 字数不匹配
+                        S_capture_diag[5],   // LED3: final_bad
+                        S_capture_diag[8],   // LED2: FIFO 溢出 (cam_flags[0])
+                        S_completed_valid }; // LED1: 帧有效可显示
 
-    // 采集链路逐级追踪：tuser -> frame_done -> 是否坏帧 -> 是否可显示
-    reg d3_tuser, d3_done;
-    always @(posedge S_csi_rx_clk or negedge S_rst_n) begin
-        if(!S_rst_n) begin
-            d3_tuser <= 1'b0; d3_done <= 1'b0;
-        end else begin
-            if (S_ISP_O_tuser)  d3_tuser <= 1'b1;   // ISP 输出过帧起始
-            if (S_rx_frame_done) d3_done <= 1'b1;   // 产生过帧完成
-        end
-    end
-
-    // 显示链路：mixer 请求 -> 读 DDR -> 数据非零 -> 帧就绪
-    reg d4_rd, d4_win, d4_nonzero;
-    always @(posedge S_hdmi_pixel_clk or negedge S_hdmi_rst_n) begin
-        if(!S_hdmi_rst_n) begin
-            d4_rd <= 1'b0; d4_win <= 1'b0; d4_nonzero <= 1'b0;
-        end else begin
-            if (S_vo_ddr_rd_en)                        d4_rd      <= 1'b1;
-            if (S_hdmi_window_rd_en)                   d4_win     <= 1'b1;
-            if (S_hdmi_window_rd_en && (S_video_rd_data != 24'd0))
-                                                       d4_nonzero <= 1'b1;
-        end
-    end
-
-    // 测量 ISP 每帧实际输出多少拍：4 颗灯显示 (拍数 >> 16)，0~15
-    //   5  → ~328k..393k  (388,800 属于此档)
-    //   7  → ~459k..524k  (518,400 属于此档)
-    //   14 → ~917k..983k  (944,784 属于此档)
-    reg [31:0] isp_beat_cnt, isp_beat_lat;
-    always @(posedge S_csi_rx_clk or negedge S_rst_n) begin
-        if(!S_rst_n) begin
-            isp_beat_cnt <= 32'd0;
-            isp_beat_lat <= 32'd0;
-        end else begin
-            if (S_ISP_O_tvalid) isp_beat_cnt <= isp_beat_cnt + 32'd1;
-            if (S_ISP_O_tuser) begin
-                isp_beat_lat <= isp_beat_cnt;
-                isp_beat_cnt <= 32'd0;
-            end
-        end
-    end
-
-    assign O_dbg_led = isp_beat_lat[19:16]; // LED1: 有帧可显示
 
 	assign O_cam_rst 	= 1'b1;
     assign O_cam_24m 	= S_24m_clk;

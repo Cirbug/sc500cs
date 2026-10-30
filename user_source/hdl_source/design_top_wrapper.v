@@ -1332,7 +1332,7 @@ module design_top_wrapper (
 	
     mipi_dphy_rx_ph1p_mipiio_wrapper#(
         .DPHY_RX_LOCATION      ( "DPHY0" ),
-        .HS_EQUALIZER          ( "0dB"   ),//"0dB","1.5dB","3dB","4.5dB","6dB","7.5dB","9dB","10.5dB"
+        .HS_EQUALIZER          ( "0dB"   ),//回到摄像头时代的原始值
         .HS_VGA_GAIN           ( "8dB" ),//"-3dB","-1.5dB","0dB","1.5dB","3dB","4.5dB","6dB","7.5dB"
         .LANE_NUM              ( 2       ),
         .BYTE_NUM              ( 1       )

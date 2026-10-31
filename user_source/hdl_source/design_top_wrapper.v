@@ -1591,6 +1591,17 @@ isp_top u_isp_top (
     // Require complete cropped data with no detected fault before completion.
     // RAW faults after the
     // crop are diagnostic; they must not black out an already complete image.
+    // The demosaic emits its reflected final row after the last RAW payload.
+    // Wait for all ISP words before publishing, or reject on drain timeout.
+    wire S_isp_frame_done,S_isp_frame_bad;
+    video_frame_drain #(
+        .FRAME_WORDS(`PIPE_WIDTH*`PIPE_HEIGHT*3/16),
+        .MAX_DRAIN_CYCLES(`SENSOR_WIDTH/4+128)
+    ) u_isp_frame_drain (
+        .clk(S_csi_rx_clk),.rst_n(S_rst_n),
+        .isp_sof(S_ISP_O_tuser),.isp_valid(S_ISP_O_tvalid),
+        .raw_done(S_rx_frame_done),.raw_bad(S_rx_frame_bad),
+        .frame_done(S_isp_frame_done),.frame_bad(S_isp_frame_bad));
     video_in #(.REQUIRE_RAW_FRAME(1'b0)) u_video_in(
         .I_rst_n              (  S_rst_n             ),
 
@@ -1598,9 +1609,9 @@ isp_top u_isp_top (
         .I_camera_frame_start ( S_ISP_O_tuser  ),
         .I_camera_valid       ( S_ISP_O_tvalid ),
         .I_camera_data        ( S_ISP_O_tdata  ),
-        .I_mipi_rx_error      ( S_rx_frame_bad ),
+        .I_mipi_rx_error      ( S_isp_frame_bad ),
         .I_camera_stream_error( S_rx_capture_error ),
-        .I_camera_frame_done ( S_rx_frame_done ),
+        .I_camera_frame_done ( S_isp_frame_done ),
         .I_reader_bank(S_reader_bank), .I_reader_valid(S_reader_valid),
         .O_video_out_valid(S_completed_valid),
         .O_frame_counts(S_capture_counts), .O_capture_diag(S_capture_diag),

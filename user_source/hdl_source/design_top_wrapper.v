@@ -1324,11 +1324,15 @@ module design_top_wrapper (
       .I_ae(S_ae),
       .I_ag(S_ag),
       .I_vts(S_cam_vts),
-      .O_cam_scl(O_cam_scl),  //I2C总线，SCL时钟
-      .IO_cam_sda(IO_cam_sda),  //I2C总线，SDA数据
+      // The sensor I2C bus is shared with B; only B configures the camera.
+      .O_cam_scl(),
+      .IO_cam_sda(),
       .O_cfg_done(S_cam_cfg_done),  //摄像头寄存器初始化完成
       .O_ae_cfg_done(S_ae_cfg_done)  //AE配置完成
   );
+
+    assign O_cam_scl  = 1'bz;
+    assign IO_cam_sda = 1'bz;
 	
     mipi_dphy_rx_ph1p_mipiio_wrapper#(
         .DPHY_RX_LOCATION      ( "DPHY0" ),

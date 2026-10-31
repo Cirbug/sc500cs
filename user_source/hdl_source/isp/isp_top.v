@@ -275,25 +275,53 @@ awb #(
     // 缩放（按你的处理顺序：在“校正+降噪”之后、“对比度增强”之前）
     //   对线性数据做 2x2 平均再等比例缩小，比在 gamma 域做更合理
     // ======================================================================
-    rgb96_downscale_crop #(
-        .SRC_WIDTH    (`SENSOR_WIDTH),
-        .SRC_HEIGHT   (`SENSOR_HEIGHT),
-        .SRC_CROP_X   (`SENSOR_EDGE_CROP_X),
-        .SCALE_WIDTH  (`SCALE_WIDTH),
-        .SCALE_HEIGHT (`SCALE_HEIGHT),
-        .OUT_HEIGHT   (`PIPE_HEIGHT),
-        .CROP_Y       (`SCALE_CROP_Y)
-    ) u_rgb96_downscale_crop (
-        .I_clk         (axi4s_video_aclk),
-        .I_rst_n       (I_rst_n),
-        .I_frame_start (S_sat_tuser),
-        .I_valid       (S_sat_tvalid),
-        .I_data        (S_sat_tdata),
-        .O_frame_start (scale_O_tuser),
-        .O_last        (scale_O_tlast),
-        .O_valid       (scale_O_tvalid),
-        .O_data        (scale_O_tdata)
-    );
+    generate
+        if ((`SENSOR_WIDTH == `SCALE_WIDTH) &&
+            (`SENSOR_HEIGHT == `SCALE_HEIGHT) &&
+            (`SENSOR_EDGE_CROP_X == 0) && (`SCALE_CROP_Y == 0)) begin : g_scale_bypass
+            localparam integer WORDS_PER_LINE = `SCALE_WIDTH / 4;
+            reg [10:0] word_count;
+
+            always @(posedge axi4s_video_aclk or negedge I_rst_n) begin
+                if (!I_rst_n)
+                    word_count <= 11'd0;
+                else if (S_sat_tuser)
+                    word_count <= S_sat_tvalid ? 11'd1 : 11'd0;
+                else if (S_sat_tvalid) begin
+                    if (word_count == WORDS_PER_LINE - 1)
+                        word_count <= 11'd0;
+                    else
+                        word_count <= word_count + 11'd1;
+                end
+            end
+
+            assign scale_O_tuser  = S_sat_tuser;
+            assign scale_O_tvalid = S_sat_tvalid;
+            assign scale_O_tdata  = S_sat_tdata;
+            assign scale_O_tlast  = S_sat_tvalid &&
+                                    (word_count == WORDS_PER_LINE - 1);
+        end else begin : g_scale_active
+            rgb96_downscale_crop #(
+                .SRC_WIDTH    (`SENSOR_WIDTH),
+                .SRC_HEIGHT   (`SENSOR_HEIGHT),
+                .SRC_CROP_X   (`SENSOR_EDGE_CROP_X),
+                .SCALE_WIDTH  (`SCALE_WIDTH),
+                .SCALE_HEIGHT (`SCALE_HEIGHT),
+                .OUT_HEIGHT   (`PIPE_HEIGHT),
+                .CROP_Y       (`SCALE_CROP_Y)
+            ) u_rgb96_downscale_crop (
+                .I_clk         (axi4s_video_aclk),
+                .I_rst_n       (I_rst_n),
+                .I_frame_start (S_sat_tuser),
+                .I_valid       (S_sat_tvalid),
+                .I_data        (S_sat_tdata),
+                .O_frame_start (scale_O_tuser),
+                .O_last        (scale_O_tlast),
+                .O_valid       (scale_O_tvalid),
+                .O_data        (scale_O_tdata)
+            );
+        end
+    endgenerate
 
     data_96bit_to_128bit u_data_96bit_to_128bit(
         .I_clk              ( axi4s_video_aclk  ),

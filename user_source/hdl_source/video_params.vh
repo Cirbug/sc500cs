@@ -1,17 +1,18 @@
 
 // 视频分辨率和时序集中参数文件。
-// 当前模式：SC500 2592x1944 全分辨率采集，HDMI 1920x1080@30 显示。
+// A 板接收 B 板完成缩放和上下裁剪后的 1920x1080 RAW10；A 端直通。
+// B 板仍将 SC500 配置为 2592x1944，并另行保留 320x180 CNN 支路。
 `ifndef VIDEO_PARAMS_VH
 `define VIDEO_PARAMS_VH
 
-// 摄像头实际输出图像宽度和高度，必须与 uics500reg.v 一致。
+// A 板 CSI 输入尺寸，对应 B 板输出每行 2400 字节、共 1080 行。
 `define SENSOR_WIDTH       1920
 `define SENSOR_HEIGHT      1080
 
-// 去掉去马赛克算法左右边界各 8 个不完整邻域像素，消除画面边缘彩色竖线。
+// B 板已完成 RAW10 水平缩放与裁剪，A 板不再做传感器裁剪。
 `define SENSOR_EDGE_CROP_X 0
 
-// RGB 缩放中间尺寸：Full 图像等比例缩小为 1920x1440。
+// A 板 ISP 输入、缩放和输出尺寸一致，保持 1920x1080 直通。
 `define SCALE_WIDTH        1920
 `define SCALE_HEIGHT       1080
 
@@ -27,7 +28,7 @@
 `define DISPLAY_CROP_X     ((`PIPE_WIDTH  - `DISPLAY_WIDTH)  / 2)
 `define DISPLAY_CROP_Y     ((`PIPE_HEIGHT - `DISPLAY_HEIGHT) / 2)
 
-// 1920x1440 缩放结果上下各裁剪 180 行，得到 1920x1080。
+// B 板已完成目标窗口缩放与裁剪，A 板 ISP 纵向裁剪量为 0。
 `define SCALE_CROP_Y       ((`SCALE_HEIGHT - `PIPE_HEIGHT) / 2)
 
 // 1920x1080@30 HDMI 标准时序。

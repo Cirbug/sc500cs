@@ -131,8 +131,15 @@ module preview_sender #(parameter GAP=0, TIMEOUT=125000000,
      end else timer<=timer+1'b1;
     end
     SEND: if(index==packet_bytes-1'b1)begin
-     sent<=sent+1'b1;state<=WAIT_REPLY;timer<=0;
-    end else index<=index+1'b1;
+      sent<=sent+1'b1;
+      // STREAM MODE: no ACK wait, advance immediately
+      consume_chunk<=1;
+      if(chunk<CHUNKS-1)begin
+       chunk<=chunk+1'b1;base<=base+CHUNK_BYTES/2;state<=ADVANCE;
+      end else begin
+       frames<=frames+1'b1;release_frame<=1;seq<=seq+1'b1;state<=WAIT_RELEASE;
+      end
+     end else index<=index+1'b1;
     WAIT_REPLY: begin
      if(rx_d && !rx_valid && !rx_bad && rx_packet_port==16'd6002 && rx_reply_complete)begin
       if(rx_status==((chunk==CHUNKS-1)?8'd1:8'd0))begin

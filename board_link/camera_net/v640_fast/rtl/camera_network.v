@@ -52,11 +52,11 @@ module camera_network(
  end
  wire stack_reset=rst || repair!=0;
  // 320x180 8-bit grayscale from 6x6 source-pixel averages.
- preview_capture_bin #(.W(1920),.H(1080),.STEP(6)) u_capture(
+ preview_capture_bin #(.W(1920),.H(1080),.STEP(4)) u_capture(
   .pclk(pixel_clk),.nclk(clk),.rst_n(main_rst_n && locked),
   .vs(vs),.de(de),.rgb(rgb),.release_frame(release_frame),.consume_chunk(consume_chunk),.rd_addr(addr),.rd_data(pixel),.ready(ready),.chunk_ready(chunk_ready),.aborted(aborted));
  // EG4D20 CNN1: 40 chunks, 1456 payload bytes each, then 816 bytes.
- preview_sender #(.CHUNKS(16'd40),.CHUNK_BYTES(16'd1456),.LAST_BYTES(16'd816)) u_sender(
+ preview_sender #(.CHUNKS(16'd179),.CHUNK_BYTES(16'd1456),.LAST_BYTES(16'd32)) u_sender(
   .clk(clk),.rst(rst),.ready(ready),.chunk_ready(chunk_ready),.aborted(aborted),.pixel(pixel),
   .release_frame(release_frame),.consume_chunk(consume_chunk),.rd_addr(addr),.busy(busy),.req(req),.valid(valid),.data(data),.len(len),
   .rx_valid(rv),.rx_data(rd),.rx_len(rlen),.rx_port(rport),

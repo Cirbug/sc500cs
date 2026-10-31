@@ -196,8 +196,8 @@ assign O_gmii_tdata = crc_read ? crc32_chksum : mac_tdata;
 udp_pkg_buf #(
 .DATA_WIDTH_W(8), 
 .DATA_WIDTH_R(8)  , 
-.ADDR_WIDTH_W(11) , 
-.ADDR_WIDTH_R(11) , 
+.ADDR_WIDTH_W(12) , 
+.ADDR_WIDTH_R(12) , 
 .SHOW_AHEAD_EN(1'b1), 
 .OUTREG_EN("NOREG")
 ) 

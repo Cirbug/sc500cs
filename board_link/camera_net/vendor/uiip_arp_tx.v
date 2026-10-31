@@ -149,7 +149,7 @@ always@(posedge I_ip_arp_clk or posedge I_ip_arp_reset)begin
 						STATE					<=	IDLE;					//回到IDLE状态，等待ARP层发送ARP包
 					end
 					else begin
-						tmac_addr_temp			<=	48'h020000000002; /*ARP_BYPASS unicast to EG4D20 slave MAC*/	//从MAC cache查询到MAC地址
+						tmac_addr_temp			<=	48'hFFFFFFFFFFFF; /*ARP_BYPASS: always broadcast*/	//从MAC cache查询到MAC地址
 						O_ip_tbusy				<=	1'b1;					//返回IP层的ACK
 						O_arp_treq_en			<=	1'b0;
 						arp_req_pend			<=	1'b0;

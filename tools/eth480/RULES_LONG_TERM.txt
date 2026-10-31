@@ -1,0 +1,28 @@
+项目约定（长期有效）
+================================================================
+记录时间：2026-10-31
+提出人：老板
+
+【约定 1】网口发送一律用广播 MAC
+    目的 MAC = FF:FF:FF:FF:FF:FF
+    位置：board_link/camera_net/vendor/uiip_arp_tx.v
+          约 289 行：tmac_addr_temp <= 48'hFFFFFFFFFFFF;
+    原因：不用改电脑/从板的网卡 MAC，插上就能收，调试最省事。
+
+    备份的做法（如果以后要改回单播）：
+        从板 MAC = 02:00:00:00:00:02
+        主板 MAC = 02:00:00:00:00:01
+
+【约定 2】路径必须全英文
+    TD 的 Tcl 处理不了中文路径（会报 couldn't read file ...）
+    所以工程目录、编译脚本路径都要用英文，
+    中文只出现在文档名和注释里。
+
+【约定 3】编译命令用正斜杠
+    & 'D:\New Folder\bin\td_commands_prompt.exe' 'C:/Users/.../tests/full_build.tcl'
+
+【约定 4】烧 FPGA bit 后 MCU 固件必丢
+    anlu_app.bin -> 0x08000000，入口 0x08000100
+
+【约定 5】别动 fpga1 的原始工程
+    改动都在副本里做（fpga2 / fpga3 / 桌面上的实验目录）

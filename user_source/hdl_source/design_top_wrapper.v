@@ -1,4 +1,5 @@
 `include "video_params.vh"
+`include "ae_control_i2c_master.v"
 // Keep the mailbox reachable from existing TD GUI/generated source lists.
 `include "red_track_mailbox.v"
 `include "red_track_display.v"
@@ -37,6 +38,9 @@ module design_top_wrapper (
     inout  wire       IO_cam_sda,
     output wire       O_cam_24m,
     output wire       O_cam_rst,
+    // A-to-B control over the MIPI CSI connector's I2C sideband (T9/U9).
+    inout wire        IO_ctrl_i2c_scl,
+    inout wire        IO_ctrl_i2c_sda,
     // Lens actuator I2C: SCL=R6, SDA=R7.
     inout  wire       O_lens_scl,
     inout  wire       IO_lens_sda,
@@ -1333,6 +1337,24 @@ module design_top_wrapper (
 
     assign O_cam_scl  = 1'bz;
     assign IO_cam_sda = 1'bz;
+
+    wire [15:0] S_ctrl_i2c_sent_count;
+    wire [15:0] S_ctrl_i2c_nack_count;
+    ae_control_i2c_master #(
+        .CLK_HZ(24000000),
+        .I2C_HZ(100000),
+        .SLAVE_ADDRESS(7'h2A)
+    ) u_ctrl_i2c_master (
+        .clk        ( S_24m_clk             ),
+        .rst_n      ( S_rst_n                ),
+        .exposure   ( S_ae                   ),
+        .gain       ( S_ag                   ),
+        .vts        ( S_cam_vts              ),
+        .scl        ( IO_ctrl_i2c_scl        ),
+        .sda        ( IO_ctrl_i2c_sda        ),
+        .sent_count ( S_ctrl_i2c_sent_count  ),
+        .nack_count ( S_ctrl_i2c_nack_count  )
+    );
 	
     mipi_dphy_rx_ph1p_mipiio_wrapper#(
         .DPHY_RX_LOCATION      ( "DPHY0" ),

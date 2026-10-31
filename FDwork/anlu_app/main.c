@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "al_core.h"
+#include "al_usart_dev.h"
 #include <stdlib.h>
 #include "max3421e_diag.h"
 #include "../shared/touch_focus.h"

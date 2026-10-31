@@ -3,6 +3,11 @@ create_clock -name {mipi_rx_ck_pad} -period 2.222 -waveform {0.000 1.111} [get_n
 
 derive_clocks
 
+# The MIPI-CSI connector I2C sideband connects to the B-board DSI sideband.
+# SDA is sampled only in the protocol ACK window; these pins are asynchronous
+# to the A-board 24 MHz control clock.
+set_false_path -from [get_ports {IO_ctrl_i2c_scl IO_ctrl_i2c_sda}]
+
 rename_clock -name {pll_clk_100m} [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[0]}]
 rename_clock -name {pll_clk_24m} [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[1]}]
 rename_clock -name {HDMI_PIXEL_CLK} [get_clocks {u_PLL/ph1p_phy_pll_wrapper_25a56e5ce2f9_Inst/u_PH1P_PHY_PLL.clkc[4]}]

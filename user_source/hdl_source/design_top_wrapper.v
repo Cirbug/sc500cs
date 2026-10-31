@@ -34,11 +34,9 @@ module design_top_wrapper (
     input  wire       I_usb_int_n,
     output wire       O_usb_res_n,
       
-    output wire       O_cam_scl,
-    inout  wire       IO_cam_sda,
     output wire       O_cam_24m,
     output wire       O_cam_rst,
-    // A-to-B control over the MIPI CSI connector's I2C sideband (T9/U9).
+    // A-to-B control over the MIPI CSI connector's I2C sideband (J9 pin3/6 -> K3/J3).
     inout wire        IO_ctrl_i2c_scl,
     inout wire        IO_ctrl_i2c_sda,
     // Lens actuator I2C: SCL=R6, SDA=R7.
@@ -1335,8 +1333,6 @@ module design_top_wrapper (
       .O_ae_cfg_done(S_ae_cfg_done)  //AE配置完成
   );
 
-    assign O_cam_scl  = 1'bz;
-    assign IO_cam_sda = 1'bz;
 
     wire [15:0] S_ctrl_i2c_sent_count;
     wire [15:0] S_ctrl_i2c_nack_count;

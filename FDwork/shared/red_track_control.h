@@ -17,11 +17,15 @@
 #define UI_TRACK_STATUS 0xacu
 #define UI_TRACK_ERRORS 0xb0u
 #define RED_TRACK_ID 0x54524b31u
-enum { TRACK_OFF, TRACK_WAIT, TRACK_SEARCH, TRACK_LOCKED, TRACK_MANUAL, TRACK_STALE, TRACK_FOCUS };
+enum { TRACK_OFF, TRACK_WAIT, TRACK_SEARCH, TRACK_LOCKED, TRACK_MANUAL, TRACK_STALE, TRACK_FOCUS, TRACK_TRIM };
 typedef struct {
     uint32_t sample, seen_ms, move_ms;
     uint8_t primed, settling, reason;
     int16_t error_x, error_y, velocity_x, velocity_y;
+    /* 锁定后 pan 微调状态：只在目标停稳时走一两小步，避免连续修正 */
+    uint32_t trim_ms;
+    int16_t trim_last_error, trim_last_step;
+    uint8_t trim_steps, trim_dir, trim_hold;
 } RedTrackControl;
 typedef struct {
     int8_t pan_sign, tilt_sign;
@@ -30,11 +34,19 @@ typedef struct {
      *   div_far / div_near 越小越快；lead_ms 是提前量；brake_ms 是刹车预留时间。
      * 现场就在"快"和"晃"之间拧这几个数就行。 */
     uint8_t div_far, div_near, lead_ms, brake_ms;
+    /* 锁定后 pan 微调：step=0 或 zone=0 关闭。
+     * zone：进入微调的最大误差（px）；deadband：进入后停住的误差（px）；
+     * settle：每步之后等多久再看（ms，覆盖视频延迟）；max_steps：最多几步；
+     * vel_limit：目标 x 速度超过这个值（px/s）就不微调。 */
+    uint8_t pan_trim_step_us, pan_trim_deadband, pan_trim_settle_ms,
+            pan_trim_max_steps, pan_trim_zone;
+    uint16_t pan_trim_vel_limit;
 } RedTrackConfig;
 
 /* The board test confirmed both automatic axes were reversed relative to
  * target-centering motion. Manual touch mapping is a separate control. */
-#define RED_TRACK_DEFAULT_CONFIG {-1, 1, 32, 1, 32, 64, 40, 220}
+#define RED_TRACK_DEFAULT_CONFIG \
+    {-1, 1, 32, 1, 32, 64, 40, 220, 4, 12, 250, 3, 64, 200}
 /* Accept every 30 fps result, but cap faster/bursty sources at 33 Hz.
  * The FPGA servo PWM remains 20 ms; this limits correction accumulation. */
 #define RED_TRACK_INTERVAL_MS 30u
@@ -76,6 +88,116 @@ static __attribute__((noinline)) int red_track_velocity(int error, int previous,
     if(rate>4000) rate=4000;
     if(rate< -4000) rate= -4000;
     return (velocity+rate)/2;
+}
+
+/* 锁定后的 pan 微调状态清零。目标重新捕获、失效、手动接管时调用。 */
+static inline void red_track_trim_reset(RedTrackControl *t)
+{
+    t->trim_steps=0;
+    t->trim_dir=0;
+    t->trim_hold=0;
+    t->trim_last_error=0;
+    t->trim_last_step=0;
+}
+
+/* 停稳后只给 pan 一两小步，避免正常跟踪环在中心附近来回修。
+ * 返回 0 = 不在微调区/已关闭；1 = 在微调区但本拍不动；2 = pan 已改动。
+ * 误差变大或过中心会回退上一步并停下；目标在动时只等稳定，不发步。 */
+static inline unsigned red_track_trim(RedTrackControl *t, int ex, uint32_t ms,
+                                      const volatile RedTrackConfig *cfg, uint32_t *pan)
+{
+    int abs_ex=ex<0?-ex:ex;
+    int dir=ex<0?1:2;
+    int next,delta;
+    unsigned old=*pan;
+
+    if(cfg->pan_trim_zone==0u || cfg->pan_trim_step_us==0u) return 0u;
+    if(abs_ex>(int)cfg->pan_trim_zone) {
+        red_track_trim_reset(t);
+        return 0u;
+    }
+    if(abs_ex<=(int)cfg->pan_trim_deadband) {
+        red_track_trim_reset(t);
+        t->reason=TRACK_LOCKED;
+        return 1u;
+    }
+    if(t->trim_hold) {
+        t->reason=TRACK_TRIM;
+        return 1u;
+    }
+    if(t->trim_dir==0u) {
+        /* 刚进入微调区：先等 settle，再走第一步 */
+        t->trim_dir=(uint8_t)dir;
+        t->trim_last_error=(int16_t)ex;
+        t->trim_ms=ms;
+        t->reason=TRACK_TRIM;
+        return 1u;
+    }
+    if(dir!=(int)t->trim_dir) {
+        if(t->trim_steps==0u) {
+            /* 还没走第一步，目标自己过中心：重新计时，不算冲过头 */
+            t->trim_dir=(uint8_t)dir;
+            t->trim_last_error=(int16_t)ex;
+            t->trim_ms=ms;
+            t->reason=TRACK_TRIM;
+            return 1u;
+        }
+        /* 已经冲过中心：回退上一步，停止微调 */
+        if(t->trim_last_step) {
+            next=(int)*pan-(int)t->trim_last_step;
+            next=next<500?500:next>2500?2500:next;
+            *pan=(uint32_t)next;
+            t->trim_last_step=0;
+        }
+        t->trim_hold=1u;
+        t->reason=TRACK_TRIM;
+        return (*pan!=old)?2u:1u;
+    }
+    if(t->velocity_x>(int)cfg->pan_trim_vel_limit ||
+       t->velocity_x<-(int)cfg->pan_trim_vel_limit) {
+        t->trim_ms=ms;                 /* 目标在动：重新等稳定窗口 */
+        t->reason=TRACK_TRIM;
+        return 1u;
+    }
+    if((uint32_t)(ms-t->trim_ms)<(uint32_t)cfg->pan_trim_settle_ms) {
+        t->reason=TRACK_TRIM;
+        return 1u;
+    }
+    if(t->trim_steps>=cfg->pan_trim_max_steps) {
+        t->trim_hold=1u;
+        t->reason=TRACK_TRIM;
+        return 1u;
+    }
+    if(t->trim_steps>0u &&
+       abs_ex>(t->trim_last_error<0?-t->trim_last_error:t->trim_last_error)+2) {
+        /* 上一步之后误差反而变大：回退，停手 */
+        if(t->trim_last_step) {
+            next=(int)*pan-(int)t->trim_last_step;
+            next=next<500?500:next>2500?2500:next;
+            *pan=(uint32_t)next;
+            t->trim_last_step=0;
+        }
+        t->trim_hold=1u;
+        t->reason=TRACK_TRIM;
+        return (*pan!=old)?2u:1u;
+    }
+    /* 方向约定与 red_track_axis 一致：error<0 -> direction 1，
+     * 实际 PWM 增量 = -pan_sign*step；error>0 -> +pan_sign*step。 */
+    delta=(dir==2?1:-1)*(int)cfg->pan_sign*(int)cfg->pan_trim_step_us;
+    next=(int)*pan+delta;
+    next=next<500?500:next>2500?2500:next;
+    t->trim_last_step=(int16_t)(next-(int)*pan);
+    t->trim_last_error=(int16_t)ex;
+    t->trim_ms=ms;
+    if(t->trim_last_step==0) {
+        t->trim_hold=1u;
+        t->reason=TRACK_TRIM;
+        return 1u;
+    }
+    *pan=(uint32_t)next;
+    t->trim_steps++;
+    t->reason=TRACK_TRIM;
+    return 2u;
 }
 
 static inline unsigned red_track_axis(unsigned pulse, unsigned direction,
@@ -122,6 +244,7 @@ static inline unsigned red_track_update(RedTrackControl *t, uint32_t word, uint3
     int ex=red_track_error(errors),ey=red_track_error(errors>>16);
     if(!allowed || !cfg->enabled || manual) {
         t->primed=0;
+        red_track_trim_reset(t);
         t->reason=manual ? TRACK_MANUAL : TRACK_OFF;
         return 0;
     }
@@ -129,15 +252,20 @@ static inline unsigned red_track_update(RedTrackControl *t, uint32_t word, uint3
         t->primed=t->settling=1;
         t->sample=word; t->seen_ms=t->move_ms=ms; t->reason=TRACK_WAIT;
         t->error_x=ex;t->error_y=ey;t->velocity_x=t->velocity_y=0;
+        red_track_trim_reset(t);
         return 0;
     }
     if((word>>16)==(t->sample>>16)) {
-        if(age>=250u) t->reason=TRACK_STALE;
+        if(age>=250u) {
+            t->reason=TRACK_STALE;
+            red_track_trim_reset(t);
+        }
         return 0;
     }
     t->sample=word; t->seen_ms=ms;
     if(age>=250u) {
         t->move_ms=ms; t->settling=1; t->reason=TRACK_STALE;
+        red_track_trim_reset(t);
         return 0;
     }
     if((word & 0xf000u)!=0xd000u || (errors & 0xe000e000u) ||
@@ -145,7 +273,9 @@ static inline unsigned red_track_update(RedTrackControl *t, uint32_t word, uint3
         /* 只记"第一次失效"的时刻：目标闪一下（单帧没结果）再回来时，
          * 不用再从头等一遍 120ms —— 原来每帧都刷新 move_ms，闪一下就白等。 */
         if(!t->settling)t->move_ms=ms;
-        t->settling=1; t->reason=TRACK_SEARCH; return 0;
+        t->settling=1; t->reason=TRACK_SEARCH;
+        red_track_trim_reset(t);
+        return 0;
     }
     t->velocity_x=t->settling ? 0 : red_track_velocity(ex,t->error_x,t->velocity_x,age);
     t->velocity_y=t->settling ? 0 : red_track_velocity(ey,t->error_y,t->velocity_y,age);
@@ -155,6 +285,12 @@ static inline unsigned red_track_update(RedTrackControl *t, uint32_t word, uint3
         return 0;
     }
     t->settling=0; t->move_ms=ms; t->reason=TRACK_LOCKED;
+    {
+        /* 中心附近先走“停稳后小步微调”，不要再用正常大环去追噪声。
+         * 微调只动 pan；tilt 仍走原控制。 */
+        unsigned trim=red_track_trim(t,ex,ms,cfg,pan);
+        if(trim) return (trim==2u)?1u:0u;
+    }
     *pan=red_track_axis(*pan,(word>>10)&3u,ex,t->velocity_x,cfg->pan_sign,cfg);
     *tilt=red_track_axis(*tilt,(word>>8)&3u,ey,t->velocity_y,cfg->tilt_sign,cfg);
     return (*pan!=old_pan ? 1u : 0u) | (*tilt!=old_tilt ? 2u : 0u);

@@ -333,7 +333,7 @@ static void touchscreen_handle(MenuState *s)
 static __attribute__((noinline)) void ui_controls_poll(MenuState *s)
 {
     tracking_service(s);
-    if(autofocus_active())auto_exposure_pause();else auto_exposure_poll(s);
+    if(autofocus_active()||autofocus_holding())auto_exposure_pause();else auto_exposure_poll(s);
     histogram_poll(s);
     mcu_menu_poll(s);
 }

@@ -80,6 +80,7 @@ volatile struct {
 } g_af_debug;
 
 static uint32_t af_state = AF_IDLE;
+static uint8_t af_tried_wide;
 static uint32_t af_wait_ms, af_position, af_scan_end, af_scan_step;
 static uint32_t af_best_position, af_best_metric, af_min_metric;
 static uint32_t af_metric_sum, af_metric_count;
@@ -90,6 +91,9 @@ static uint8_t af_retried, af_move_pending, af_no_refocus;
 
 /* 徘徊不算"正在对焦"：这样 tracking_service() 才能在镜头不动的时候照常跟目标 */
 static int autofocus_active(void) { return af_state!=AF_IDLE && af_state!=AF_HOLD; }
+/* HOLD 时镜头已经停在峰值。AE 必须继续冻结，否则第一次对焦后
+ * AE 会把曝光推走，下一轮 focus_metric 变 0，第二次 AF 只能判 FLAT。 */
+static int autofocus_holding(void) { return af_state==AF_HOLD; }
 
 static void autofocus_stop(uint32_t reason)
 {
@@ -131,6 +135,16 @@ static void autofocus_park(uint32_t ms, uint32_t reason)
         return;
     }
     if(af_best_metric <= af_min_metric + (af_min_metric>>AF_FLAT_DIV)) {
+        /* 默认 160x120 太平：自动换一次 960x720 再扫，保持原来的菜单 AF 行为。 */
+        if(!af_tried_wide) {
+            af_tried_wide=1;
+            ui_write(0xfc, 0x02D003C0);
+            af_state=AF_START;
+            af_wait_ms=ms;
+            af_move_pending=0;
+            g_af_debug.reason=AF_REASON_COARSE;
+            return;
+        }
         af_best_position=af_start_position;
         af_no_refocus=1;
         g_af_debug.reason=AF_REASON_FLAT;
@@ -155,7 +169,8 @@ static void autofocus_restart(void)
     af_state=AF_START;
     af_wait_ms=ui_now_ms();
     af_retried=af_move_pending=0;
-    af_no_refocus=0;                    /* 手动/进档触发的对焦，重新允许阈值重对 */
+    af_no_refocus=0;
+    af_tried_wide=0;                    /* 手动/进档触发的对焦，重新允许阈值重对 */
 }
 
 static void manual_focus_step(int32_t delta)

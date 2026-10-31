@@ -1,0 +1,14 @@
+{
+  "arch": "rv32",
+  "bspLocation": "C:/Users/21397/Desktop/fpga1/sc500cs/FDwork/anlu",
+  "bspName": "anlu",
+  "chip": "ph1p35",
+  "languageType": "C",
+  "name": "qspi",
+  "os": "standalone",
+  "processor": "rpu",
+  "templateName": "",
+  "toolVersion": "2026.1",
+  "type": "application",
+  "location": "C:/Users/21397/Desktop/fpga1/sc500cs/FDwork/qspi"
+}

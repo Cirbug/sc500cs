@@ -13,8 +13,8 @@ int main(void)
      * 完全等效的参数**（div 48/96、brake 120ms、无提前量、上限 16），
      * 让下面既有的断言仍然表达同一个不变量；新版默认值
      * （32/64/40/220、上限 32）由 RED_TRACK_DEFAULT_CONFIG 表达。 */
-    RedTrackConfig c={1,-1,16,1,48,96,0,120};
-    RedTrackConfig c0={1,-1,0,1,48,96,0,120};   /* 上限 0：用来验证"一步都不给" */
+    RedTrackConfig c={1,-1,16,1,48,96,0,120,0,0,0,0,0,0};
+    RedTrackConfig c0={1,-1,0,1,48,96,0,120,0,0,0,0,0,0};   /* 上限 0：用来验证"一步都不给" */
     uint32_t pan=1500,tilt=1500,w=packet(1,0xd000,2,1),e=errors(700,-400);
     assert(!red_track_update(&t,w,e,0,0,0,&c,&pan,&tilt));
     assert(!red_track_update(&t,w,e,0,1,0,&c,&pan,&tilt));

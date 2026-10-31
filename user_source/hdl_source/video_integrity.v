@@ -67,6 +67,40 @@ module video_rx_integrity #(
     end
 endmodule
 
+// CSI EOF can precede the final ISP row. Hold its verdict until the packed
+// payload has drained, with a bounded timeout for malformed/truncated frames.
+module video_frame_drain #(
+    parameter integer FRAME_WORDS=388800,
+    parameter integer MAX_DRAIN_CYCLES=608
+)(
+    input wire clk,rst_n,isp_sof,isp_valid,raw_done,raw_bad,
+    output reg frame_done,frame_bad
+);
+    localparam TIMER_W=$clog2(MAX_DRAIN_CYCLES+1);
+    reg [19:0] words;
+    reg pending,bad_latched;
+    reg [TIMER_W-1:0] remaining;
+    wire [20:0] words_now={1'b0,words}+isp_valid;
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            words<=0;pending<=0;remaining<=0;bad_latched<=1;
+            frame_done<=0;frame_bad<=1;
+        end else begin
+            frame_done<=0;
+            if(isp_sof) begin words<=0;pending<=0;end
+            else if(isp_valid && words<FRAME_WORDS+1) words<=words+1'b1;
+            if(raw_done) begin
+                pending<=1;remaining<=MAX_DRAIN_CYCLES;bad_latched<=raw_bad;
+            end else if(pending) begin
+                if(words_now>=FRAME_WORDS || remaining==0) begin
+                    pending<=0;frame_done<=1;
+                    frame_bad<=bad_latched || words_now!=FRAME_WORDS;
+                end else remaining<=remaining-1'b1;
+            end
+        end
+    end
+endmodule
+
 // Source holds a complete snapshot until the next synchronized request.
 module video_diag_cdc #(parameter WIDTH=64)(
     input wire src_clk,dst_clk,rst_n,input wire [WIDTH-1:0] data,

@@ -69,13 +69,16 @@ module line_buffer_demosaic #(
     always @(posedge I_clk or negedge I_rst_n) begin
         if (!I_rst_n || I_tuser) begin
             tlast_lock_d0 <= 1'b0;  // 复位或者I_tuser有效时，将tlast_lock_d0清零
-        end else if ((tlast_lock_d0 == 1'b0) & (addra == IMG_WIDTH_4x - 1)) begin
+        end else if ((tlast_lock_d0 == 1'b0) && valid_d0 && (addra == IMG_WIDTH_4x - 1)) begin
             tlast_lock_d0 <= 1'b1;  // 当第一次addra达到最大值时，置位tlast_lock_d0
         end
     end
 
     // 读使能信号rd_en的生成
-    assign rd_en = (I_valid && tlast_lock_d0) ? 1'b1 : 1'b0;
+    // A row becomes readable only when its last valid write occurs.
+    // Include that write edge so back-to-back rows do not repeat word zero.
+    assign rd_en = I_valid && (tlast_lock_d0 ||
+                    (valid_d0 && addra == IMG_WIDTH_4x - 1));
     // 只有当I_valid有效且tlast_lock_d0置位后，才产生读使能信号
 
     // 读地址计数器addrb的更新
@@ -102,6 +105,9 @@ module line_buffer_demosaic #(
         .dia (data_d0),   // 写数据
         .clkb (I_clk  ),   // 读端口时钟信号
         .addrb(addrb  ),   // 读地址
+        .web(1'b0),
+        .dib(33'd0),
+        .doa(),
         .dob(O_data )    // 读数据输出
     );
 

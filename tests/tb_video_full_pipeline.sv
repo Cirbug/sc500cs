@@ -21,7 +21,7 @@ module tb_video_full_pipeline;
     raw10_unpacket_2lane unpacker(.I_clk(clk),.I_rst_n(rst_n),.I_csi_frame_start(fs),
         .I_csi_frame_end(fe),.I_csi_valid(cv),.I_csi_data(raw),
         .O_raw10_frame_start(rs),.O_raw10_frame_end(re),.O_raw10_valid(rv),.O_raw10_data(unpacked));
-    uial2axis #(.IMG_WIDTH(2592),.IMG_HEIGHT(1944),.INPUT_DATA_WIDTH(40)) axis_adapter(
+    uial2axis #(.IMG_WIDTH(1920),.IMG_HEIGHT(1080),.INPUT_DATA_WIDTH(40)) axis_adapter(
         .I_native_clk(clk),.I_rst_n(rst_n),.I_data(unpacked),.I_data_valid(rv),
         .I_data_start(rs),.I_data_end(re),.axis_tvalid(av),.axis_tdata(axis_data),
         .axis_tuser(af),.axis_tlast(al));
@@ -31,14 +31,17 @@ module tb_video_full_pipeline;
         .I_awb_bypass(1'b0),.I_blc_off(8'd12),.I_gamma_en(1'b0),.I_gamma_sel(4'd4),.I_bright(2'd1),
         .I_core_sel(3'd0),.I_awb_gate_en(1'b1),.I_awb_gate_th(8'd48),
         .I_awb_smooth_en(1'b1),.I_sat_off(1'b0),.I_sat_sel(2'd1),.I_denoise(2'd0));
-    video_rx_integrity check_rx(.clk(clk),.rst_n(rst_n),.line_end(packet_end),
+    video_rx_integrity #(.LINE_WORDS(600),.HEIGHT(1080)) check_rx(.clk(clk),.rst_n(rst_n),.line_end(packet_end),
         .packet_error(packet_error),.frame_start(fs),
         .frame_end(fe),.word_valid(cv),.lane_error(1'b0),.match_error(matcherr),
         .capture_error(capture_error),.frame_done(done),.frame_bad(bad),.diagnostics(rxdiag));
+    wire drained_done,drained_bad;
+    video_frame_drain drain(.clk(clk),.rst_n(rst_n),.isp_sof(pf),.isp_valid(pv),
+        .raw_done(done),.raw_bad(bad),.frame_done(drained_done),.frame_bad(drained_bad));
     video_in #(.REQUIRE_RAW_FRAME(1'b0)) vi(.I_rst_n(rst_n),.I_camera_clk(clk),.I_camera_frame_start(pf),
-        .I_camera_valid(pv),.I_camera_data(packed_data),.I_mipi_rx_error(bad),
+        .I_camera_valid(pv),.I_camera_data(packed_data),.I_mipi_rx_error(drained_bad),
         .I_camera_stream_error(capture_error),
-        .I_camera_frame_done(done),.I_ddr_clk(ddr),.I_display_pause(1'b0),
+        .I_camera_frame_done(drained_done),.I_ddr_clk(ddr),.I_display_pause(1'b0),
         .I_video_out_rd_busy(1'b0),.I_reader_bank(2'd0),.I_reader_valid(1'b0),
         .O_video_out_valid(published),.O_ddr_user_wr_en(we),.O_ddr_user_addr(wa),
         .O_ddr_user_wr_data(wd),.I_ddr_user_ready(1'b1),.O_frame_counts(counts),.O_capture_diag(cdiag));
@@ -70,9 +73,9 @@ module tb_video_full_pipeline;
     endtask
     task raw_line(input integer row,input bit close_hs=1);
         begin
-            @(negedge clk);hs=1;data={8'h2b,8'ha8}; // 3240 bytes
-            @(negedge clk);data=16'h0c3b;
-            for(integer n=0;n<1620;n=n+1) begin @(negedge clk);data=16'h8080;end
+            @(negedge clk);hs=1;data={8'h2b,8'h60}; // 2400 bytes
+            @(negedge clk);data={8'h09,test_header_ecc(24'h09602b)};
+            for(integer n=0;n<1200;n=n+1) begin @(negedge clk);data=16'h8080;end
             @(negedge clk);data=0; // payload CRC, not validated here
             if(close_hs) begin
                 // PHY valid can stay high into trail: reproduce board regression.
@@ -85,7 +88,7 @@ module tb_video_full_pipeline;
         repeat(20) @(negedge clk);rst_n=1;repeat(100) @(negedge clk);
         // FS shares HS with the first line; FE shares HS with the last line.
         short_packet(0,0);
-        for(integer row=0;row<1944;row=row+1) raw_line(row,row!=1943);
+        for(integer row=0;row<1080;row=row+1) raw_line(row,row!=1079);
         short_packet(1);repeat(2000) @(negedge clk);
         if(rxdiag[63:32]!=1 || npacked!=388800 || sof!=1 || counts!=1 || !published || writes!=388800)
             $fatal(1,"full pipeline failed: RX=%h packed=%0d sof=%0d cap=%h diag=%h writes=%0d",rxdiag,npacked,sof,counts,cdiag,writes);
@@ -93,38 +96,24 @@ module tb_video_full_pipeline;
         // and all ISP words are complete. PHY comparison warnings must not
         // defeat geometry checks or prevent publication.
         matcherr=1;short_packet(0);
-        for(integer row=0;row<1944;row=row+1) raw_line(row);
+        for(integer row=0;row<1080;row=row+1) raw_line(row);
         short_packet(0);repeat(2000) @(negedge clk);
         if(rxdiag[63:32]!=2 || rxdiag[31:24]!=8'h12 || counts!=2 ||
            npacked!=777600 || writes!=777600 || sof!=2 || nonzero_words==0)
             $fatal(1,"complete next-FS boundary failed RX=%h cap=%h words=%0d writes=%0d SOF=%0d",rxdiag,counts,npacked,writes,sof);
-        // The previous FS already started this frame. Reproduce the board's
-        // 92-word truncated final RAW row, outside the 1920x1080 display crop.
-        for(integer row=0;row<1943;row=row+1) raw_line(row);
-        // Board also misses FE: the next FS must finalize this tail-fault frame.
-        short_line();short_packet(0);repeat(2000) @(negedge clk);
-        if(rxdiag[63:48]!=1 || counts!=3 || npacked!=1166400 || writes!=1166400)
-            $fatal(1,"tail fault wrongly discarded complete crop RX=%h cap=%h words=%0d",rxdiag,counts,npacked);
-        // The same fault before the crop must still reject the image even
-        // if subsequent packing happens to produce the expected word count.
-        // The previous FS already started the next frame.
-        short_line();
-        for(integer row=1;row<1944;row=row+1) raw_line(row);
-        short_packet(1);repeat(2000) @(negedge clk);
-        if(counts!=32'h00010003) $fatal(1,"prefix fault was accepted cap=%h",counts);
-        short_packet(0);
-        for(integer row=0;row<1944;row=row+1) begin
-            if(row==1000) short_line();else raw_line(row);
-        end
-        short_packet(1);repeat(2000) @(negedge clk);
-        if(counts!=32'h00020003) $fatal(1,"visible-region fault was accepted cap=%h",counts);
-        $display("PASS full CSI->RAW->ISP->capture: full crops publish despite truncated last RAW row; prefix and visible-region faults rejected; shared-HS and next-FS fallback pass");
+        // The previous FS already started this frame. A truncated final line
+        // is visible in 1080p direct mode, so it must never publish a frame.
+        for(integer row=0;row<1079;row=row+1) raw_line(row);
+        short_line();short_packet(1);repeat(2000) @(negedge clk);
+        if(counts!=32'h00010002)
+            $fatal(1,"truncated 1080p frame was not rejected cap=%h",counts);
+        $display("PASS full 1080p CSI->RAW->ISP->capture: EOF drain, shared HS, next-FS boundary and truncated-frame rejection");
         $finish;
     end
     task short_line;
         begin
-            @(negedge clk);hs=1;data=16'h2ba8;
-            @(negedge clk);data=16'h0c3b;
+            @(negedge clk);hs=1;data=16'h2b60;
+            @(negedge clk);data={8'h09,test_header_ecc(24'h09602b)};
             repeat(184) begin @(negedge clk);data=16'h8080;end
             @(negedge clk);hs=0;repeat(80) @(negedge clk);
         end

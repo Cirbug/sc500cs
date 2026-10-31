@@ -10,6 +10,7 @@ out=a.out.resolve();out.mkdir(parents=True,exist_ok=True);tool=Path(a.modelsim)
 fifo128=[ip/'w128_d512_fifo/w128_d512_fifo.v',ip/'w128_d512_fifo/soft_fifo_al_4057d6b76aa6.v']
 fifo155=list((ip/'w155_d512_fifo').glob('*.v'))
 cases={
+ 'tb_video_frame_drain':[],
  'tb_video_crop_guard':[h/'video_in.v']+fifo128,
  'tb_csi_vendor_aligners':[h/'mipi_dphy_rx/byte_aligner.enc.v',h/'mipi_dphy_rx/channel_aligner.enc.v',h/'mipi_dphy_rx/byte_aligner_wrapper.enc.sv',h/'mipi_dphy_rx/channel_aligner_wrapper.enc.sv',h/'isp/csi_unpacket_2lane.v'],
  'tb_video_error_details':[h/'isp/csi_unpacket_2lane.v'],

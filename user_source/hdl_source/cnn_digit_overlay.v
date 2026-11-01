@@ -4,8 +4,9 @@
 // clears and draws in <75k clocks. Publish at VSYNC only, including empty groups.
 // Two cycles of video latency. No camera/display backpressure.
 module cnn_digit_overlay(
-    input wire clk,rst_n,enable,result_valid,
-    input wire [4:0] result_count,input wire [671:0] result_records,
+    input wire clk,rst_n,enable,result_valid,result_busy,
+    input wire [4:0] result_count,input wire [15:0] result_generation,
+    input wire [639:0] result_records,
     input wire vs,hs,de,input wire [23:0] rgb,
     output reg out_vs,out_hs,out_de,output reg [23:0] out_rgb
 );
@@ -13,10 +14,10 @@ module cnn_digit_overlay(
     reg display_bank,build_bank,display_valid,ready,built_valid;
     reg [2:0] state;
     localparam IDLE=0,CLEAR=1,LOAD=2,SETUP=3,HEDGE=4,VEDGE=5,TEXT=6;
-    reg [671:0] held_records;
     reg [4:0] held_count;
+    reg [15:0] held_generation;
     reg [3:0] record_index;
-    reg [41:0] record_data;
+    reg [39:0] record_data;
     reg [15:0] clear_index;
     reg [8:0] x0,x1,cx,label_x;
     reg [7:0] y0,y1,cy,label_y;
@@ -72,31 +73,38 @@ module cnn_digit_overlay(
     always @(posedge clk or negedge rst_n)begin
         if(!rst_n)begin
             display_bank<=0;build_bank<=1;display_valid<=0;ready<=0;built_valid<=0;
-            state<=IDLE;held_records<=0;held_count<=0;record_index<=0;record_data<=0;
+            state<=IDLE;held_count<=0;held_generation<=0;record_index<=0;record_data<=0;
             clear_index<=0;x0<=0;x1<=0;y0<=0;y1<=0;cx<=0;cy<=0;label_x<=0;label_y<=0;
             phase<=0;font_x<=0;font_y<=0;digit<=0;
         end else begin
             if(frame_start)begin
-                if(ready)begin display_bank<=build_bank;display_valid<=built_valid;ready<=0;end
-                if(state==IDLE)begin
-                    build_bank<=ready?display_bank:~display_bank;
-                    held_records<=result_records;
+                if(ready)begin
+                    if(!result_busy&&result_generation==held_generation)begin
+                        display_bank<=build_bank;display_valid<=built_valid;
+                    end
+                    ready<=0;
+                end
+                if(state==IDLE&&!result_busy)begin
+                    build_bank<=(ready&&(result_generation==held_generation))?display_bank:~display_bank;
+                    held_generation<=result_generation;
                     held_count<=enable&&result_valid?result_count:0;
                     built_valid<=enable&&result_valid;
                     clear_index<=0;record_index<=0;state<=CLEAR;
                 end
             end
-            case(state)
+            if(state!=IDLE && (result_busy||result_generation!=held_generation))begin
+                state<=IDLE;ready<=0;built_valid<=0;
+            end else case(state)
             CLEAR:if(clear_index==57599)begin
                 if(held_count==0)begin ready<=1;state<=IDLE;end else state<=LOAD;
             end else clear_index<=clear_index+1'b1;
-            LOAD:begin record_data<=held_records[record_index*42+:42];state<=SETUP;end
+            LOAD:begin record_data<=result_records[record_index*40+:40];state<=SETUP;end
             SETUP:begin
-                x0<=record_data[41:32];x1<=record_data[41:32]+record_data[22:13]-1'b1;
-                y0<=record_data[31:23];y1<=record_data[31:23]+record_data[12:4]-1'b1;
-                cx<=record_data[41:32];cy<=record_data[31:23];digit<=record_data[3:0];
-                label_x<=record_data[41:32]>315?9'd315:record_data[41:32];
-                label_y<=record_data[31:23]>=7?record_data[31:23]-7'd7:8'd0;
+                x0<=record_data[39:31];x1<=record_data[39:31]+record_data[22:14]-9'd1;
+                y0<=record_data[30:23];y1<=record_data[30:23]+record_data[13:6]-8'd1;
+                cx<=record_data[39:31];cy<=record_data[30:23];digit<=record_data[5:2];
+                label_x<=record_data[39:31]>315?9'd315:record_data[39:31];
+                label_y<=record_data[30:23]>=7?record_data[30:23]-7'd7:8'd0;
                 phase<=0;state<=HEDGE;
             end
             HEDGE:begin

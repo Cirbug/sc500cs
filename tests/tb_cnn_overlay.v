@@ -1,12 +1,13 @@
 `timescale 1ns/1ps
 module tb_cnn_overlay;
-    reg clk=0,rst_n=0,enable=0,valid=0,vs=0,hs=0,de=0;
-    reg [671:0] records=0;reg [4:0] count=0;
+    reg clk=0,rst_n=0,enable=0,valid=0,busy=0,vs=0,hs=0,de=0;
+    reg [639:0] records=0;reg [4:0] count=0;reg [15:0] result_generation=0;
     reg [23:0] source_rgb=24'h123456;
     wire ovs,ohs,ode;wire [23:0] rgb;
     always #5 clk=~clk;
-    cnn_digit_overlay d(.clk(clk),.rst_n(rst_n),.enable(enable),.result_valid(valid),
-        .result_count(count),.result_records(records),.vs(vs),.hs(hs),.de(de),.rgb(source_rgb),
+    cnn_digit_overlay d(.clk(clk),.rst_n(rst_n),.enable(enable),.result_valid(valid),.result_busy(busy),
+        .result_count(count),.result_generation(result_generation),.result_records(records),
+        .vs(vs),.hs(hs),.de(de),.rgb(source_rgb),
         .out_vs(ovs),.out_hs(ohs),.out_de(ode),.out_rgb(rgb));
     task sync_frame;
         begin @(negedge clk);vs=1;de=0;repeat(2)@(negedge clk);vs=0;repeat(80000)@(negedge clk);end
@@ -40,7 +41,7 @@ module tb_cnn_overlay;
                     if(x>0 && (!ode || rgb!==previous))$fatal(1,"pixel %0d,%0d got %h want %h",x-1,y,rgb,previous);
                     previous=expected;
                     // A new result during active scan must not alter this frame.
-                    if(y==40 && x==40)records[0+:42]={10'd20,9'd20,10'd5,9'd5,4'd8};
+                    if(y==40 && x==40)records[0+:40]={9'd20,8'd20,9'd5,8'd5,4'd8,2'b00};
                 end
                 @(negedge clk);de=0;repeat(4)@(negedge clk);
             end
@@ -49,15 +50,15 @@ module tb_cnn_overlay;
     integer i;
     initial begin
         #50;rst_n=1;enable=1;valid=1;count=1;
-        records[0+:42]={10'd10,9'd10,10'd5,9'd5,4'd1};sync_frame;sync_frame;raster(1);
+        records[0+:40]={9'd10,8'd10,9'd5,8'd5,4'd1,2'b00};sync_frame;sync_frame;raster(1);
         enable=0;sync_frame;raster(0);
         enable=1;count=0;sync_frame;raster(0);
         count=1;valid=0;sync_frame;raster(0);
         // Worst-case 16 full-view boxes exercise the last slot, the final
         // bitmap address, and the build budget before bank publication.
         valid=1;count=16;
-        for(i=0;i<16;i=i+1)records[i*42+:42]={10'd0,9'd0,10'd320,9'd180,4'd9};
-        records[15*42+:42]={10'd100,9'd80,10'd3,9'd3,4'd6};
+        for(i=0;i<16;i=i+1)records[i*40+:40]={9'd0,8'd0,9'd320,8'd180,4'd9,2'b00};
+        records[15*40+:40]={9'd100,8'd80,9'd3,8'd3,4'd6,2'b00};
         sync_frame;
         if(d.state!==0 || !d.ready)$fatal(1,"16-box build missed blank budget");
         sync_frame;
@@ -67,6 +68,23 @@ module tb_cnn_overlay;
             $fatal(1,"16-box edges/interior/last slot");
         count=0;sync_frame;sync_frame;
         if(d.bitmap[{d.display_bank,16'd57599}]!==0)$fatal(1,"empty group did not clear old edges");
-        $display("CNN_OVERLAY_PASS geometry/font/frame-snapshot/disabled/empty/stale");$finish;
+        // A newly committed result during bitmap construction invalidates the
+        // partial drawing; the next frame must use only the new sequence.
+        count=1;result_generation=16'd10;records[0+:40]={9'd10,8'd10,9'd5,8'd5,4'd2,2'b00};
+        @(negedge clk);vs=1;
+        @(negedge clk);vs=0;
+        repeat(100)@(negedge clk);
+        busy=1;result_generation=16'd11;records[0+:40]={9'd30,8'd30,9'd5,8'd5,4'd3,2'b00};
+        @(negedge clk);
+        busy=0;
+        if(d.state!==0 || d.ready || !d.display_valid)
+            $fatal(1,"busy did not abort build while preserving the displayed bitmap");
+        sync_frame;
+        if(!d.display_valid || !d.ready || d.held_generation!=11)
+            $fatal(1,"stale build replaced display or new build did not finish");
+        sync_frame;
+        if(!d.display_valid || d.held_generation!=11 || d.bitmap[{d.display_bank,16'd9630}]!==1)
+            $fatal(1,"new sequence was not rebuilt cleanly");
+        $display("CNN_OVERLAY_PASS geometry/font/frame-snapshot/disabled/empty/busy/stale");$finish;
     end
 endmodule

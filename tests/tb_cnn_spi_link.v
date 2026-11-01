@@ -11,22 +11,23 @@ module tb_cnn_spi_link;
     reg digit_done=0,frame_done=0;
     reg [9:0] x=0,w=0;reg [8:0] y=0,h=0;
     reg [3:0] cls=0;reg [4:0] n=0;
-    wire result_new,result_valid,ov;
-    wire [671:0] records;wire [4:0] count;
+    wire result_new,result_valid,result_busy,ov;
+    wire [639:0] records;wire [4:0] count;
     wire [15:0] seq;wire [31:0] weight,good,bad;
     cnn_spi_result_slave b(.clk(bclk),.rst_n(rst_n),.spi_clk(sclk),.spi_cs_n(cs_n),.spi_mosi(mosi^wrong_command),.spi_miso(miso_raw),
         .digit_done(digit_done),.frame_done(frame_done),.digit_x(x),.digit_y(y),.digit_w(w),.digit_h(h),
         .digit_class(cls),.frame_count(n),.weight_crc(32'heec8e020));
     cnn_spi_result_master #(.HALF_PERIOD(8),.POLL_CYCLES(400),.TIMEOUT_CYCLES(100000)) a(
         .clk(aclk),.rst_n(rst_n),.spi_miso(miso),.spi_clk(sclk),.spi_cs_n(cs_n),.spi_mosi(mosi),
-        .result_new(result_new),.result_valid(result_valid),.result_records(records),.result_count(count),
+        .result_new(result_new),.result_valid(result_valid),.result_busy(result_busy),
+        .result_records(records),.result_count(count),
         .result_overflow(ov),.result_sequence(seq),.result_weight_crc(weight),.good_packets(good),.bad_packets(bad));
     task emit;
         input integer total;
         integer i;
         begin
             for(i=0;i<total;i=i+1)begin
-                @(negedge bclk);digit_done=1;x=i*18;y=i*8;w=10;h=12;cls=i%10;
+                @(negedge bclk);digit_done=1;x=i*18;y=i*10;w=10;h=12;cls=i%10;
                 @(negedge bclk);digit_done=0;
             end
             @(negedge bclk);frame_done=1;n=total;
@@ -41,15 +42,16 @@ module tb_cnn_spi_link;
             if(seq!==expect_seq || count!==expect_count || ov!==expect_ov || weight!==32'heec8e020 || !result_valid)
                 $fatal(1,"header seq=%d count=%d ov=%d weight=%h",seq,count,ov,weight);
             for(i=0;i<expect_count;i=i+1)begin
-                if(records[i*42+32+:10]!==i*18 || records[i*42+23+:9]!==i*8 ||
-                   records[i*42+13+:10]!==10 || records[i*42+4+:9]!==12 || records[i*42+:4]!==i%10)
-                    $fatal(1,"record %d mismatch %h",i,records[i*42+:42]);
+                if(records[i*40+31+:9]!==i*18 || records[i*40+23+:8]!==i*10 ||
+                   records[i*40+14+:9]!==10 || records[i*40+6+:8]!==12 || records[i*40+2+:4]!==i%10 ||
+                   records[i*40+:2]!==0)
+                    $fatal(1,"record %d mismatch %h",i,records[i*40+:40]);
             end
             $display("PASS seq=%d count=%d overflow=%d",seq,count,ov);
             @(negedge aclk);
         end
     endtask
-    integer old_bad,k;reg [15:0] old_seq,crc_a,crc_b;
+    integer old_bad,k;reg [15:0] old_seq,old_generation,crc_a,crc_b;
     reg [71:0] crc_vector="123456789";
     initial begin
         crc_a=16'hffff;crc_b=16'hffff;
@@ -61,7 +63,9 @@ module tb_cnn_spi_link;
         #100;rst_n=1;
         emit(1);check(1,1,0);
         // Rebuild while an old packet is being read: CRC and bank must remain coherent.
-        wait(cs_n);wait(!cs_n);#50000;emit(16);check(2,16,0);
+        wait(cs_n);wait(!cs_n);#50000;
+        if(!result_valid||!result_busy)$fatal(1,"receive busy/last result state mismatch");
+        emit(16);check(2,16,0);
         emit(0);check(3,0,0);
         emit(17);check(4,16,1);
         // Disallow malformed coordinates even if transport CRC is correct.
@@ -72,9 +76,10 @@ module tb_cnn_spi_link;
         if(bad<=old_bad || seq!=4)$fatal(1,"malformed record accepted");
         emit(1);check(6,1,0);
         // A CRC-only error must not publish a new result.
-        wait(cs_n);corrupt=1;old_bad=bad;old_seq=seq;
+        wait(cs_n);corrupt=1;old_bad=bad;old_seq=seq;old_generation=a.result_generation;
         emit(2);repeat(55000)@(posedge aclk);
-        if(bad<=old_bad || seq!=old_seq)$fatal(1,"corrupt packet accepted");
+        if(bad<=old_bad || seq!=old_seq || result_valid || a.result_generation==old_generation)
+            $fatal(1,"corrupt packet accepted or cache remained exposed");
         corrupt=0;check(7,2,0);
         wait(cs_n);wrong_command=1;old_bad=bad;old_seq=seq;
         emit(1);repeat(55000)@(posedge aclk);

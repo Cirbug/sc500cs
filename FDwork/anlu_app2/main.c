@@ -298,9 +298,19 @@ static void touchscreen_handle(MenuState *s)
 {
     TouchEvent event;
     if(max3421e_touch_pop(&event)) {
+        static uint32_t last_move_report_ms;
+        uint32_t now = ui_now_ms();
+        if(event.type != TOUCH_MOVE || (uint32_t)(now - last_move_report_ms) >= 200u) {
+            const char *name = event.type == TOUCH_DOWN ? "DOWN" :
+                               event.type == TOUCH_MOVE ? "MOVE" :
+                               event.type == TOUCH_UP ? "UP" : "CANCEL";
+            (al_printf)("TOUCH: %s x=%u y=%u\r\n", name,
+                        (unsigned)event.x, (unsigned)event.y);
+            last_move_report_ms = now;
+        }
         MenuState old = *s;
         unsigned actions = touch_focus(&focus_gesture, &event,
-            ui_now_ms(),
+            now,
             touch_in_menu_area(s, &event));
         actions |= menu_touch(s, &event);
         if(actions & MENU_AF) {
@@ -533,6 +543,7 @@ AL_S32 main(void)
              * AF request may retry initialization; idle must not reset focus. */
         }
         max3421e_touch_poll();
+        max3421e_usb_recover();
         touchscreen_handle(&ui);
         rtc_diag_poll((uint32_t)UI_APB_BASE);
         video_diag_poll((uint32_t)UI_APB_BASE);

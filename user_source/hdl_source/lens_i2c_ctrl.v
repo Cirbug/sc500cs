@@ -24,8 +24,11 @@ module lens_i2c_ctrl #(
     wire [7:0] nack_byte, rx_data;
     wire [7:0] reg_addr=phase==1 ? 8'h02 : phase==2 ? 8'h00 :
                          phase==3 ? 8'h01 : phase==4 ? 8'h84 : 8'h85;
-    wire [7:0] reg_value=phase==1 ? 8'h00 : phase==2 ? position[13:6] :
-                          {position[5:0],2'b00};
+    // DW9714 Byte1 is {PD, FLAG, D[9:4]} and Byte2 is
+    // {D[3:0], S[3:0]}. Scale the 14-bit UI position to its 10-bit DAC
+    // code and keep PD/FLAG and slew control fixed at zero.
+    wire [7:0] reg_value=phase==1 ? 8'h00 : phase==2 ? {2'b00,position[13:8]} :
+                          {position[7:4],4'b0000};
     lens_i2c_master #(.PERIOD_CYCLES(CLK_DIV+1)) u_bus (
         .clk(I_clk), .rst_n(I_rst_n), .start(start), .read_reg(phase>=4),
         .reg_addr(reg_addr), .reg_value(reg_value), .scl(O_scl), .sda(IO_sda),

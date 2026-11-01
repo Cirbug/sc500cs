@@ -88,6 +88,13 @@ module tb_lens_i2c_diag;
         if(slave.observed[index]!==expected)
             $fatal(1,"byte[%0d]=%h expected %h",index,slave.observed[index],expected);
     endtask
+    task move_to(input [13:0] target);
+        begin
+            @(negedge clk); position=target; cmd=1;
+            @(negedge clk); cmd=0;
+            repeat(4) @(negedge clk); wait_idle();
+        end
+    endtask
     integer before_count, before_recovery;
     initial begin
         repeat(10) @(negedge clk); rst_n=1; cfg=1;
@@ -97,25 +104,33 @@ module tb_lens_i2c_diag;
         if(slave.starts!=7 || slave.stops!=5 || slave.master_nacks!=2)
             $fatal(1,"Missing repeated START or final NACK: start=%0d stop=%0d nack=%0d",slave.starts,slave.stops,slave.master_nacks);
         check_byte(0,'h18); check_byte(1,'h02); check_byte(2,'h00);
-        check_byte(3,'h18); check_byte(4,'h00); check_byte(5,'h80);
+        check_byte(3,'h18); check_byte(4,'h00); check_byte(5,'h20);
         check_byte(6,'h18); check_byte(7,'h01); check_byte(8,'h00);
         check_byte(9,'h18); check_byte(10,'h84); check_byte(11,'h19);
         check_byte(12,'h18); check_byte(13,'h85); check_byte(14,'h19);
         $display("PASS: initialization, 0x84/85 reads, repeated START, master NACK");
-        @(negedge clk); cmd=1;
-        @(negedge clk); cmd=0;
-        repeat(4) @(negedge clk); wait_idle();
-        check_byte(15,'h18); check_byte(16,'h00); check_byte(17,'h22);
-        check_byte(18,'h18); check_byte(19,'h01); check_byte(20,'hd0);
+        move_to(14'd2228);
+        check_byte(15,'h18); check_byte(16,'h00); check_byte(17,'h08);
+        check_byte(18,'h18); check_byte(19,'h01); check_byte(20,'hb0);
         if(error || count!=9 || adc_count!=2) $fatal(1,"position command/readback failed");
-        $display("PASS: position 2228 wire bytes 22/D0 and ADC pair refresh");
+        move_to(14'd8192);
+        check_byte(27,'h18); check_byte(28,'h00); check_byte(29,'h20);
+        check_byte(30,'h18); check_byte(31,'h01); check_byte(32,'h00);
+        if(slave.observed[29][7] || slave.observed[29][6])
+            $fatal(1,"position 8192 must keep DW9714 PD and FLAG clear");
+        move_to(14'd16383);
+        check_byte(39,'h18); check_byte(40,'h00); check_byte(41,'h3f);
+        check_byte(42,'h18); check_byte(43,'h01); check_byte(44,'hf0);
+        if(slave.observed[41][7] || slave.observed[41][6])
+            $fatal(1,"position 16383 must keep DW9714 PD and FLAG clear");
+        $display("PASS: 14-bit positions map to 10-bit DAC; PD/FLAG stay clear at 8192 and 16383");
         slave.nack_at=3;
         @(negedge clk); read_adc=1;
         @(negedge clk); read_adc=0;
         repeat(4) @(negedge clk); wait_idle();
         if(!error || !initialized || diag[6:4]!=4 || diag[15:8]!=3 ||
-           diag[2:0]!=3 || adc[16] || adc_count!=2)
-            $fatal(1,"Read-address NACK must invalidate ADC and retain initialized flag");
+           diag[2:0]!=3 || adc[16] || adc_count!=4)
+            $fatal(1,"Read-address NACK must invalidate ADC and retain initialized flag: err=%b init=%b diag=%h adc=%h adc_count=%d",error,initialized,diag,adc,adc_count);
         slave.nack_at=0; request_retry();
         if(error || !adc[16]) $fatal(1,"Recovery from read NACK failed");
         $display("PASS: read-address NACK invalidates ADC pair; retry recovers");

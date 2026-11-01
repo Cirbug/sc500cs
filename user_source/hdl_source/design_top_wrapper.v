@@ -2117,18 +2117,20 @@ isp_top u_isp_top (
         .period_valid    ( S_cam_period_valid)
     );
 
-    wire S_cnn_new,S_cnn_valid,S_cnn_overflow,S_cnn_enable;
+    wire S_cnn_new,S_cnn_valid,S_cnn_busy,S_cnn_overflow,S_cnn_enable;
     wire [4:0] S_cnn_count;
-    wire [671:0] S_cnn_records;
-    wire [15:0] S_cnn_sequence;
+    wire [639:0] S_cnn_records;
+    wire [15:0] S_cnn_sequence,S_cnn_generation;
     wire [31:0] S_cnn_weight,S_cnn_good,S_cnn_bad;
     wire S_cnn_vs,S_cnn_hs,S_cnn_de;
     wire [23:0] S_cnn_rgb;
     cnn_spi_result_master #(.CLK_HZ(`HDMI_PIXEL_CLOCK_HZ)) u_cnn_spi_result_master (
         .clk(S_hdmi_pixel_clk),.rst_n(S_rst_n && S_hdmi_rst_n),
         .spi_clk(O_cnn_spi_clk),.spi_cs_n(O_cnn_spi_cs_n),.spi_mosi(O_cnn_spi_mosi),.spi_miso(I_cnn_spi_miso),
-        .result_new(S_cnn_new),.result_valid(S_cnn_valid),.result_records(S_cnn_records),
+        .result_new(S_cnn_new),.result_valid(S_cnn_valid),.result_busy(S_cnn_busy),
+        .result_records(S_cnn_records),
         .result_count(S_cnn_count),.result_overflow(S_cnn_overflow),.result_sequence(S_cnn_sequence),
+        .result_generation(S_cnn_generation),
         .result_weight_crc(S_cnn_weight),.good_packets(S_cnn_good),.bad_packets(S_cnn_bad));
     cnn_result_apb u_cnn_result_apb (
         .apb_clk(S_mcu_apb_clk),.pixel_clk(S_hdmi_pixel_clk),.rst_n(S_rst_n && S_hdmi_rst_n),
@@ -2139,7 +2141,9 @@ isp_top u_isp_top (
         .good_packets(S_cnn_good),.bad_packets(S_cnn_bad));
     cnn_digit_overlay u_cnn_digit_overlay (
         .clk(S_hdmi_pixel_clk),.rst_n(S_hdmi_rst_n),.enable(S_cnn_enable),
-        .result_valid(S_cnn_valid),.result_count(S_cnn_count),.result_records(S_cnn_records),
+        .result_valid(S_cnn_valid),.result_busy(S_cnn_busy),.result_count(S_cnn_count),
+        .result_generation(S_cnn_generation),
+        .result_records(S_cnn_records),
         .vs(S_final_vsync),.hs(S_final_hsync),.de(S_final_de),.rgb(S_final_data),
         .out_vs(S_cnn_vs),.out_hs(S_cnn_hs),.out_de(S_cnn_de),.out_rgb(S_cnn_rgb));
 

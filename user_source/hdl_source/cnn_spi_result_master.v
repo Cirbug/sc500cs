@@ -11,11 +11,12 @@ module cnn_spi_result_master #(
     input wire clk,rst_n,spi_miso,
     output reg spi_clk,spi_cs_n,spi_mosi,
     output reg result_new,
-    output wire result_valid,
-    output reg [671:0] result_records,
+    output wire result_valid,result_busy,
+    output reg [639:0] result_records,
     output reg [4:0] result_count,
     output reg result_overflow,
     output reg [15:0] result_sequence,
+    output reg [15:0] result_generation,
     output reg [31:0] result_weight_crc,good_packets,bad_packets
 );
     (* async_reg="true" *) reg [1:0] miso_sync;
@@ -25,18 +26,18 @@ module cnn_spi_result_master #(
     localparam IDLE=0,TRANSFER=1,HOLD=2;
     reg [7:0] byte_index,rx_shift,byte_data,byte_number;
     reg [2:0] bit_index;
-    reg byte_valid,start_packet,have_result;
-    reg [671:0] pending_records;
+    reg byte_valid,start_packet,have_result,receiving;
     reg [4:0] pending_count;
     reg pending_overflow,packet_bad;
     reg [15:0] pending_sequence,crc,received_crc;
     reg [31:0] pending_weight;
     reg [3:0] record_index,field_index;
-    reg [9:0] x,w;
-    reg [8:0] y,h;
-    wire [10:0] right={1'b0,x}+{1'b0,w};
-    wire [9:0] bottom={1'b0,y}+{1'b0,h};
+    reg [8:0] x,w;
+    reg [7:0] y,h;
+    wire [9:0] right={1'b0,x}+{1'b0,w};
+    wire [8:0] bottom={1'b0,y}+{1'b0,h};
     assign result_valid=have_result && age<TIMEOUT_CYCLES;
+    assign result_busy=receiving;
     function [15:0] crc_byte;
         input [15:0] c0;input [7:0] data;
         reg [15:0] c;integer k;
@@ -86,17 +87,18 @@ module cnn_spi_result_master #(
     end
     always @(posedge clk or negedge rst_n)begin
         if(!rst_n)begin
-            result_new<=0;have_result<=0;age<=TIMEOUT_CYCLES;
-            result_records<=0;result_count<=0;result_overflow<=0;result_sequence<=0;
+            result_new<=0;have_result<=0;receiving<=0;age<=TIMEOUT_CYCLES;
+            result_count<=0;result_overflow<=0;result_sequence<=0;result_generation<=0;
             result_weight_crc<=0;good_packets<=0;bad_packets<=0;
-            pending_records<=0;pending_count<=0;pending_overflow<=0;
+            pending_count<=0;pending_overflow<=0;
             pending_sequence<=0;pending_weight<=0;crc<=16'hffff;received_crc<=0;
             record_index<=0;field_index<=0;packet_bad<=0;x<=0;y<=0;w<=0;h<=0;
         end else begin
             result_new<=0;if(age<TIMEOUT_CYCLES)age<=age+1'b1;
             if(start_packet)begin
-                pending_records<=0;crc<=16'hffff;packet_bad<=0;
+                crc<=16'hffff;packet_bad<=0;
                 record_index<=0;field_index<=0;
+                receiving<=1;result_generation<=result_generation+1'b1;
             end
             if(byte_valid)begin
                 if(byte_number<156)crc<=crc_byte(crc,byte_data);
@@ -119,26 +121,29 @@ module cnn_spi_result_master #(
                 159:begin
                     if(!packet_bad && byte_data==10 && crc==received_crc)begin
                         good_packets<=good_packets+1'b1;
+                        receiving<=0;result_generation<=result_generation+1'b1;
                         if(!have_result || pending_sequence!=result_sequence)begin
-                            result_records<=pending_records;result_count<=pending_count;
-                            result_overflow<=pending_overflow;result_sequence<=pending_sequence;
-                            result_weight_crc<=pending_weight;result_new<=1;have_result<=1;age<=0;
+                            result_count<=pending_count;result_overflow<=pending_overflow;
+                            result_sequence<=pending_sequence;result_weight_crc<=pending_weight;
+                            result_new<=1;have_result<=1;age<=0;
                         end
-                    end else bad_packets<=bad_packets+1'b1;
+                    end else begin
+                        bad_packets<=bad_packets+1'b1;receiving<=0;have_result<=0;
+                    end
                 end
                 default:begin
                     if(record_index<pending_count)begin
                         case(field_index)
-                        0:begin x[9:8]<=byte_data[1:0];if(byte_data>1)packet_bad<=1;end
+                        0:begin x[8]<=byte_data[0];if(byte_data>1)packet_bad<=1;end
                         1:x[7:0]<=byte_data;
-                        2:begin y[8]<=byte_data[0];if(byte_data!=0)packet_bad<=1;end
+                        2:if(byte_data!=0)packet_bad<=1;
                         3:y[7:0]<=byte_data;
-                        4:begin w[9:8]<=byte_data[1:0];if(byte_data>1)packet_bad<=1;end
+                        4:begin w[8]<=byte_data[0];if(byte_data>1)packet_bad<=1;end
                         5:w[7:0]<=byte_data;
-                        6:begin h[8]<=byte_data[0];if(byte_data!=0)packet_bad<=1;end
+                        6:if(byte_data!=0)packet_bad<=1;
                         7:h[7:0]<=byte_data;
                         8:begin
-                            pending_records[record_index*42+:42]<={x,y,w,h,byte_data[3:0]};
+                            result_records[record_index*40+:40]<={x,y,w,h,byte_data[3:0],2'b00};
                             if(byte_data>9 || w==0 || h==0 || right>320 || bottom>180)packet_bad<=1;
                         end
                         endcase

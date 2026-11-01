@@ -845,10 +845,27 @@ static void touch_health_report(const char *reason)
     unsigned ready = 0;
     for (unsigned i = 0; i < hid_endpoint_count; ++i)
         if (hid_endpoints[i].ready) ++ready;
-    al_printf("USB: %s rc=%d stage=%u rev=%02x bus=%02x enum=%u hid=%u\r\n",
+    (al_printf)("TOUCH_USB: %s rc=%d stage=%u rev=%02x bus=%02x enum=%u hid=%u/%u pending=%u\r\n",
               reason, diag_result, (unsigned)g_usb_debug_stage,
               (unsigned)g_usb_revision, (unsigned)host_bus_state,
-              (unsigned)host_descriptor_done, ready);
+              (unsigned)host_descriptor_done, ready,
+              (unsigned)hid_endpoint_count, (unsigned)touch_pending);
+}
+
+static int host_sample_bus(uint8_t *bus_state)
+{
+    uint8_t hctl = 0, hrsl;
+    unsigned i;
+    if (reg_write(REG_HCTL, SAMPLEBUS)) return -1;
+    for (i = 0; i < 20u; ++i) {
+        if (reg_read(REG_HCTL, &hctl)) return -1;
+        if (!(hctl & SAMPLEBUS)) break;
+        AlSys_MDelay(1);
+    }
+    if (hctl & SAMPLEBUS) return -1;
+    if (reg_read(REG_HRSL, &hrsl)) return -1;
+    *bus_state = hrsl & (HRSL_JSTATUS | HRSL_KSTATUS);
+    return 0;
 }
 
 int max3421e_diag_init(uint32_t ui_base)
@@ -883,9 +900,44 @@ int max3421e_diag_init(uint32_t ui_base)
     return diag_result;
 }
 
+/* Reconfiguration can reset the FPGA-side USB gate and the MAX3421E. */
+#define USB_CTRL_ENABLE_MASK 3u
+#define USB_RECOVER_TICKS 200000000u
+#define USB_EMPTY_RETRY_TICKS 100000000u
+#define USB_EMPTY_RETRY_LIMIT 8u
+void max3421e_usb_recover(void)
+{
+    static uint32_t last_gate_tick;
+    static uint32_t last_empty_retry_tick;
+    static unsigned empty_retries;
+    uint32_t now;
+    if (!extension_present) return;
+    now = (uint32_t)AlSys_GetTimerTickCount();
+    if ((uint32_t)(board_read(USB_CTRL) & USB_CTRL_ENABLE_MASK) != USB_CTRL_ENABLE_MASK) {
+        if ((uint32_t)(now - last_gate_tick) < USB_RECOVER_TICKS) return;
+        last_gate_tick = now;
+        (al_printf)("TOUCH_USB: gate lost; retry init\r\n");
+        max3421e_diag_init(apb_base);
+        return;
+    }
+    if (diag_result == 0 && host_bus_state == 0u && !host_descriptor_done &&
+        empty_retries < USB_EMPTY_RETRY_LIMIT) {
+        if ((uint32_t)(now - last_empty_retry_tick) < USB_EMPTY_RETRY_TICKS) return;
+        last_empty_retry_tick = now;
+        ++empty_retries;
+        (al_printf)("TOUCH_USB: empty-bus retry=%u/%u\r\n",
+                    empty_retries, USB_EMPTY_RETRY_LIMIT);
+        max3421e_diag_init(apb_base);
+    } else if (host_bus_state != 0u || host_descriptor_done) {
+        empty_retries = 0u;
+    }
+}
+
 void max3421e_diag_report(void)
 {
-    uint8_t revision = 0, mode = 0, irq = 0, hrsl = 0, hctl = 0;
+    static unsigned report_divider;
+    static unsigned empty_bus_rescan;
+    uint8_t revision = 0, mode = 0, irq = 0, hrsl = 0;
     if (!extension_present) return;
     /* A fresh bounded probe after failure gives periodic hardware SCLK bursts
      * for measurement; do not merely reprint a cached failure. */
@@ -907,26 +959,31 @@ void max3421e_diag_report(void)
             diag_result = -1;
         else {
             host_last_hirq = irq;
-            if ((irq & CONDETIRQ) != 0u) {
-                /* HIRQ bits are write-one-to-clear.  Re-sample the bus after
-                 * a connection transition and leave the detector enabled. */
-                (void)reg_write(REG_HIRQ, CONDETIRQ);
-                if (!reg_write(REG_HCTL, SAMPLEBUS) &&
-                    !reg_read(REG_HCTL, &hctl) && !(hctl & SAMPLEBUS) &&
-                    !reg_read(REG_HRSL, &hrsl)) {
-                    host_bus_state = hrsl & (HRSL_JSTATUS | HRSL_KSTATUS);
-                    diag_printf("MAX3421E: USB bus event HIRQ=0x%02x BUS=0x%02x\r\n",
-                              (unsigned)irq, (unsigned)host_bus_state);
-                    host_descriptor_done = 0;
-                    touch_decoder.down = 0;
-                    touch_event.type = TOUCH_CANCEL;
-                    touch_pending = 1;
-                    /* A detach/reattach can leave the same J/K sample.
-                     * We invalidated the descriptors above: always restart
-                     * enumeration when a device is still attached. */
-                    if (host_bus_state != 0u)
-                        (void)host_bus_reset_and_probe();
-                    touch_health_report("CONNECT");
+            {
+                int connection_irq = (irq & CONDETIRQ) != 0u;
+                int rescan_empty = !host_descriptor_done && host_bus_state == 0u &&
+                                   ((empty_bus_rescan++ & 7u) == 0u);
+                if (connection_irq || rescan_empty) {
+                    uint8_t sampled_bus;
+                    /* HIRQ is write-one-to-clear. SAMPLEBUS is asynchronous;
+                     * wait for it to finish before consuming HRSL. */
+                    if (connection_irq) (void)reg_write(REG_HIRQ, CONDETIRQ);
+                    if (host_sample_bus(&sampled_bus) == 0 &&
+                        (connection_irq || sampled_bus != host_bus_state)) {
+                        host_bus_state = sampled_bus;
+                        diag_printf("MAX3421E: USB bus event HIRQ=0x%02x BUS=0x%02x\r\n",
+                                  (unsigned)irq, (unsigned)host_bus_state);
+                        host_descriptor_done = 0;
+                        touch_decoder.down = 0;
+                        touch_event.type = TOUCH_CANCEL;
+                        touch_pending = 1;
+                        /* A detach/reattach can leave the same J/K sample.
+                         * We invalidated the descriptors above: always restart
+                         * enumeration when a device is still attached. */
+                        if (host_bus_state != 0u)
+                            (void)host_bus_reset_and_probe();
+                        touch_health_report("CONNECT");
+                    }
                 }
             }
         }
@@ -953,4 +1010,6 @@ void max3421e_diag_report(void)
         diag_printf("MAX3421E: stage3 USBCTL stop=0x%02x run=0x%02x USBIRQ before=0x%02x last=0x%02x\r\n",
                   (unsigned)g_usb_ctl_reset, (unsigned)g_usb_ctl_run,
                   (unsigned)g_usb_irq_before_reset, (unsigned)g_usb_irq_last);
+    if ((report_divider++ & 7u) == 0u)
+        touch_health_report("POLL");
 }

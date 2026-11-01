@@ -210,6 +210,7 @@ static void lens_diag_report(void)
 /* All inputs commit through this one hardware boundary. */
 static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
 {
+    if(s->cnn_available && s->cnn_enabled!=old->cnn_enabled)ui_write(0x4004u,s->cnn_enabled);
     if(s->exposure!=old->exposure || s->gain!=old->gain) s->auto_exposure=0;
     /* Manual gimbal input cancels AF before changing either PWM target. */
     if(autofocus_active() && (s->servo_pan_us!=old->servo_pan_us ||
@@ -334,9 +335,8 @@ static __attribute__((noinline)) void ui_controls_poll(MenuState *s)
 }
 
 static MenuState *record_ui;
-#include "../shared/wifi_mcu.h"
+/* ESP-01 pads are reassigned to the B-board SPI link. */
 static void recorder_service(void) {
-    wifi_mcu_poll(1);
     rtc_diag_poll((uint32_t)UI_APB_BASE);
     video_diag_poll((uint32_t)UI_APB_BASE);
     max3421e_touch_poll();
@@ -466,6 +466,9 @@ AL_S32 main(void)
     }
 #endif
     ui.panel_ui=(uint8_t)mcu_menu_available;
+    ui.cnn_available=(ui_read(0x4000u)==0x53504447u);
+    ui.cnn_enabled=0;
+    if(ui.cnn_available)ui_write(0x4004u,0);
     auto_exposure_init(&ui);
     ui.histogram_available=(ui_read(HE_BASE)==HE_ID);
     if(ui.histogram_available)ui_write(HE_BASE+0x1c,0);
@@ -477,7 +480,6 @@ AL_S32 main(void)
     record_ui=&ui;
     rtc_diag_init((uint32_t)UI_APB_BASE);
     ui.record_available=recorder_init(recorder_service);
-    wifi_mcu_init();
 
     while(1) {
         g_ui_debug_stage = 5;
@@ -536,7 +538,6 @@ AL_S32 main(void)
         video_diag_poll((uint32_t)UI_APB_BASE);
         lens_serial_poll();
         recorder_poll();
-        wifi_mcu_poll(0);
         ui_controls_poll(&ui);
         g_ui_debug_stage = 6;
         AlSys_MDelay(1);

@@ -16,6 +16,10 @@ for n in ['.init','.text']:
 assert sections['.init'][1]==0x20e00000
 ram=[]
 for n in ['.config_settings','.rodata_in_ram','.data','.bss','.wifi_boot','.heap','.stack']:
+    # The ESP-01 interface can be disabled when its pads serve result SPI.
+    # Linker garbage collection then omits this optional section entirely.
+    if n=='.wifi_boot' and n not in sections:
+        continue
     size,vma,lma=sections[n]
     assert 0x08008000<=vma<vma+size<=0x0800c000,(n,sections[n])
     ram.append((vma,vma+size,n))

@@ -10,6 +10,9 @@
 // Same convention: lens shading correction is pulled in through the top file
 // so it does not have to be registered in the TD project (.al) source list.
 `include "lens_shading_correction.v"
+`include "cnn_spi_result_master.v"
+`include "cnn_digit_overlay.v"
+`include "cnn_result_apb.v"
 
 module design_top_wrapper (
     output wire O_sd_clk, O_sd_mosi, O_sd_cs,
@@ -19,11 +22,9 @@ module design_top_wrapper (
 
     input wire        I_mcu_uart_rx,
     output wire       O_mcu_uart_tx,
-    // ESP-01: module TXD -> E12/RX0, module RXD <- E16/TX0.
-    input  wire       I_wifi_uart_rx,
-    output wire       O_wifi_uart_tx,
-    inout  wire       IO_wifi_reset_n,
-    inout  wire       IO_wifi_gpio0,
+    // ESP-01 interface disabled; the same four pads now serve B-board SPI.
+    output wire O_cnn_spi_clk, O_cnn_spi_cs_n, O_cnn_spi_mosi,
+    input wire I_cnn_spi_miso,
     output wire       O_usb_sclk,
     input  wire       I_usb_miso,
     // MAX3421E uses this same pad as the return-data line while its
@@ -325,14 +326,10 @@ module design_top_wrapper (
     wire S_rtc_set;
     wire [1:0] S_wifi_ctrl;
     (* async_reg="true" *) reg [1:0] S_wifi_pad_meta, S_wifi_pad_sync;
-    // Open-drain control: reset defaults to release, GPIO0 defaults to
-    // normal flash boot. External 3.3V pull-ups must hold both pins before
-    // FPGA configuration too. Never actively drive against a module button.
-    assign IO_wifi_reset_n = S_wifi_ctrl[0] ? 1'b0 : 1'bz;
-    assign IO_wifi_gpio0 = S_wifi_ctrl[1] ? 1'b0 : 1'bz;
+    // Keep legacy APB addresses readable, but disconnect Wi-Fi pad ownership.
     always @(posedge S_mcu_apb_clk or negedge S_rst_n) begin
         if(!S_rst_n) begin S_wifi_pad_meta<=2'b11; S_wifi_pad_sync<=2'b11; end
-        else begin S_wifi_pad_meta<={IO_wifi_gpio0,IO_wifi_reset_n}; S_wifi_pad_sync<=S_wifi_pad_meta; end
+        else begin S_wifi_pad_meta<=2'b11; S_wifi_pad_sync<=S_wifi_pad_meta; end
     end
     wire [31:0] S_focus_roi_apb;
     // 自动对焦 ROI 的尺寸（APB 0xfc）。慢变控制量，而且 focus_metric 只在帧首
@@ -1066,8 +1063,8 @@ module design_top_wrapper (
         .gpio7_in    ( S_mcu_gpio7_in    ),
         .gpio7_out   ( S_mcu_gpio7_out   ),
         .gpio7_dir   ( S_mcu_gpio7_dir   ),
-        .uart0_tx    ( O_wifi_uart_tx     ),
-        .uart0_rx    ( I_wifi_uart_rx     ),
+        .uart0_tx    (                   ),
+        .uart0_rx    ( 1'b1              ),
         .uart1_tx    ( O_mcu_uart_tx      ),
         .uart1_rx    ( I_mcu_uart_rx      ),
         .i2c_sda_in  ( 1'b0               ),
@@ -1205,14 +1202,16 @@ module design_top_wrapper (
     wire rec_select=(S_mcu_paddr[19:12]==8'h01);
     wire menu_select=(S_mcu_paddr[19:12]==8'h02);
     wire he_select=(S_mcu_paddr[19:12]==8'h03);
+    wire cnn_select=(S_mcu_paddr[19:12]==8'h04);
+    wire [31:0] cnn_rdata;
     wire [31:0] he_rdata;
     wire [31:0] menu_rdata;
     wire rec_block, rec_wr, rec_rd, video_read_valid;
     wire [24:0] rec_addr;
     wire [127:0] rec_data;
-    assign S_mcu_prdata=he_select?he_rdata:menu_select?menu_rdata:rec_select?rec_rdata:legacy_rdata;
-    assign S_mcu_pready=(rec_select || menu_select || he_select)?1'b1:legacy_ready;
-    assign S_mcu_pslverr=(rec_select || menu_select || he_select)?1'b0:legacy_error;
+    assign S_mcu_prdata=cnn_select?cnn_rdata:he_select?he_rdata:menu_select?menu_rdata:rec_select?rec_rdata:legacy_rdata;
+    assign S_mcu_pready=(rec_select || menu_select || he_select || cnn_select)?1'b1:legacy_ready;
+    assign S_mcu_pslverr=(rec_select || menu_select || he_select || cnn_select)?1'b0:legacy_error;
     sd_recorder u_recorder (
         .rst_n(S_rst_n), .apb_clk(S_mcu_apb_clk),
         .pixel_clk(S_hdmi_pixel_clk), .ddr_clk(S_ddr_clk),
@@ -1237,7 +1236,7 @@ module design_top_wrapper (
         .O_usb_res_n   ( S_apb_usb_res_n ),
         .O_usb_spi_enable ( S_apb_usb_spi_enable ),
         .I_paddr       ( S_mcu_paddr ),
-        .I_psel        ( S_mcu_psel && !rec_select && !menu_select && !he_select ),
+        .I_psel        ( S_mcu_psel && !rec_select && !menu_select && !he_select && !cnn_select ),
         .I_penable     ( S_mcu_penable ),
         .I_pwrite      ( S_mcu_pwrite ),
         .I_pwdata      ( S_mcu_pwdata ),
@@ -2118,6 +2117,32 @@ isp_top u_isp_top (
         .period_valid    ( S_cam_period_valid)
     );
 
+    wire S_cnn_new,S_cnn_valid,S_cnn_overflow,S_cnn_enable;
+    wire [4:0] S_cnn_count;
+    wire [671:0] S_cnn_records;
+    wire [15:0] S_cnn_sequence;
+    wire [31:0] S_cnn_weight,S_cnn_good,S_cnn_bad;
+    wire S_cnn_vs,S_cnn_hs,S_cnn_de;
+    wire [23:0] S_cnn_rgb;
+    cnn_spi_result_master #(.CLK_HZ(`HDMI_PIXEL_CLOCK_HZ)) u_cnn_spi_result_master (
+        .clk(S_hdmi_pixel_clk),.rst_n(S_rst_n && S_hdmi_rst_n),
+        .spi_clk(O_cnn_spi_clk),.spi_cs_n(O_cnn_spi_cs_n),.spi_mosi(O_cnn_spi_mosi),.spi_miso(I_cnn_spi_miso),
+        .result_new(S_cnn_new),.result_valid(S_cnn_valid),.result_records(S_cnn_records),
+        .result_count(S_cnn_count),.result_overflow(S_cnn_overflow),.result_sequence(S_cnn_sequence),
+        .result_weight_crc(S_cnn_weight),.good_packets(S_cnn_good),.bad_packets(S_cnn_bad));
+    cnn_result_apb u_cnn_result_apb (
+        .apb_clk(S_mcu_apb_clk),.pixel_clk(S_hdmi_pixel_clk),.rst_n(S_rst_n && S_hdmi_rst_n),
+        .sel(S_mcu_psel && cnn_select),.enable(S_mcu_penable),.write(S_mcu_pwrite),
+        .addr(S_mcu_paddr[7:0]),.strobe(S_mcu_pstrobe),.wdata(S_mcu_pwdata),.rdata(cnn_rdata),
+        .overlay_enable(S_cnn_enable),.result_valid(S_cnn_valid),.result_overflow(S_cnn_overflow),
+        .result_count(S_cnn_count),.result_sequence(S_cnn_sequence),.weight_crc(S_cnn_weight),
+        .good_packets(S_cnn_good),.bad_packets(S_cnn_bad));
+    cnn_digit_overlay u_cnn_digit_overlay (
+        .clk(S_hdmi_pixel_clk),.rst_n(S_hdmi_rst_n),.enable(S_cnn_enable),
+        .result_valid(S_cnn_valid),.result_count(S_cnn_count),.result_records(S_cnn_records),
+        .vs(S_final_vsync),.hs(S_final_hsync),.de(S_final_de),.rgb(S_final_data),
+        .out_vs(S_cnn_vs),.out_hs(S_cnn_hs),.out_de(S_cnn_de),.out_rgb(S_cnn_rgb));
+
     ui_osd #(
         .H_ACTIVE(`HDMI_H_ACTIVE),
         .V_ACTIVE(`HDMI_V_ACTIVE),
@@ -2134,13 +2159,13 @@ isp_top u_isp_top (
         .I_camera_display(S_camera_display_pixel),
         .I_clk          ( S_hdmi_pixel_clk ),
         .I_rst_n        ( S_hdmi_rst_n ),
-        .I_vsync        ( S_final_vsync ),
+        .I_vsync        ( S_cnn_vs ),
         .I_mipi_frames  ( S_mipi_frames_bcd ),
         .I_mipi_fps     ( S_mipi_fps_bcd ),
         .I_mipi_fps_valid ( S_mipi_fps_valid ),
-        .I_hsync        ( S_final_hsync ),
-        .I_de           ( S_final_de ),
-        .I_data         ( S_final_data ),
+        .I_hsync        ( S_cnn_hs ),
+        .I_de           ( S_cnn_de ),
+        .I_data         ( S_cnn_rgb ),
         .I_menu_enable  ( S_ui_enable_p2 ),
         .I_edit_enable  ( S_ui_edit_p2 ),
         .I_info_enable  ( S_ui_info_p2 ),

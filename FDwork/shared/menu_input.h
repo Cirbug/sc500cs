@@ -69,6 +69,7 @@ typedef struct {
     /* 2026-10-27：二值化阈值 0..255（默认 128）。只在"图像特效=二值化"时起作用、
      * 也只有在那个档位才允许调；按你的要求**不持久化**，每次上电回 128。 */
     uint32_t bin_threshold;
+    uint32_t cnn_enabled, cnn_available; /* FPGA result SPI/overlay, page +0x4000. */
     /* --- 已停用（2026-10-26）：gege 的 track_color / APB 0xf4 链路 ----------
      * 没有任何菜单代码给它赋值，FPGA 也只按 image_step 5/6/7 选色，
      * 永远影响不到可见行为，还要占 TCM。
@@ -431,7 +432,7 @@ static inline unsigned panel_rows(const MenuState *s)
 {
     /* 2026-10-27 第四期：显示模式页 4 -> 5 行（新增"颜色识别"档）。 */
     /* 2026-10-27：显示模式页 5 -> 6 行（"图像特效"下面加"阈值"滑条）。 */
-    static const uint8_t rows[]={6,7,5,6,4,6,2};
+    static const uint8_t rows[]={6,7,5,7,4,6,2};
     return rows[s->panel_page]+(s->panel_page==PANEL_PICTURE && s->histogram_available);
 }
 /* 显示模式页的行 -> image_step 映射（2026-10-27 第四期）。
@@ -485,7 +486,8 @@ static inline unsigned panel_adjust(MenuState *s,int direction)
         s->index=selected==2?7:selected;
         action=menu_adjust(s,direction);s->index=selected;break;
     case PANEL_MODE:
-        if(selected<4)s->image_step=mode_row_step[selected];   /* 前 4 行是档位（含新增的颜色识别）*/
+        if(selected==6) { if(s->cnn_available)s->cnn_enabled=!s->cnn_enabled; }
+        else if(selected<4)s->image_step=mode_row_step[selected];   /* 前 4 行是档位（含新增的颜色识别）*/
         else if(selected==4) { /* Reuse effect/target adjustment without interpreting it as a mode. */
             old=s->picture_page;s->picture_page=0;s->index=5;
             action=menu_adjust(s,direction);s->index=selected;s->picture_page=old;

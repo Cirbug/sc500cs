@@ -24,11 +24,11 @@ set_pin_assignment { O_servo_pan }  { LOCATION = V6; IOSTANDARD = LVCMOS33; DRIV
 set_pin_assignment { O_servo_tilt } { LOCATION = V4; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLDOWN; }
 
 # Board USB-UART bridge.
-# ATK-ESP-01, independent USART0. Module and FPGA share GND; 3.3V logic.
-set_pin_assignment { I_wifi_uart_rx } { LOCATION = E12; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
-set_pin_assignment { O_wifi_uart_tx } { LOCATION = E16; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
-set_pin_assignment { IO_wifi_reset_n } { LOCATION = F13; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
-set_pin_assignment { IO_wifi_gpio0 } { LOCATION = E17; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+# Former ESP-01 pads, now result SPI. Disconnect ESP-01 before loading.
+set_pin_assignment { O_cnn_spi_clk } { LOCATION = E12; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
+set_pin_assignment { O_cnn_spi_cs_n } { LOCATION = E16; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLUP; }
+set_pin_assignment { I_cnn_spi_miso } { LOCATION = F13; IOSTANDARD = LVCMOS33; PULLTYPE = PULLDOWN; }
+set_pin_assignment { O_cnn_spi_mosi } { LOCATION = E17; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 4; PULLTYPE = PULLDOWN; }
 set_pin_assignment	{ I_mcu_uart_rx }		{ LOCATION = J1; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
 set_pin_assignment	{ O_mcu_uart_tx }		{ LOCATION = H1; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = PULLUP; }
 

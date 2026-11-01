@@ -169,6 +169,18 @@ int main(int argc,char **argv) {
     tap(&s,400,916);assert(s.histogram_mode==0 && s.picture==PICTURE_DEFAULT);
     s.histogram_available=0;menu_key(&s,2);assert(s.index==0);
     puts("PASS merged panel HE row, keys/touch, reset, AE ownership and independent dirty bits");
+    panel_open(&s,PANEL_MODE);assert(panel_rows(&s)==7);
+    s.cnn_available=1;s.cnn_enabled=0;s.index=6;
+    unsigned old_step=s.image_step,old_effect=s.image_effect;
+    menu_key(&s,8);assert(s.cnn_enabled && !s.edit);
+    assert(s.image_step==old_step && s.image_effect==old_effect);
+    mcu_menu_publish(&s,0);
+    for(unsigned c=0;c<4;c++)assert((words[112+c]&255u)==mcu_label_pool[mcu_panel_labels[3][7]+c]);
+    mcu_menu_poll(&s);i=commits;
+    tap(&s,400,916);assert(!s.cnn_enabled);
+    mcu_menu_poll(&s);assert(commits==i+1);
+    s.cnn_available=0;menu_key(&s,8);assert(!s.cnn_enabled);
+    puts("PASS CNN menu label, capability, key/touch toggle and independent dirty bit");
     puts("PASS panel AE toggle, manual override, dirty key and AUTO header");
     puts("PASS panel pages, keys/touch, exposure limits, mode/effect, tracking, recording, diagnostics, dirty/busy and focus exclusion");
 }

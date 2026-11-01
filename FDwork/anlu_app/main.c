@@ -216,6 +216,7 @@ static void lens_diag_report(void)
 /* All inputs commit through this one hardware boundary. */
 static void menu_commit(MenuState *s, const MenuState *old, unsigned actions)
 {
+    if(s->cnn_available && s->cnn_enabled!=old->cnn_enabled)ui_write(0x4004u,s->cnn_enabled);
     if(s->exposure!=old->exposure || s->gain!=old->gain) s->auto_exposure=0;
     /* Manual gimbal input cancels AF before changing either PWM target. */
     if(autofocus_active() && (s->servo_pan_us!=old->servo_pan_us ||
@@ -596,6 +597,9 @@ AL_S32 main(void)
     }
 #endif
     ui.panel_ui=(uint8_t)mcu_menu_available;
+    ui.cnn_available=(ui_read(0x4000u)==0x53504447u);
+    ui.cnn_enabled=0;
+    if(ui.cnn_available)ui_write(0x4004u,0);
     auto_exposure_init(&ui);
     /* auto_exposure_init 会按能力位把 AE 打开，这里把用户上次的开关恢复回去，
      * 否则"灌完 bit 画面变了"还会多一条：AE 从关变开。 */

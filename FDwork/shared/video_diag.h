@@ -22,6 +22,10 @@ static __attribute__((noinline)) void video_diag_poll(uintptr_t base)
     unsigned end=r[0xd8/4]==0x44455431u ? 0xd4u:0xc8u;
     for(unsigned offset=0xb8u;offset<=end;offset+=4u)
         al_printf("VIDEO: %02x=%08x\r\n",offset,r[offset/4]);
+    if(r[0x4000u/4]==0x53504447u) {
+        for(unsigned offset=0x4004u;offset<=0x4014u;offset+=4u)
+            al_printf("CNN: %04x=%08x\r\n",offset,r[offset/4]);
+    }
 }
 #pragma GCC pop_options
 #endif

@@ -166,7 +166,11 @@ static uint32_t mcu_menu_row_base(const MenuState *s,uint32_t rec,unsigned row,u
         /* 2026-10-27 第四期：本页 5 行 = 普通(2)/识别(3)/运动(4)/颜色识别(0)/图像特效。
          * 前 4 行的档位查 mode_row_step[]（档位不再连续，不能用 row+1 的算术）；
          * 第 5 行是图像特效。跟踪态(5/6/7)时本页无行高亮，状态在"目标追踪"页看。 */
-        if(row>=1 && row<=4 && s->image_step==mode_row_step[row-1])mcu_panel_value(cells,7);
+        if(row==7) {
+            if(s->cnn_available)mcu_panel_value(cells,s->cnn_enabled?7:6);
+            else mcu_menu_text(cells,"----");
+        }
+        else if(row>=1 && row<=4 && s->image_step==mode_row_step[row-1])mcu_panel_value(cells,7);
         else if(row==6) {   /* 阈值（只有二值化时显示数值，其余显示 ----）*/
             if(s->image_effect==3u) mcu_panel_number(cells,s->bin_threshold);
             else mcu_menu_text(cells,"----");
@@ -262,7 +266,7 @@ static void mcu_menu_poll(const MenuState *s)
         (s->image_effect<<16)|(s->image_target<<20)|(s->histogram_mode<<24);
     /* 2026-10-27：二值化阈值必须并进脏键，否则"阈值在变、但条形图不动" ——
      * 和当年色度滑条不顺是同一个原因（键不变 -> mcu_menu_poll 提前返回）。 */
-    key[7]=(uint32_t)s->bin_threshold;
+    key[7]=(uint32_t)s->bin_threshold|(s->cnn_enabled<<16)|(s->cnn_available<<17);
     if((status&6u)==2u && !memcmp(key,mcu_menu_previous,sizeof key))return;
     mcu_menu_publish(s,rec);
     memcpy(mcu_menu_previous,key,sizeof key);

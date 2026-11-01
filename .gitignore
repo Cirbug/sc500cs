@@ -1,7 +1,7 @@
 build/
 # Prerequisites
 *.d
-
+*.log
 # Object files
 *.o
 *.ko
@@ -111,3 +111,6 @@ __pycache__/
 /spi_text/MDK-ARM/*.lst
 td_project/.lock.f
 *.stackdump
+
+
+
